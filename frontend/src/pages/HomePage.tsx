@@ -10,10 +10,8 @@ import {
   Globe,
   ArrowRight,
   Play,
-  Lock,
   Search,
   Bell,
-  Check,
   Vote,
   FileText,
   Settings,
@@ -25,71 +23,72 @@ export const HomePage: React.FC = () => {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   return (
-    <div className="space-y-16 lg:space-y-24 pb-16">
+    <div className="space-y-16 lg:space-y-20 pb-16">
       {/* ==================================================================== */}
-      {/* 1. HERO SECTION                                                      */}
+      {/* 1. HERO SECTION (EXACT REPLICA OF THE HERO DESIGN MOCKUP)            */}
       {/* ==================================================================== */}
-      <section className="relative overflow-hidden pt-4 sm:pt-8 lg:pt-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          {/* Left Column: Headline, Copy & Actions */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="inline-block">
-              <span className="text-xs font-bold text-blue-600 tracking-wider uppercase bg-blue-50/80 border border-blue-100 rounded-full px-3.5 py-1">
-                INSTITUTIONAL VOTING PLATFORM
-              </span>
-            </div>
+      <section className="relative overflow-hidden pt-6 pb-6 lg:pt-10 lg:pb-12 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#ECF4FB] via-[#F6FBFE] to-[#FFFFFF]">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-4 items-center">
+          {/* Left Column: Overline, Headline, Copy, Action Buttons, Trust Badges */}
+          <div className="lg:col-span-5 space-y-6 z-10 py-4 lg:py-8">
+            {/* Tagline / Overline (Clean uppercase text matching design) */}
+            <p className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-[0.16em] uppercase">
+              INSTITUTIONAL VOTING PLATFORM
+            </p>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-blue-950 tracking-tight leading-[1.12]">
+            {/* Main Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-slate-900 tracking-tight leading-[1.08]">
               Secure Elections for <br className="hidden sm:inline" />
               <span className="text-blue-600">Stronger Institutions</span>
             </h1>
 
-            <p className="text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
+            {/* Subtitle / Description */}
+            <p className="text-base sm:text-lg text-slate-600 max-w-[480px] leading-relaxed">
               PollWise is a modern, secure, and easy-to-use voting platform built for universities,
               organizations, and institutions. We make elections simple, transparent, and
               trustworthy — from eligibility to results.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-4 pt-1">
               <Link to="/elections">
-                <Button
-                  size="lg"
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-7 py-3.5 text-base font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                <button
+                  type="button"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-7 py-3.5 text-sm sm:text-base font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  Get Started Free
+                  <span>Get Started Free</span>
                   <ArrowRight className="h-4 w-4" />
-                </Button>
+                </button>
               </Link>
 
               <button
                 type="button"
                 onClick={() => setVideoModalOpen(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-all shadow-sm hover:shadow"
+                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full border border-blue-200 bg-white hover:bg-blue-50/60 text-blue-600 text-sm sm:text-base font-medium transition-all shadow-xs cursor-pointer"
               >
-                <div className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Play className="h-3 w-3 fill-current ml-0.5" />
+                <div className="h-5 w-5 rounded-full border border-blue-600 flex items-center justify-center">
+                  <Play className="h-2.5 w-2.5 fill-blue-600 text-blue-600 ml-0.5" />
                 </div>
                 <span>Watch Demo</span>
               </button>
             </div>
 
-            {/* Value Proposition Checkpoints */}
-            <div className="flex flex-wrap items-center gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-700">
+            {/* Trust Badges Row (3 Checkpoints) */}
+            <div className="flex flex-wrap items-center gap-6 sm:gap-7 pt-3 text-xs sm:text-sm font-medium text-slate-600">
               <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                <span className="h-4 w-4 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
                   ✓
                 </span>
                 <span>Secure & Private</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                <span className="h-4 w-4 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
                   ✓
                 </span>
                 <span>Easy to Use</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                <span className="h-4 w-4 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
                   ✓
                 </span>
                 <span>Built for Institutions</span>
@@ -97,95 +96,38 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Composite Hero Visual (Campus + Card + 3D Ballot Box) */}
-          <div className="lg:col-span-5 relative">
-            {/* Campus Background Frame */}
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 min-h-[460px] bg-slate-900 group">
+          {/* Right Column: Exact Graphic (S-Curve Mask, Campus Hall, Floating Card, 3D Ballot Box) */}
+          <div className="lg:col-span-7 relative flex items-center justify-center lg:justify-end">
+            <div className="relative w-full max-w-[620px] lg:max-w-[660px]">
               <img
-                src="/university-campus.jpg"
-                alt="University Campus Neoclassical Hall"
-                className="w-full h-full object-cover min-h-[460px] transform group-hover:scale-105 transition-transform duration-700"
-                onError={(e) => {
-                  // Fallback styling if local image is unavailable
-                  (e.target as HTMLElement).style.display = "none";
-                }}
+                src="/hero-right-pollwise.png"
+                alt="PollWise Institutional Voting Platform Architecture"
+                className="w-full h-auto object-contain select-none drop-shadow-sm"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-950/60 via-transparent to-transparent pointer-events-none" />
 
-              {/* Floating Card: "Your Voice Matters" */}
-              <div className="absolute top-6 left-6 z-20 bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-slate-100 max-w-[290px] animate-fade-in">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-blue-900 font-bold text-sm">
-                    <Landmark className="h-4 w-4 text-blue-600" />
-                    <span>PollWise</span>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 rounded-full">
-                    <Check className="h-3 w-3 stroke-[3]" />
-                    Secure Voting
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-bold text-slate-900 mt-3 tracking-tight">
-                  Your Voice Matters
-                </h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Participate in institutional elections and help shape a better tomorrow.
-                </p>
-
-                <Link to="/elections">
-                  <button
-                    type="button"
-                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs transition shadow-sm flex items-center justify-center gap-1.5"
-                  >
-                    <span>Start Voting</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </Link>
-
-                <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 mt-2.5">
-                  <Lock className="h-3 w-3" />
-                  <span>Your vote is secret and secure</span>
-                </div>
-              </div>
-
-              {/* Stylized 3D Ballot Box Graphic */}
-              <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center">
-                {/* Oval Pedestal Base */}
-                <div className="absolute -bottom-4 w-52 h-16 bg-blue-500/30 rounded-full blur-md -z-10" />
-
-                {/* Ballot Box Container */}
-                <div className="relative w-48 h-36 bg-gradient-to-b from-blue-700 to-blue-900 rounded-xl shadow-2xl border-t border-blue-400/40 p-3 flex flex-col justify-end items-center">
-                  {/* Top Slot & Paper Insert */}
-                  <div className="absolute -top-6 w-32 h-10 flex justify-center">
-                    {/* Ballot Paper Sliding In */}
-                    <div className="w-20 h-14 bg-white rounded-t-md shadow-md border border-slate-200 transform -rotate-6 flex flex-col items-center justify-center p-1">
-                      <div className="w-8 h-1 bg-slate-200 rounded mb-1" />
-                      <div className="w-10 h-1 bg-slate-200 rounded mb-1" />
-                      <div className="h-5 w-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <Check className="h-3.5 w-3.5 stroke-[3]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Slot Border on top surface */}
-                  <div className="absolute top-1 w-24 h-2 bg-blue-950/80 rounded-full shadow-inner" />
-
-                  {/* Shield Emblem on Front */}
-                  <div className="h-16 w-16 rounded-full bg-blue-800/80 border-2 border-blue-400/50 flex items-center justify-center text-white shadow-inner mb-2">
-                    <ShieldCheck className="h-9 w-9 text-blue-100" />
-                  </div>
-                  <span className="text-[10px] font-mono tracking-wider text-blue-200/80 uppercase">
-                    SECRECY PRESERVED
-                  </span>
-                </div>
-              </div>
+              {/* Interactive Hit Target over the "Start Voting ->" button on the illustration */}
+              <Link
+                to="/elections"
+                title="Start Voting"
+                role="button"
+                aria-label="Start Voting"
+                className="absolute z-10 rounded-lg cursor-pointer transition hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 flex items-center justify-center"
+                style={{
+                  top: "50%",
+                  left: "14%",
+                  width: "30%",
+                  height: "15%",
+                }}
+              >
+                <span className="sr-only">Start Voting</span>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* 2. FIVE KEY PILLARS STRIP                                            */}
+      {/* 2. FIVE KEY VALUE PILLARS STRIP                                      */}
       {/* ==================================================================== */}
       <section className="border-y border-slate-100 bg-slate-50/50 py-10 rounded-2xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -516,9 +458,12 @@ export const HomePage: React.FC = () => {
                             </p>
                             <p className="text-[9px] text-blue-600">Closes in 2 days</p>
                           </div>
-                          <span className="text-blue-600 hover:underline font-semibold cursor-pointer">
+                          <Link
+                            to="/elections"
+                            className="text-blue-600 hover:underline font-semibold cursor-pointer"
+                          >
                             View
-                          </span>
+                          </Link>
                         </div>
 
                         <div className="flex items-center justify-between p-1.5 bg-slate-50 rounded border border-slate-100">
@@ -528,9 +473,12 @@ export const HomePage: React.FC = () => {
                             </p>
                             <p className="text-[9px] text-emerald-600">Opens in 3 days</p>
                           </div>
-                          <span className="text-blue-600 hover:underline font-semibold cursor-pointer">
+                          <Link
+                            to="/elections"
+                            className="text-blue-600 hover:underline font-semibold cursor-pointer"
+                          >
                             View
-                          </span>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -558,7 +506,7 @@ export const HomePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setVideoModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
