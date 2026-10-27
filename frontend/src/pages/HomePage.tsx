@@ -96,9 +96,9 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Authentic Visual Architecture (Full Card, S-Curve Blending Close to Caption) */}
-          <div className="w-full lg:w-[55%] xl:w-[58%] lg:-ml-6 xl:-ml-10 relative flex items-center justify-end pb-4 lg:pb-0">
-            <div className="relative w-full max-w-[640px]">
+          {/* Right Column: Clean Visual Architecture (Card, Campus, 3D Ballot Box) */}
+          <div className="w-full lg:w-[54%] xl:w-[56%] relative flex items-center justify-end pb-4 lg:pb-0">
+            <div className="relative w-full max-w-[560px]">
               <img
                 src="/hero-artwork-pollwise.png"
                 alt="PollWise Institutional Voting Platform Architecture"
@@ -114,8 +114,8 @@ export const HomePage: React.FC = () => {
                 className="absolute z-10 rounded-lg cursor-pointer transition hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 flex items-center justify-center"
                 style={{
                   top: "54.5%",
-                  left: "19.5%",
-                  width: "29%",
+                  left: "5.5%",
+                  width: "34%",
                   height: "7.5%",
                 }}
               >
