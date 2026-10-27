@@ -228,8 +228,8 @@ export const AppShell: React.FC = () => {
       {/* MAIN CONTENT AREA                                                    */}
       {/* ==================================================================== */}
       {isLandingPage ? (
-        // Full-width Landing Page Container matching the visual design
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1">
+        // Full-bleed Landing Page Container matching the visual design
+        <main className="w-full flex-1">
           <Outlet />
         </main>
       ) : (
