@@ -10,7 +10,11 @@ import {
   History, 
   ArrowLeft, 
   User, 
-  AlertCircle
+  AlertCircle,
+  Vote,
+  Users,
+  CheckCircle2,
+  UserPlus
 } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -26,6 +30,9 @@ export const ElectionDetailPage: React.FC = () => {
 
   const [approvalReason, setApprovalReason] = useState("");
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showAddVoterModal, setShowAddVoterModal] = useState(false);
+  const [voterEmailInput, setVoterEmailInput] = useState("");
+  const [bulkEmailsInput, setBulkEmailsInput] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: election, isLoading, error } = useQuery({
@@ -37,6 +44,18 @@ export const ElectionDetailPage: React.FC = () => {
   const { data: auditTrail } = useQuery({
     queryKey: ["election-audit", id],
     queryFn: () => apiClient.getElectionAudit(id!),
+    enabled: !!id && isAuthenticated,
+  });
+
+  const { data: participation } = useQuery({
+    queryKey: ["participation", id],
+    queryFn: () => apiClient.getMyParticipation(id!),
+    enabled: !!id && isAuthenticated,
+  });
+
+  const { data: eligibilityList } = useQuery({
+    queryKey: ["election-eligibility", id],
+    queryFn: () => apiClient.getEligibility(id!),
     enabled: !!id && isAuthenticated,
   });
 
@@ -85,6 +104,34 @@ export const ElectionDetailPage: React.FC = () => {
     onError: (err: any) => setErrorMessage(err?.message || "Failed to close election"),
   });
 
+  const addVoterMutation = useMutation({
+    mutationFn: () => apiClient.addEligibleVoter(id!, { email: voterEmailInput.trim() }),
+    onSuccess: () => {
+      setVoterEmailInput("");
+      setShowAddVoterModal(false);
+      queryClient.invalidateQueries({ queryKey: ["election-eligibility", id] });
+      setErrorMessage(null);
+    },
+    onError: (err: any) => setErrorMessage(err?.message || "Failed to add voter to roll"),
+  });
+
+  const bulkImportMutation = useMutation({
+    mutationFn: () => {
+      const parsedEmails = bulkEmailsInput
+        .split(/[\n,;]+/)
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0 && e.includes("@"));
+      return apiClient.bulkImportEligibility(id!, parsedEmails);
+    },
+    onSuccess: () => {
+      setBulkEmailsInput("");
+      setShowAddVoterModal(false);
+      queryClient.invalidateQueries({ queryKey: ["election-eligibility", id] });
+      setErrorMessage(null);
+    },
+    onError: (err: any) => setErrorMessage(err?.message || "Failed to bulk import voters"),
+  });
+
   if (isLoading) {
     return <div className="text-center py-16 text-xs text-muted-foreground">Loading election details...</div>;
   }
@@ -118,6 +165,50 @@ export const ElectionDetailPage: React.FC = () => {
         <span>/</span>
         <span className="text-foreground font-medium truncate">{election.title}</span>
       </div>
+
+      {/* Active Voting Banner (when election is open) */}
+      {election.status === "open" && (
+        <div className="p-5 rounded-2xl border border-emerald-300 bg-emerald-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600" />
+              </span>
+              <h3 className="font-bold text-base text-emerald-950">Voting Is Currently Open</h3>
+            </div>
+            <p className="text-xs text-emerald-800">
+              {participation?.has_voted
+                ? "You have already cast your secret ballot for this election. Thank you for participating!"
+                : participation?.is_eligible
+                ? "You are authorized as an eligible voter. You may now proceed to the secure voting booth."
+                : "Eligible voters may cast their ballots until the election closes."}
+            </p>
+          </div>
+
+          <div>
+            {participation?.has_voted ? (
+              <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-900 gap-1.5 py-1.5 px-3">
+                <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                Ballot Cast
+              </Badge>
+            ) : participation?.is_eligible ? (
+              <Link to={`/elections/${election.id}/vote`}>
+                <Button className="gap-2 bg-emerald-700 hover:bg-emerald-800 shadow">
+                  <Vote className="h-4 w-4" />
+                  Cast Your Ballot
+                </Button>
+              </Link>
+            ) : (
+              <Link to={`/elections/${election.id}/vote`}>
+                <Button variant="secondary" className="gap-1.5 text-xs">
+                  Enter Voting Booth
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Election Header Card */}
       <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-sm space-y-6">
@@ -306,6 +397,58 @@ export const ElectionDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Voter Eligibility Roster (Auditor / Manager View) */}
+      {isAuthenticated && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Voter Eligibility Roll</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Verified institutional voters authorized to request single-use voting credentials.
+              </CardDescription>
+            </div>
+            {election.status === "draft" && (
+              <Button size="sm" variant="outline" onClick={() => setShowAddVoterModal(true)} className="gap-1.5 text-xs">
+                <UserPlus className="h-3.5 w-3.5" />
+                Add Eligible Voters
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {(!eligibilityList || eligibilityList.length === 0) ? (
+              <p className="text-xs text-muted-foreground italic py-3 text-center">
+                No voters registered on this eligibility roll yet.
+              </p>
+            ) : (
+              <div className="divide-y divide-border">
+                {eligibilityList.slice(0, 10).map((elig) => (
+                  <div key={elig.id} className="py-2.5 flex items-center justify-between text-xs">
+                    <div>
+                      <p className="font-semibold text-foreground">{elig.user_email || elig.user_id}</p>
+                      {elig.user_name && <p className="text-[11px] text-muted-foreground">{elig.user_name}</p>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        {elig.eligibility_status}
+                      </Badge>
+                      <Badge
+                        variant={elig.entitlement_status === "redeemed" ? "success" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {elig.entitlement_status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Audit Event Trail Section */}
       {isAuthenticated && auditTrail && auditTrail.length > 0 && (
         <Card>
@@ -366,6 +509,75 @@ export const ElectionDetailPage: React.FC = () => {
                 </Button>
                 <Button onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending}>
                   {approveMutation.isPending ? "Recording..." : "Confirm Approval"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Add Eligible Voters Modal */}
+      {showAddVoterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <Card className="max-w-lg w-full shadow-xl">
+            <CardHeader>
+              <CardTitle>Register Eligible Voters</CardTitle>
+              <CardDescription className="text-xs">
+                Add verified institutional members to the authorized voter registry.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Single Voter */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-foreground">Add Individual by Email</label>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    placeholder="student@university.edu"
+                    value={voterEmailInput}
+                    onChange={(e) => setVoterEmailInput(e.target.value)}
+                    className="flex-1 p-2 text-xs rounded-lg border border-border bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => addVoterMutation.mutate()}
+                    disabled={!voterEmailInput.trim() || addVoterMutation.isPending}
+                    className="text-xs"
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-surface px-2 text-muted-foreground">OR BULK IMPORT</span></div>
+              </div>
+
+              {/* Bulk Import */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-foreground">Paste Email Roster (One per line)</label>
+                <textarea
+                  rows={4}
+                  placeholder="alice@university.edu&#10;bob@university.edu&#10;carol@university.edu"
+                  value={bulkEmailsInput}
+                  onChange={(e) => setBulkEmailsInput(e.target.value)}
+                  className="w-full p-2 text-xs font-mono rounded-lg border border-border bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => bulkImportMutation.mutate()}
+                  disabled={!bulkEmailsInput.trim() || bulkImportMutation.isPending}
+                  className="w-full text-xs"
+                >
+                  {bulkImportMutation.isPending ? "Importing Roster..." : "Import Email Roll"}
+                </Button>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-border">
+                <Button variant="ghost" size="sm" onClick={() => setShowAddVoterModal(false)} className="text-xs">
+                  Done
                 </Button>
               </div>
             </CardContent>

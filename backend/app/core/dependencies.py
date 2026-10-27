@@ -110,6 +110,57 @@ async def require_platform_admin(
     return current_user
 
 
+async def verify_user_organization_role(
+    db: AsyncSession,
+    user: User,
+    organization_id: uuid.UUID,
+    allowed_roles: list[str],
+) -> OrganizationMembership:
+    """Explicitly verify that user possesses an authorized role in an organization."""
+    if user.is_platform_admin:
+        stmt = select(OrganizationMembership).where(
+            OrganizationMembership.organization_id == organization_id,
+            OrganizationMembership.user_id == user.id,
+        )
+        res = await db.execute(stmt)
+        mem = res.scalar_one_or_none()
+        if mem:
+            return mem
+        return OrganizationMembership(
+            id=uuid.uuid4(),
+            organization_id=organization_id,
+            user_id=user.id,
+            role="organization_admin",
+            status="active",
+        )
+
+    stmt = (
+        select(OrganizationMembership)
+        .where(
+            OrganizationMembership.organization_id == organization_id,
+            OrganizationMembership.user_id == user.id,
+            OrganizationMembership.status == MembershipStatus.ACTIVE.value,
+        )
+        .options(selectinload(OrganizationMembership.organization))
+    )
+    res = await db.execute(stmt)
+    membership = res.scalar_one_or_none()
+
+    if not membership:
+        raise AppException(
+            code=ErrorCode.FORBIDDEN,
+            message="You are not an active member of this organization.",
+        )
+
+    if membership.role not in allowed_roles:
+        raise AppException(
+            code=ErrorCode.FORBIDDEN,
+            message=f"Insufficient role in organization. Required: {', '.join(allowed_roles)}.",
+        )
+
+    return membership
+
+
 def require_organization_role(allowed_roles: list[str]) -> Callable:
     """Factory creating dependency verifying user has appropriate organization membership."""
 
@@ -118,50 +169,6 @@ def require_organization_role(allowed_roles: list[str]) -> Callable:
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_identity_session),
     ) -> OrganizationMembership:
-        # Platform admins bypass organization role restrictions
-        if current_user.is_platform_admin:
-            # Return or synthesize an admin membership context
-            stmt = select(OrganizationMembership).where(
-                OrganizationMembership.organization_id == organization_id,
-                OrganizationMembership.user_id == current_user.id,
-            )
-            res = await db.execute(stmt)
-            mem = res.scalar_one_or_none()
-            if mem:
-                return mem
-            # Synthesize mock admin membership for platform admin
-            return OrganizationMembership(
-                id=uuid.uuid4(),
-                organization_id=organization_id,
-                user_id=current_user.id,
-                role="organization_admin",
-                status="active",
-            )
-
-        stmt = (
-            select(OrganizationMembership)
-            .where(
-                OrganizationMembership.organization_id == organization_id,
-                OrganizationMembership.user_id == current_user.id,
-                OrganizationMembership.status == MembershipStatus.ACTIVE.value,
-            )
-            .options(selectinload(OrganizationMembership.organization))
-        )
-        res = await db.execute(stmt)
-        membership = res.scalar_one_or_none()
-
-        if not membership:
-            raise AppException(
-                code=ErrorCode.FORBIDDEN,
-                message="You are not an active member of this organization.",
-            )
-
-        if membership.role not in allowed_roles:
-            raise AppException(
-                code=ErrorCode.FORBIDDEN,
-                message=f"Insufficient role in organization. Required: {', '.join(allowed_roles)}.",
-            )
-
-        return membership
+        return await verify_user_organization_role(db, current_user, organization_id, allowed_roles)
 
     return dependency

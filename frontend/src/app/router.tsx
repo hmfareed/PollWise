@@ -3,6 +3,7 @@ import { AppShell } from "../layouts/AppShell";
 import { HomePage } from "../pages/HomePage";
 import { ElectionsPage } from "../pages/ElectionsPage";
 import { ElectionDetailPage } from "../pages/ElectionDetailPage";
+import { VotingBoothPage } from "../pages/VotingBoothPage";
 import { CreateElectionWizardPage } from "../pages/CreateElectionWizardPage";
 import { AdminDashboardPage } from "../pages/AdminDashboardPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
       {
         path: "elections/:id",
         element: <ElectionDetailPage />,
+      },
+      {
+        path: "elections/:id/vote",
+        element: <VotingBoothPage />,
       },
       {
         path: "admin",

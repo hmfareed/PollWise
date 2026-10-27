@@ -62,6 +62,10 @@ class Settings(BaseSettings):
         default="pollwise-ballot-box-hmac-key-dev-only-change-in-prod",
         description="HMAC key used solely by ballot-box to decouple credential hashes",
     )
+    CREDENTIAL_SIGNING_SECRET: str = Field(
+        default="pollwise-credential-signing-secret-dev-min32chars",
+        description="Secret key for signing single-use voter credentials",
+    )
 
     # Operational Limits
     MAX_UPLOAD_MB: int = 10

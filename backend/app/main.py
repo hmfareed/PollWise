@@ -54,8 +54,10 @@ def create_app() -> FastAPI:
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
 
-    # Include main API router
+    # Include main API router and dedicated ballot-box boundary router
     app.include_router(api_v1_router)
+    from app.api.ballot_box import router as ballot_box_router
+    app.include_router(ballot_box_router, prefix="/ballot-box/v1")
 
     @app.get("/")
     async def root():
