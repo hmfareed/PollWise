@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import (
 import app.models.ballot
 import app.models.election
 import app.models.identity
+from app.core.rate_limit import rate_limit_ballot_box, rate_limit_login
 from app.db.base import BallotBase, ElectionBase, IdentityBase
 from app.db.session import (
     get_ballot_session,
@@ -106,6 +107,8 @@ async def test_client(test_identity_session, test_election_session, test_ballot_
     app.dependency_overrides[get_identity_session] = override_get_identity_session
     app.dependency_overrides[get_election_session] = override_get_election_session
     app.dependency_overrides[get_ballot_session] = override_get_ballot_session
+    app.dependency_overrides[rate_limit_login] = lambda: None
+    app.dependency_overrides[rate_limit_ballot_box] = lambda: None
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

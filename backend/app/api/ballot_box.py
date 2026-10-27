@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.errors import AppException, ErrorCode
+from app.core.rate_limit import rate_limit_ballot_box
 from app.db.session import get_ballot_session, get_election_session
 from app.schemas.ballot import BallotSubmitRequest, BallotSubmitResponse
 from app.services.ballot_box_service import BallotBoxService
@@ -23,6 +24,7 @@ router = APIRouter(tags=["Isolated Ballot-Box"])
     "/ballots",
     response_model=dict,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit_ballot_box)],
 )
 async def submit_ballot(
     request: Request,

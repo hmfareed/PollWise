@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user, get_token_from_request
+from app.core.rate_limit import rate_limit_login
 from app.db.session import get_identity_session
 from app.models.identity import User
 from app.schemas.auth import (
@@ -34,7 +35,11 @@ async def register(
     )
 
 
-@router.post("/login", response_model=ApiResponse[MeResponse])
+@router.post(
+    "/login",
+    response_model=ApiResponse[MeResponse],
+    dependencies=[Depends(rate_limit_login)],
+)
 async def login(
     req: LoginRequest,
     request: Request,
