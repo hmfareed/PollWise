@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: pollwise-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deployment/docker/init-multi-db.sql:/docker-entrypoint-initdb.d/init-multi-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pollwise-backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: development
+      IDENTITY_DATABASE_URL: postgresql+asyncpg://identity_user:identity_pass@postgres:5432/identity_db
+      ELECTION_DATABASE_URL: postgresql+asyncpg://election_user:election_pass@postgres:5432/election_db
+      BALLOT_DATABASE_URL: postgresql+asyncpg://ballot_user:ballot_pass@postgres:5432/ballot_db
+      SESSION_SECRET: pollwise-dev-session-secret-must-be-replaced-in-production-min32chars
+      FRONTEND_ORIGIN: http://localhost:5173
+      BALLOT_BOX_BASE_URL: http://localhost:8000/ballot-box/v1
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pollwise-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
