@@ -65,3 +65,7 @@ coverage/
 *.sqlite3
 *.db
 pgdata/
+
+# Scratch & temporary development scripts
+scratch/
+

@@ -25,36 +25,36 @@ export const HomePage: React.FC = () => {
   return (
     <div className="space-y-16 lg:space-y-20 pb-16">
       {/* ==================================================================== */}
-      {/* 1. HERO SECTION (EXPANDED ARTWORK, SEAMLESS CURVE, CLOSE TO CAPTION) */}
+      {/* 1. HERO SECTION (EXPANDED ARTWORK, FULL-FACE PRESENTATION)            */}
       {/* ==================================================================== */}
       <section className="relative w-full overflow-hidden bg-[#F6FAFE] border-b border-slate-100">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 py-8 lg:py-12 gap-8 lg:gap-6">
           {/* Left Column: Overline, Headline, Copy, Action Buttons, Trust Badges */}
-          <div className="w-full lg:w-[45%] xl:w-[42%] py-4 lg:py-6 space-y-4 z-20 flex-shrink-0">
+          <div className="w-full lg:w-[44%] xl:w-[42%] space-y-5 z-20 flex-shrink-0">
             {/* Tagline / Overline */}
             <p className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-[0.16em] uppercase">
               INSTITUTIONAL VOTING PLATFORM
             </p>
 
             {/* Main Headline (Exact 2 lines matching the mockup) */}
-            <h1 className="text-3xl sm:text-4xl lg:text-[38px] font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+            <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-slate-900 tracking-tight leading-[1.1]">
               <span className="block whitespace-nowrap">Secure Elections for</span>
               <span className="block text-blue-600 whitespace-nowrap">Stronger Institutions</span>
             </h1>
 
             {/* Subtitle / Description */}
-            <p className="text-xs sm:text-[13px] text-slate-600 max-w-[430px] leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-600 max-w-[480px] leading-relaxed">
               PollWise is a modern, secure, and easy-to-use voting platform built for universities,
               organizations, and institutions. We make elections simple, transparent, and
               trustworthy — from eligibility to results.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-1">
+            <div className="flex flex-wrap items-center gap-4 pt-1">
               <Link to="/elections">
                 <button
                   type="button"
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 text-sm font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 text-sm sm:text-base font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <span>Get Started Free</span>
                   <ArrowRight className="h-4 w-4" />
@@ -64,7 +64,7 @@ export const HomePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setVideoModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-blue-200 bg-white hover:bg-blue-50/60 text-blue-600 text-sm font-medium transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-blue-200 bg-white hover:bg-blue-50/60 text-blue-600 text-sm sm:text-base font-medium transition-all shadow-xs cursor-pointer"
               >
                 <div className="h-4 w-4 rounded-full border border-blue-600 flex items-center justify-center">
                   <Play className="h-2 w-2 fill-blue-600 text-blue-600 ml-0.5" />
@@ -96,9 +96,9 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Clean Visual Architecture (Card, Campus, 3D Ballot Box) */}
-          <div className="w-full lg:w-[54%] xl:w-[56%] relative flex items-center justify-end pb-4 lg:pb-0">
-            <div className="relative w-full max-w-[560px]">
+          {/* Right Column: Clean Visual Architecture (Enlarged to fill space) */}
+          <div className="w-full lg:w-[56%] xl:w-[58%] relative flex items-center justify-end pb-4 lg:pb-0">
+            <div className="relative w-full max-w-[720px]">
               <img
                 src="/hero-illustration.png"
                 alt="PollWise Institutional Voting Platform Architecture"
