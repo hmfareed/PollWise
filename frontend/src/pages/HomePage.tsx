@@ -27,7 +27,7 @@ export const HomePage: React.FC = () => {
       {/* ==================================================================== */}
       {/* 1. HERO SECTION (EXPANDED ARTWORK, SEAMLESS CURVE, CLOSE TO CAPTION) */}
       {/* ==================================================================== */}
-      <section className="relative w-full overflow-hidden bg-gradient-to-r from-[#ECF4FB] via-[#F6FBFE] to-[#FFFFFF] border-b border-slate-100">
+      <section className="relative w-full overflow-hidden bg-[#F6FAFE] border-b border-slate-100">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
           {/* Left Column: Overline, Headline, Copy, Action Buttons, Trust Badges */}
           <div className="w-full lg:w-[45%] xl:w-[42%] py-4 lg:py-6 space-y-4 z-20 flex-shrink-0">
