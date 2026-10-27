@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "../features/auth/AuthContext";
 import { AppShell } from "../layouts/AppShell";
 
 const createTestQueryClient = () =>
@@ -18,15 +19,18 @@ describe("AppShell Component", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <AppShell />
-        </MemoryRouter>
+        <AuthProvider>
+          <MemoryRouter>
+            <AppShell />
+          </MemoryRouter>
+        </AuthProvider>
       </QueryClientProvider>
     );
 
     expect(screen.getByText("Pollwise")).toBeInTheDocument();
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Elections")).toBeInTheDocument();
+    expect(screen.getByText("Organizations")).toBeInTheDocument();
     expect(screen.getByText("Institutional Admin")).toBeInTheDocument();
   });
 });

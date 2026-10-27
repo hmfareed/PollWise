@@ -10,15 +10,20 @@ import {
   Settings as SettingsIcon, 
   Activity,
   Menu,
-  X
+  X,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import { apiClient } from "../lib/api-client";
+import { useAuth } from "../features/auth/useAuth";
 import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export const AppShell: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   // Poll backend health for live readiness indication
   const { data: health, isError } = useQuery({
@@ -30,8 +35,8 @@ export const AppShell: React.FC = () => {
   const navItems = [
     { name: "Overview", to: "/", icon: LayoutDashboard },
     { name: "Elections", to: "/elections", icon: Vote },
-    { name: "Institutional Admin", to: "/admin", icon: ShieldCheck },
     { name: "Organizations", to: "/organizations", icon: Users },
+    { name: "Institutional Admin", to: "/admin", icon: ShieldCheck },
     { name: "Audit Records", to: "/audit", icon: FileText },
     { name: "Settings", to: "/settings", icon: SettingsIcon },
   ];
@@ -77,6 +82,38 @@ export const AppShell: React.FC = () => {
                 </span>
               )}
             </div>
+
+            {/* User Session State */}
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end text-xs">
+                  <span className="font-semibold text-foreground">{user.display_name}</span>
+                  <span className="text-muted-foreground font-mono">{user.email}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={logout}
+                  className="gap-1.5 text-muted-foreground hover:text-danger"
+                  title="Sign Out"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link to="/login">
+                  <Button variant="ghost" size="sm" className="gap-1.5">
+                    <UserIcon className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button size="sm">Register</Button>
+                </Link>
+              </div>
+            )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
