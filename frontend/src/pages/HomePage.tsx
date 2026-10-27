@@ -96,25 +96,30 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Expanded Graphic (Natural Sweeping S-Curve Brought Close to Caption) */}
-          <div className="w-full lg:w-[60%] xl:w-[62%] -ml-0 lg:-ml-12 xl:-ml-16 h-full relative flex items-center justify-end overflow-hidden pb-4 lg:pb-0">
+          {/* Right Column: Authentic Visual Architecture (Full Card, S-Curve Blending Close to Caption) */}
+          <div className="w-full lg:w-[60%] xl:w-[64%] -ml-0 lg:-ml-12 xl:-ml-20 h-full relative flex items-center justify-end overflow-hidden pb-4 lg:pb-0">
             <div className="relative h-full flex items-center justify-end max-w-full">
               <img
-                src="/hero-right-clean.png"
+                src="/hero-artwork-pollwise.png"
                 alt="PollWise Institutional Voting Platform Architecture"
-                className="h-[320px] sm:h-[400px] lg:h-[460px] xl:h-[490px] w-auto max-w-none object-contain select-none ml-auto drop-shadow-sm"
+                className="h-[340px] sm:h-[420px] lg:h-[470px] xl:h-[500px] w-auto max-w-none object-contain select-none ml-auto"
               />
 
-              {/* Interactive Hit Target over the 3D Ballot Box */}
+              {/* Interactive Hit Target over the "Start Voting ->" button on the floating card */}
               <Link
                 to="/elections"
                 title="Start Voting"
                 role="button"
                 aria-label="Start Voting"
-                className="absolute bottom-8 sm:bottom-12 left-[36%] sm:left-[38%] z-30 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+                className="absolute z-10 rounded-lg cursor-pointer transition hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 flex items-center justify-center"
+                style={{
+                  top: "54%",
+                  left: "19.5%",
+                  width: "29.5%",
+                  height: "8%",
+                }}
               >
-                <span>Start Voting</span>
-                <ArrowRight className="h-3 w-3" />
+                <span className="sr-only">Start Voting</span>
               </Link>
             </div>
           </div>
