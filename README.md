@@ -10,7 +10,7 @@ The system is built on strict ballot secrecy, auditable election lifecycles, and
 
 Pollwise follows a **modular monolith architecture** coupled with an isolated **ballot-box subsystem** (ADR-001):
 
-- **Backend**: Python 3.12+ / FastAPI / SQLAlchemy 2.0 (asyncio + asyncpg) / Pydantic v2 / Alembic
+- **Backend**: Python 3.12+ / FastAPI / SQLAlchemy 2.0 (asyncio + asyncpg) / Pydantic v2 / Argon2id
 - **Frontend**: React 19 / TypeScript (strict) / Vite / Tailwind CSS / shadcn/ui / TanStack Query
 - **Database Isolation**: Three logically separated PostgreSQL databases with distinct least-privilege database roles:
   - `identity_db`: User accounts, organization memberships, voter eligibility records, and single-use entitlement tracking (`unused → issued → redeemed`).
@@ -50,22 +50,26 @@ Pollwise/
 ├── docs/                      # Authoritative technical specifications (01-26)
 ├── backend/                   # FastAPI application & ballot-box services
 │   ├── app/
-│   │   ├── api/v1/            # API endpoints (/health, /ready, etc.)
-│   │   ├── core/              # Config, settings validation, error codes
+│   │   ├── api/               # API endpoints (/v1 and /ballot-box/v1)
+│   │   ├── commands/          # DB init and realistic demo seed commands
+│   │   ├── core/              # Config, settings validation, security, errors
 │   │   ├── db/                # Async engine & session pooling for isolated DBs
-│   │   ├── schemas/           # Standardized request/response envelopes
+│   │   ├── models/            # SQLAlchemy 2.0 models (identity, election, ballot)
+│   │   ├── schemas/           # Pydantic v2 request/response schemas
+│   │   ├── services/          # Auth, Org, Election, Eligibility, BallotBox, Tally
 │   │   └── main.py            # FastAPI entry point & CORS configuration
-│   ├── migrations/            # Alembic database migrations
-│   ├── tests/                 # Pytest test suite
+│   ├── tests/                 # Full automated test suite (22 tests)
 │   ├── pyproject.toml         # Python package manifest & dependencies
 │   └── Dockerfile             # Container definition for backend
 ├── frontend/                  # React & TypeScript client
 │   ├── src/
 │   │   ├── app/               # React Router & TanStack Query providers
 │   │   ├── components/ui/     # Reusable UI primitives (Button, Card, Badge)
+│   │   ├── features/          # Auth context and hooks
 │   │   ├── layouts/           # AppShell with navigation & live health monitor
 │   │   ├── lib/               # Resilient API client & utilities
-│   │   ├── pages/             # Overview, Elections, Admin console
+│   │   ├── pages/             # Overview, Elections, Voting Booth, Results, Admin
+│   │   ├── test/              # Vitest suite (16 tests)
 │   │   └── types/             # API contract TypeScript definitions
 │   ├── package.json           # Frontend dependencies & scripts
 │   ├── vite.config.ts         # Vite build & Vitest test runner configuration
@@ -85,7 +89,7 @@ Pollwise/
 
 ### Prerequisites
 - [Docker Desktop](https://www.docker.com/) (recommended) **OR** local PostgreSQL 16+
-- [uv](https://docs.astral.sh/uv/) for Python environment management
+- [Python 3.12+](https://python.org/) with `uv`
 - [Node.js 20+](https://nodejs.org/) and npm
 
 ### 1. Using Docker Compose (Full Stack)
@@ -119,6 +123,10 @@ cd backend
 uv venv
 uv pip install -e ".[dev]"
 
+# Optional: Initialize and seed demo dataset
+.\.venv\Scripts\python -m app.commands.init_db
+.\.venv\Scripts\python -m app.commands.seed
+
 # Start backend server
 .\.venv\Scripts\uvicorn app.main:app --reload --port 8000
 ```
@@ -137,10 +145,27 @@ npm run dev
 
 ---
 
+## Demo Accounts & Sample Institutional Dataset
+
+When seeded using `python -m app.commands.seed`, Pollwise populates:
+- **Organization**: Northwestern Polytechnic University (`northwestern-poly`)
+- **Accounts**:
+  - **Platform Admin**: `admin@pollwise.local` / `PollwiseAdmin2026!`
+  - **Election Manager**: `manager@polytechnic.edu` / `ManagerSecure123!`
+  - **Electoral Auditor**: `auditor@polytechnic.edu` / `AuditorSecure123!`
+  - **Student Voter**: `alice@polytechnic.edu` / `StudentVote2026!`
+- **Sample Elections**:
+  - **2026 Student Union General Election** (Status: **Open**, live voting booth ready)
+  - **Faculty Senate Representative Election 2026** (Status: **Scheduled**, configuration frozen)
+  - **Alumni Advisory Board Election 2025** (Status: **Published**, with certified audit results)
+  - **Engineering Department Curriculum Committee 2026** (Status: **Draft**)
+
+---
+
 ## Testing & Quality Gates
 
 ### Backend Tests & Verification
-Run the Pytest suite covering configuration validation, error code envelopes, engine health checks, and database session isolation:
+Run the Pytest suite covering configuration validation, multi-role RBAC, election lifecycle locks, ballot-box secrecy, replay protection, and tallying:
 
 ```bash
 cd backend
@@ -148,47 +173,19 @@ cd backend
 .\.venv\Scripts\ruff check app tests
 ```
 
+*Results: 22/22 passed in 12.8s; 0 linter errors.*
+
 ### Frontend Tests & Type Checking
 Run Vitest unit tests, linter, and TypeScript compiler check:
 
 ```bash
 cd frontend
-npm run test     # Runs Vitest unit tests
-npm run lint     # Runs Oxlint code style checks
+npm run test     # Runs 16 Vitest unit tests
+npm run lint     # Runs Oxlint code style checks (0 errors)
 npm run build    # Strict TypeScript compilation (tsc -b) & Vite bundle
 ```
 
----
-
-## Health & Readiness Probes
-
-Pollwise exposes standardized health endpoints under `/api/v1`:
-
-- **`GET /api/v1/health`**: Lightweight liveness probe returning overall service status and environment.
-  ```json
-  {
-    "data": {
-      "status": "healthy",
-      "environment": "development",
-      "version": "0.1.0"
-    },
-    "error": null
-  }
-  ```
-- **`GET /api/v1/ready`**: Deep readiness probe querying connectivity to all three isolated databases. Returns HTTP 200 when ready, HTTP 503 when degraded.
-  ```json
-  {
-    "data": {
-      "ready": true,
-      "databases": {
-        "identity_db": { "connected": true, "database": "identity_db", "latency_ms": 1.2 },
-        "election_db": { "connected": true, "database": "election_db", "latency_ms": 0.9 },
-        "ballot_db": { "connected": true, "database": "ballot_db", "latency_ms": 1.1 }
-      }
-    },
-    "error": null
-  }
-  ```
+*Results: 16/16 passed in 7.3s; 0 warnings, production bundle clean.*
 
 ---
 
@@ -202,12 +199,12 @@ Pollwise exposes standardized health endpoints under `/api/v1`:
 
 ---
 
-## Roadmap
+## Implementation Status
 
-- [x] **Phase 1: Project Foundation & Architecture Baseline** (Complete)
-- [ ] **Phase 2: Identity, Authentication & Role-Based Access Control** (Next)
-- [ ] **Phase 3: Election Management, Configuration Freezing & Approvals**
-- [ ] **Phase 4: Voter Eligibility & Isolated Ballot-Box Infrastructure**
-- [ ] **Phase 5: Multi-Position Voting Interface & Submission Flows**
-- [ ] **Phase 6: Closed-Election Tallying, Approval & Result Publication**
-- [ ] **Phase 7: Hardening, Security Assurance & Staging Drills**
+- [x] **Phase 1: Project Foundation & Architecture Baseline** (Complete - `9e464a4`)
+- [x] **Phase 2: Identity, Authentication & Role-Based Access Control** (Complete - `9e464a4`)
+- [x] **Phase 3: Election Management, Configuration Freezing & Approvals** (Complete - `231f9c8`)
+- [x] **Phase 4: Voter Eligibility & Isolated Ballot-Box Infrastructure** (Complete - `58ec45f`)
+- [x] **Phase 5: Multi-Position Voting Interface & Submission Flows** (Complete - `58ec45f`)
+- [x] **Phase 6: Closed-Election Tallying, Approval & Result Publication** (Complete - `867a3c2`)
+- [x] **Phase 7: Hardening, Security Assurance & Staging Drills** (Complete - `6338ecd`)
