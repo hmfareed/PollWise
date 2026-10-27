@@ -1,126 +1,593 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Vote, Shield, CheckCircle2, Lock, ArrowRight, Server } from "lucide-react";
+import {
+  Landmark,
+  Shield,
+  ShieldCheck,
+  CheckCircle2,
+  Users,
+  Zap,
+  Globe,
+  ArrowRight,
+  Play,
+  Lock,
+  Search,
+  Bell,
+  Check,
+  Vote,
+  FileText,
+  Settings,
+  X,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 
 export const HomePage: React.FC = () => {
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="rounded-2xl border border-border bg-surface p-8 sm:p-12 shadow-sm space-y-6">
-        <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-semibold text-primary">
-          <Shield className="h-3.5 w-3.5" />
-          <span>Institutional Integrity Architecture</span>
+    <div className="space-y-16 lg:space-y-24 pb-16">
+      {/* ==================================================================== */}
+      {/* 1. HERO SECTION                                                      */}
+      {/* ==================================================================== */}
+      <section className="relative overflow-hidden pt-4 sm:pt-8 lg:pt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          {/* Left Column: Headline, Copy & Actions */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="inline-block">
+              <span className="text-xs font-bold text-blue-600 tracking-wider uppercase bg-blue-50/80 border border-blue-100 rounded-full px-3.5 py-1">
+                INSTITUTIONAL VOTING PLATFORM
+              </span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold text-blue-950 tracking-tight leading-[1.12]">
+              Secure Elections for <br className="hidden sm:inline" />
+              <span className="text-blue-600">Stronger Institutions</span>
+            </h1>
+
+            <p className="text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
+              Electara is a modern, secure, and easy-to-use voting platform built for universities,
+              organizations, and institutions. We make elections simple, transparent, and
+              trustworthy — from eligibility to results.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <Link to="/elections">
+                <Button
+                  size="lg"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-7 py-3.5 text-base font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                >
+                  Get Started Free
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setVideoModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-all shadow-sm hover:shadow"
+              >
+                <div className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Play className="h-3 w-3 fill-current ml-0.5" />
+                </div>
+                <span>Watch Demo</span>
+              </button>
+            </div>
+
+            {/* Value Proposition Checkpoints */}
+            <div className="flex flex-wrap items-center gap-6 pt-4 text-xs sm:text-sm font-medium text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                  ✓
+                </span>
+                <span>Secure & Private</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                  ✓
+                </span>
+                <span>Easy to Use</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                  ✓
+                </span>
+                <span>Built for Institutions</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Composite Hero Visual (Campus + Card + 3D Ballot Box) */}
+          <div className="lg:col-span-5 relative">
+            {/* Campus Background Frame */}
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 min-h-[460px] bg-slate-900 group">
+              <img
+                src="/university-campus.jpg"
+                alt="University Campus Neoclassical Hall"
+                className="w-full h-full object-cover min-h-[460px] transform group-hover:scale-105 transition-transform duration-700"
+                onError={(e) => {
+                  // Fallback styling if local image is unavailable
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-blue-950/60 via-transparent to-transparent pointer-events-none" />
+
+              {/* Floating Card: "Your Voice Matters" */}
+              <div className="absolute top-6 left-6 z-20 bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-slate-100 max-w-[290px] animate-fade-in">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-blue-900 font-bold text-sm">
+                    <Landmark className="h-4 w-4 text-blue-600" />
+                    <span>Electara</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+                    <Check className="h-3 w-3 stroke-[3]" />
+                    Secure Voting
+                  </span>
+                </div>
+
+                <h3 className="text-lg font-bold text-slate-900 mt-3 tracking-tight">
+                  Your Voice Matters
+                </h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Participate in institutional elections and help shape a better tomorrow.
+                </p>
+
+                <Link to="/elections">
+                  <button
+                    type="button"
+                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-xs transition shadow-sm flex items-center justify-center gap-1.5"
+                  >
+                    <span>Start Voting</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </Link>
+
+                <div className="flex items-center justify-center gap-1 text-[11px] text-slate-400 mt-2.5">
+                  <Lock className="h-3 w-3" />
+                  <span>Your vote is secret and secure</span>
+                </div>
+              </div>
+
+              {/* Stylized 3D Ballot Box Graphic */}
+              <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center">
+                {/* Oval Pedestal Base */}
+                <div className="absolute -bottom-4 w-52 h-16 bg-blue-500/30 rounded-full blur-md -z-10" />
+
+                {/* Ballot Box Container */}
+                <div className="relative w-48 h-36 bg-gradient-to-b from-blue-700 to-blue-900 rounded-xl shadow-2xl border-t border-blue-400/40 p-3 flex flex-col justify-end items-center">
+                  {/* Top Slot & Paper Insert */}
+                  <div className="absolute -top-6 w-32 h-10 flex justify-center">
+                    {/* Ballot Paper Sliding In */}
+                    <div className="w-20 h-14 bg-white rounded-t-md shadow-md border border-slate-200 transform -rotate-6 flex flex-col items-center justify-center p-1">
+                      <div className="w-8 h-1 bg-slate-200 rounded mb-1" />
+                      <div className="w-10 h-1 bg-slate-200 rounded mb-1" />
+                      <div className="h-5 w-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slot Border on top surface */}
+                  <div className="absolute top-1 w-24 h-2 bg-blue-950/80 rounded-full shadow-inner" />
+
+                  {/* Shield Emblem on Front */}
+                  <div className="h-16 w-16 rounded-full bg-blue-800/80 border-2 border-blue-400/50 flex items-center justify-center text-white shadow-inner mb-2">
+                    <ShieldCheck className="h-9 w-9 text-blue-100" />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-wider text-blue-200/80 uppercase">
+                    SECRECY PRESERVED
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight leading-tight">
-          Secure, Verifiable Institutional Elections
-        </h1>
-        <p className="text-base sm:text-lg text-muted-foreground max-w-2xl leading-relaxed">
-          Pollwise provides high-assurance voting for universities, student unions, academic departments, and professional associations with strict ballot secrecy.
-        </p>
+      </section>
 
-        <div className="flex flex-wrap gap-4 pt-2">
-          <Link to="/elections">
-            <Button size="lg" className="gap-2">
-              Browse Active Elections
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Link to="/admin">
-            <Button variant="secondary" size="lg">
-              Administrator Console
-            </Button>
-          </Link>
+      {/* ==================================================================== */}
+      {/* 2. FIVE KEY PILLARS STRIP                                            */}
+      {/* ==================================================================== */}
+      <section className="border-y border-slate-100 bg-slate-50/50 py-10 rounded-2xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          {/* Card 1 */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="h-10 w-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-sm">Secure by Design</h4>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Your data and ballots are protected with industry best practices.
+            </p>
+          </div>
+
+          {/* Card 2 */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="h-10 w-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3">
+              <Users className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-sm">For All Institutions</h4>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Universities, schools, associations, and organizations.
+            </p>
+          </div>
+
+          {/* Card 3 */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="h-10 w-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-3">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-sm">Transparent Process</h4>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              From eligibility to results, every step is auditable.
+            </p>
+          </div>
+
+          {/* Card 4 */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="h-10 w-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-3">
+              <Zap className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-sm">Built for Efficiency</h4>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Save time with streamlined workflows and automation.
+            </p>
+          </div>
+
+          {/* Card 5 */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+            <div className="h-10 w-10 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center mb-3">
+              <Globe className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-sm">Global Ready</h4>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              Accessible, reliable, and scalable for institutions worldwide.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Architectural Guarantees Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center text-primary mb-2">
-              <Lock className="h-5 w-5" />
-            </div>
-            <CardTitle>Strict Ballot Secrecy</CardTitle>
-            <CardDescription>
-              Voter identity and eligibility records are structurally decoupled from the anonymous ballot box.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="text-xs text-muted-foreground space-y-2">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                No voter ID stored in ballot records
+      {/* ==================================================================== */}
+      {/* 3. "WHY ELECTARA" / "MORE THAN JUST A VOTE"                          */}
+      {/* ==================================================================== */}
+      <section className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column: Why Electara Copy */}
+          <div className="lg:col-span-5 space-y-6">
+            <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">
+              WHY ELECTARA
+            </span>
+
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              More than just a vote
+            </h2>
+
+            <p className="text-base text-slate-600 leading-relaxed">
+              Electara combines security, simplicity, and transparency to help your institution run
+              elections with confidence.
+            </p>
+
+            <ul className="space-y-3.5 pt-2">
+              <li className="flex items-start gap-3 text-sm text-slate-700">
+                <span className="h-5 w-5 rounded-full bg-blue-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                  ✓
+                </span>
+                <span>Manage multiple elections and positions</span>
               </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Single-use atomic credential redemption
+              <li className="flex items-start gap-3 text-sm text-slate-700">
+                <span className="h-5 w-5 rounded-full bg-blue-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                  ✓
+                </span>
+                <span>Control voter eligibility and access</span>
               </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Timing & telemetry correlation defenses
+              <li className="flex items-start gap-3 text-sm text-slate-700">
+                <span className="h-5 w-5 rounded-full bg-blue-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                  ✓
+                </span>
+                <span>Ensure ballot secrecy and prevent duplicate voting</span>
+              </li>
+              <li className="flex items-start gap-3 text-sm text-slate-700">
+                <span className="h-5 w-5 rounded-full bg-blue-600 text-white flex-shrink-0 flex items-center justify-center text-xs mt-0.5">
+                  ✓
+                </span>
+                <span>Get accurate results with built-in audit trails</span>
               </li>
             </ul>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center text-success mb-2">
-              <Vote className="h-5 w-5" />
+            <div className="pt-2">
+              <Link to="/admin">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-3 font-semibold shadow-sm flex items-center gap-2">
+                  <span>Explore All Features</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             </div>
-            <CardTitle>Election Lifecycle Control</CardTitle>
-            <CardDescription>
-              Enforced backend state transitions from draft to published results with zero interim leaks.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="text-xs text-muted-foreground space-y-2">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Frozen ballot configurations
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Multi-position ballots support
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Post-closing deterministic tallies
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center text-warning mb-2">
-              <Server className="h-5 w-5" />
+          {/* Right Column: High-Fidelity Admin Dashboard Preview Mockup */}
+          <div className="lg:col-span-7">
+            <div className="rounded-2xl shadow-2xl border border-slate-200 bg-white overflow-hidden text-xs">
+              <div className="flex flex-col md:flex-row min-h-[440px]">
+                {/* Mini Sidebar */}
+                <div className="w-full md:w-44 bg-slate-900 text-slate-300 p-3 flex flex-col justify-between border-r border-slate-800">
+                  <div className="space-y-4">
+                    {/* Brand */}
+                    <div className="flex items-center gap-1.5 px-2 py-1 text-white font-bold text-sm">
+                      <Landmark className="h-4 w-4 text-blue-400" />
+                      <span>Electara</span>
+                    </div>
+
+                    {/* Nav Items */}
+                    <div className="space-y-1 text-[11px]">
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-blue-600/30 text-blue-400 font-semibold border-l-2 border-blue-500">
+                        <Vote className="h-3.5 w-3.5" />
+                        <span>Dashboard</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <Vote className="h-3.5 w-3.5" />
+                        <span>Elections</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>Positions</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>Candidates</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span>Voters & Eligibility</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>Organizations</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>Reports</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <Shield className="h-3.5 w-3.5" />
+                        <span>Audit Logs</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/60 transition">
+                        <Settings className="h-3.5 w-3.5" />
+                        <span>Settings</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Dashboard Area */}
+                <div className="flex-1 bg-slate-50/70 p-4 sm:p-5 flex flex-col justify-between space-y-4">
+                  {/* Top Bar */}
+                  <div className="flex items-center justify-between gap-4 pb-3 border-b border-slate-200/80">
+                    <div className="relative flex-1 max-w-xs">
+                      <Search className="h-3.5 w-3.5 absolute left-2.5 top-2 text-slate-400" />
+                      <input
+                        type="text"
+                        readOnly
+                        placeholder="Search elections, candidates..."
+                        className="w-full bg-white border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-[11px] text-slate-600 focus:outline-hidden"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="h-7 w-7 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+                        <Bell className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                          SJ
+                        </div>
+                        <div className="hidden sm:block text-left text-[11px] leading-tight">
+                          <p className="font-semibold text-slate-900">Sarah Johnson</p>
+                          <p className="text-[10px] text-slate-400">System Administrator</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Welcome Message */}
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Welcome back, Admin</h3>
+                    <p className="text-[11px] text-slate-500">
+                      Here's what's happening with your elections today.
+                    </p>
+                  </div>
+
+                  {/* 4 Stat Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs">
+                      <div className="flex items-center justify-between text-blue-600 mb-1">
+                        <Vote className="h-4 w-4" />
+                        <span className="text-[10px] text-emerald-600 font-semibold">+2</span>
+                      </div>
+                      <p className="text-lg font-bold text-slate-900 leading-none">5</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Total Elections</p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs">
+                      <div className="flex items-center justify-between text-emerald-600 mb-1">
+                        <Users className="h-4 w-4" />
+                        <span className="text-[10px] text-emerald-600 font-semibold">↑12%</span>
+                      </div>
+                      <p className="text-lg font-bold text-slate-900 leading-none">2,843</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Eligible Voters</p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs">
+                      <div className="flex items-center justify-between text-purple-600 mb-1">
+                        <Users className="h-4 w-4" />
+                        <span className="text-[10px] text-slate-400 font-medium">6 pos</span>
+                      </div>
+                      <p className="text-lg font-bold text-slate-900 leading-none">28</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Candidates</p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-2xs">
+                      <div className="flex items-center justify-between text-teal-600 mb-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="text-[10px] text-teal-600 font-medium">100%</span>
+                      </div>
+                      <p className="text-lg font-bold text-slate-900 leading-none">2</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Completed</p>
+                    </div>
+                  </div>
+
+                  {/* Bottom Panels: Donut Chart & Upcoming Deadlines */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+                    {/* Donut Chart: Election Status Overview */}
+                    <div className="sm:col-span-6 bg-white p-3 rounded-lg border border-slate-200/80">
+                      <p className="font-semibold text-slate-900 text-[11px] mb-2">
+                        Election Status Overview
+                      </p>
+                      <div className="flex items-center gap-3">
+                        {/* Donut graphic */}
+                        <div className="relative h-16 w-16 flex items-center justify-center">
+                          <svg viewBox="0 0 36 36" className="h-16 w-16 transform -rotate-90">
+                            {/* Background Circle */}
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#e2e8f0"
+                              strokeWidth="3.8"
+                            />
+                            {/* Open: 40% (Blue) */}
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#2563eb"
+                              strokeWidth="3.8"
+                              strokeDasharray="40, 100"
+                            />
+                            {/* Upcoming: 40% (Teal/Emerald) */}
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#10b981"
+                              strokeWidth="3.8"
+                              strokeDasharray="40, 100"
+                              strokeDashoffset="-40"
+                            />
+                            {/* Completed: 20% (Amber) */}
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#f59e0b"
+                              strokeWidth="3.8"
+                              strokeDasharray="20, 100"
+                              strokeDashoffset="-80"
+                            />
+                          </svg>
+                          <div className="absolute text-center leading-none">
+                            <span className="text-xs font-bold text-slate-900">5</span>
+                          </div>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="text-[10px] space-y-1 text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-blue-600" />
+                            <span>Open (2 · 40%)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            <span>Upcoming (2 · 40%)</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-amber-500" />
+                            <span>Completed (1 · 20%)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Upcoming Deadlines */}
+                    <div className="sm:col-span-6 bg-white p-3 rounded-lg border border-slate-200/80 space-y-2">
+                      <p className="font-semibold text-slate-900 text-[11px]">
+                        Upcoming Deadlines
+                      </p>
+                      <div className="space-y-1.5 text-[10px]">
+                        <div className="flex items-center justify-between p-1.5 bg-slate-50 rounded border border-slate-100">
+                          <div className="truncate pr-2">
+                            <p className="font-medium text-slate-900 truncate">
+                              Student Union Leadership
+                            </p>
+                            <p className="text-[9px] text-blue-600">Closes in 2 days</p>
+                          </div>
+                          <span className="text-blue-600 hover:underline font-semibold cursor-pointer">
+                            View
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between p-1.5 bg-slate-50 rounded border border-slate-100">
+                          <div className="truncate pr-2">
+                            <p className="font-medium text-slate-900 truncate">
+                              Faculty Senate Election
+                            </p>
+                            <p className="text-[9px] text-emerald-600">Opens in 3 days</p>
+                          </div>
+                          <span className="text-blue-600 hover:underline font-semibold cursor-pointer">
+                            View
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <CardTitle>Separation of Duties</CardTitle>
-            <CardDescription>
-              Role-based authorization prevents single-actor compromise across administration and tally approval.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="text-xs text-muted-foreground space-y-2">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Independent tally approval gate
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Append-only audit event trails
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                Read-only auditor access roles
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 4. MODAL DEMO WALKTHROUGH                                            */}
+      {/* ==================================================================== */}
+      {videoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div className="flex items-center gap-2">
+                <Landmark className="h-5 w-5 text-blue-600" />
+                <h3 className="font-bold text-slate-900 text-lg">
+                  Electara Platform Walkthrough
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVideoModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="aspect-video bg-slate-900 rounded-xl flex flex-col items-center justify-center text-white p-6 text-center space-y-3">
+              <div className="h-14 w-14 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                <Play className="h-6 w-6 fill-current ml-1" />
+              </div>
+              <p className="font-semibold text-sm">Interactive Voting Lifecycle Preview</p>
+              <p className="text-xs text-slate-400 max-w-md">
+                Observe the complete journey: eligibility verification, single-use credential
+                issuance, anonymous ballot-box submission, and deterministic tallying.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" onClick={() => setVideoModalOpen(false)}>
+                Close
+              </Button>
+              <Link to="/elections" onClick={() => setVideoModalOpen(false)}>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                  Enter Live Platform
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

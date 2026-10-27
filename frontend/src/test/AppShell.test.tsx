@@ -15,19 +15,38 @@ const createTestQueryClient = () =>
   });
 
 describe("AppShell Component", () => {
-  it("renders brand logo and navigation links", () => {
+  it("renders Electara brand and landing navigation on root route", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <MemoryRouter>
+          <MemoryRouter initialEntries={["/"]}>
             <AppShell />
           </MemoryRouter>
         </AuthProvider>
       </QueryClientProvider>
     );
 
-    expect(screen.getByText("Pollwise")).toBeInTheDocument();
+    expect(screen.getByText("Electara")).toBeInTheDocument();
+    expect(screen.getByText("Home")).toBeInTheDocument();
+    expect(screen.getByText("Features")).toBeInTheDocument();
+    expect(screen.getByText("For Institutions")).toBeInTheDocument();
+    expect(screen.getByText("Get Started")).toBeInTheDocument();
+  });
+
+  it("renders institutional console sidebar on internal routes", () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={["/admin"]}>
+            <AppShell />
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByText("Electara")).toBeInTheDocument();
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Elections")).toBeInTheDocument();
     expect(screen.getByText("Organizations")).toBeInTheDocument();

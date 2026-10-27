@@ -12,13 +12,19 @@ describe("HomePage Component", () => {
     );
 
     expect(
-      screen.getByText(/Secure, Verifiable Institutional Elections/i)
+      screen.getByText(/Secure Elections for/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Browse Active Elections/i })
+      screen.getByText(/Stronger Institutions/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Administrator Console/i })
+      screen.getByRole("button", { name: /Get Started Free/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Watch Demo/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Start Voting/i })
     ).toBeInTheDocument();
   });
 
@@ -30,13 +36,40 @@ describe("HomePage Component", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: /Strict Ballot Secrecy/i })
+      screen.getByText(/Secure by Design/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /Election Lifecycle Control/i })
+      screen.getByText(/For All Institutions/i)
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /Separation of Duties/i })
+      screen.getByText(/Transparent Process/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Built for Efficiency/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Global Ready/i)
+    ).toBeInTheDocument();
+  });
+
+  it("renders Why Electara section and dashboard mockup preview", () => {
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>
+    );
+
+    expect(
+      screen.getByText(/More than just a vote/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Manage multiple elections and positions/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Welcome back, Admin/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Explore All Features/i })
     ).toBeInTheDocument();
   });
 });
