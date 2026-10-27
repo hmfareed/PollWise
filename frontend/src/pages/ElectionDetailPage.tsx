@@ -166,7 +166,32 @@ export const ElectionDetailPage: React.FC = () => {
         <span className="text-foreground font-medium truncate">{election.title}</span>
       </div>
 
-      {/* Active Voting Banner (when election is open) */}
+      {/* Published / Tallied / Closed Results Banner */}
+      {(election.status === "published" || election.status === "tallied" || election.status === "closed") && (
+        <div className="p-5 rounded-2xl border border-blue-200 bg-blue-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+          <div className="space-y-1">
+            <h3 className="font-bold text-base text-blue-950">
+              {election.status === "published"
+                ? "Official Results Published"
+                : election.status === "tallied"
+                ? "Election Tallied (Awaiting Publication Approval)"
+                : "Election Voting Concluded"}
+            </h3>
+            <p className="text-xs text-blue-800">
+              {election.status === "published"
+                ? "Certified election outcomes and vote distributions are available for public inspection."
+                : election.status === "tallied"
+                ? "The election has been tallied and is undergoing managerial audit review."
+                : "This election is closed. Tally calculation can now be initiated by election officials."}
+            </p>
+          </div>
+          <Link to={`/elections/${election.id}/results`}>
+            <Button className="gap-2 self-start sm:self-auto bg-primary">
+              View Election Results
+            </Button>
+          </Link>
+        </div>
+      )}
       {election.status === "open" && (
         <div className="p-5 rounded-2xl border border-emerald-300 bg-emerald-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div className="space-y-1">
