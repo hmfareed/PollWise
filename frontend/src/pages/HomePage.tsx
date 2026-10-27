@@ -100,7 +100,7 @@ export const HomePage: React.FC = () => {
           <div className="w-full lg:w-[54%] xl:w-[56%] relative flex items-center justify-end pb-4 lg:pb-0">
             <div className="relative w-full max-w-[560px]">
               <img
-                src="/hero-artwork-pollwise.png"
+                src="/hero-illustration.png"
                 alt="PollWise Institutional Voting Platform Architecture"
                 className="w-full h-auto object-contain select-none block"
               />
