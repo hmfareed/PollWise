@@ -15,7 +15,7 @@ const createTestQueryClient = () =>
   });
 
 describe("AppShell Component", () => {
-  it("renders Electara brand and landing navigation on root route", () => {
+  it("renders PollWise brand and landing navigation on root route", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -27,7 +27,7 @@ describe("AppShell Component", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText("Electara")).toBeInTheDocument();
+    expect(screen.getByText("PollWise")).toBeInTheDocument();
     expect(screen.getByText("Home")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
     expect(screen.getByText("For Institutions")).toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("AppShell Component", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText("Electara")).toBeInTheDocument();
+    expect(screen.getByText("PollWise")).toBeInTheDocument();
     expect(screen.getByText("Overview")).toBeInTheDocument();
     expect(screen.getByText("Elections")).toBeInTheDocument();
     expect(screen.getByText("Organizations")).toBeInTheDocument();

@@ -52,7 +52,7 @@ describe("HomePage Component", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Why Electara section and dashboard mockup preview", () => {
+  it("renders Why PollWise section and dashboard mockup preview", () => {
     render(
       <MemoryRouter>
         <HomePage />

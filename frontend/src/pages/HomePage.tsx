@@ -45,7 +45,7 @@ export const HomePage: React.FC = () => {
             </h1>
 
             <p className="text-base sm:text-lg text-slate-600 max-w-xl leading-relaxed">
-              Electara is a modern, secure, and easy-to-use voting platform built for universities,
+              PollWise is a modern, secure, and easy-to-use voting platform built for universities,
               organizations, and institutions. We make elections simple, transparent, and
               trustworthy — from eligibility to results.
             </p>
@@ -117,7 +117,7 @@ export const HomePage: React.FC = () => {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 text-blue-900 font-bold text-sm">
                     <Landmark className="h-4 w-4 text-blue-600" />
-                    <span>Electara</span>
+                    <span>PollWise</span>
                   </div>
                   <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2 py-0.5 rounded-full">
                     <Check className="h-3 w-3 stroke-[3]" />
@@ -247,14 +247,14 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ==================================================================== */}
-      {/* 3. "WHY ELECTARA" / "MORE THAN JUST A VOTE"                          */}
+      {/* 3. "WHY POLLWISE" / "MORE THAN JUST A VOTE"                          */}
       {/* ==================================================================== */}
       <section className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          {/* Left Column: Why Electara Copy */}
+          {/* Left Column: Why PollWise Copy */}
           <div className="lg:col-span-5 space-y-6">
             <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">
-              WHY ELECTARA
+              WHY POLLWISE
             </span>
 
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -262,7 +262,7 @@ export const HomePage: React.FC = () => {
             </h2>
 
             <p className="text-base text-slate-600 leading-relaxed">
-              Electara combines security, simplicity, and transparency to help your institution run
+              PollWise combines security, simplicity, and transparency to help your institution run
               elections with confidence.
             </p>
 
@@ -313,7 +313,7 @@ export const HomePage: React.FC = () => {
                     {/* Brand */}
                     <div className="flex items-center gap-1.5 px-2 py-1 text-white font-bold text-sm">
                       <Landmark className="h-4 w-4 text-blue-400" />
-                      <span>Electara</span>
+                      <span>PollWise</span>
                     </div>
 
                     {/* Nav Items */}
@@ -552,7 +552,7 @@ export const HomePage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Landmark className="h-5 w-5 text-blue-600" />
                 <h3 className="font-bold text-slate-900 text-lg">
-                  Electara Platform Walkthrough
+                  PollWise Platform Walkthrough
                 </h3>
               </div>
               <button

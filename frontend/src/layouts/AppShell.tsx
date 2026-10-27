@@ -57,10 +57,10 @@ export const AppShell: React.FC = () => {
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-2xl font-extrabold text-blue-950 tracking-tight">
-                  Electara
+                  PollWise
                 </span>
                 <span className="text-[9px] font-mono font-medium text-slate-400 uppercase tracking-widest hidden sm:inline">
-                  Pollwise Platform
+                  Institutional Voting Platform
                 </span>
               </div>
             </Link>
@@ -288,7 +288,7 @@ export const AppShell: React.FC = () => {
               <Landmark className="h-3.5 w-3.5" />
             </div>
             <p className="font-medium text-slate-700">
-              © {CURRENT_YEAR} Electara — Institutional Voting Platform.
+              © {CURRENT_YEAR} PollWise — Institutional Voting Platform.
             </p>
           </div>
           <div className="flex flex-wrap gap-6 text-slate-500">
