@@ -28,22 +28,22 @@ export const HomePage: React.FC = () => {
       {/* 1. HERO SECTION (EXPANDED ARTWORK, SEAMLESS CURVE, CLOSE TO CAPTION) */}
       {/* ==================================================================== */}
       <section className="relative w-full overflow-hidden bg-gradient-to-r from-[#ECF4FB] via-[#F6FBFE] to-[#FFFFFF] border-b border-slate-100">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 min-h-[400px] lg:min-h-[460px]">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
           {/* Left Column: Overline, Headline, Copy, Action Buttons, Trust Badges */}
-          <div className="w-full lg:w-[45%] xl:w-[42%] py-8 lg:py-10 space-y-5 z-20 flex-shrink-0">
+          <div className="w-full lg:w-[45%] xl:w-[42%] py-4 lg:py-6 space-y-4 z-20 flex-shrink-0">
             {/* Tagline / Overline */}
             <p className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-[0.16em] uppercase">
               INSTITUTIONAL VOTING PLATFORM
             </p>
 
             {/* Main Headline (Exact 2 lines matching the mockup) */}
-            <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-slate-900 tracking-tight leading-[1.12]">
+            <h1 className="text-3xl sm:text-4xl lg:text-[38px] font-extrabold text-slate-900 tracking-tight leading-[1.12]">
               <span className="block whitespace-nowrap">Secure Elections for</span>
               <span className="block text-blue-600 whitespace-nowrap">Stronger Institutions</span>
             </h1>
 
             {/* Subtitle / Description */}
-            <p className="text-sm sm:text-base text-slate-600 max-w-[440px] leading-relaxed">
+            <p className="text-xs sm:text-[13px] text-slate-600 max-w-[430px] leading-relaxed">
               PollWise is a modern, secure, and easy-to-use voting platform built for universities,
               organizations, and institutions. We make elections simple, transparent, and
               trustworthy — from eligibility to results.
@@ -97,12 +97,12 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Right Column: Authentic Visual Architecture (Full Card, S-Curve Blending Close to Caption) */}
-          <div className="w-full lg:w-[60%] xl:w-[64%] -ml-0 lg:-ml-12 xl:-ml-20 h-full relative flex items-center justify-end overflow-hidden pb-4 lg:pb-0">
-            <div className="relative h-full flex items-center justify-end max-w-full">
+          <div className="w-full lg:w-[55%] xl:w-[58%] lg:-ml-6 xl:-ml-10 relative flex items-center justify-end pb-4 lg:pb-0">
+            <div className="relative w-full max-w-[640px]">
               <img
                 src="/hero-artwork-pollwise.png"
                 alt="PollWise Institutional Voting Platform Architecture"
-                className="h-[340px] sm:h-[420px] lg:h-[470px] xl:h-[500px] w-auto max-w-none object-contain select-none ml-auto"
+                className="w-full h-auto object-contain select-none block"
               />
 
               {/* Interactive Hit Target over the "Start Voting ->" button on the floating card */}
@@ -113,10 +113,10 @@ export const HomePage: React.FC = () => {
                 aria-label="Start Voting"
                 className="absolute z-10 rounded-lg cursor-pointer transition hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 flex items-center justify-center"
                 style={{
-                  top: "54%",
+                  top: "54.5%",
                   left: "19.5%",
-                  width: "29.5%",
-                  height: "8%",
+                  width: "29%",
+                  height: "7.5%",
                 }}
               >
                 <span className="sr-only">Start Voting</span>
