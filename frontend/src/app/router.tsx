@@ -2,6 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import { AppShell } from "../layouts/AppShell";
 import { HomePage } from "../pages/HomePage";
 import { ElectionsPage } from "../pages/ElectionsPage";
+import { ElectionDetailPage } from "../pages/ElectionDetailPage";
+import { CreateElectionWizardPage } from "../pages/CreateElectionWizardPage";
 import { AdminDashboardPage } from "../pages/AdminDashboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
@@ -22,8 +24,16 @@ export const router = createBrowserRouter([
         element: <ElectionsPage />,
       },
       {
+        path: "elections/:id",
+        element: <ElectionDetailPage />,
+      },
+      {
         path: "admin",
         element: <AdminDashboardPage />,
+      },
+      {
+        path: "admin/elections/new",
+        element: <CreateElectionWizardPage />,
       },
       {
         path: "organizations",
