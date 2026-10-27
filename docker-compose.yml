@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: public.ecr.aws/supabase/postgres:17.11.0.002
     container_name: pollwise-postgres
     restart: unless-stopped
     environment:

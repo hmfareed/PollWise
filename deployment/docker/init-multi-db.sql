@@ -19,3 +19,15 @@ GRANT ALL PRIVILEGES ON DATABASE ballot_db TO ballot_user;
 
 -- Grant tally user read-only access to ballot_db
 GRANT CONNECT ON DATABASE ballot_db TO tally_ro_user;
+
+-- 4. Grant schema-level permissions for PostgreSQL 15+
+\c identity_db
+GRANT ALL ON SCHEMA public TO identity_user;
+
+\c election_db
+GRANT ALL ON SCHEMA public TO election_user;
+
+\c ballot_db
+GRANT ALL ON SCHEMA public TO ballot_user;
+GRANT USAGE ON SCHEMA public TO tally_ro_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO tally_ro_user;

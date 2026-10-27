@@ -20,15 +20,15 @@ class Settings(BaseSettings):
 
     # Databases (Logical separation per ADR-001 and docs 03-06)
     IDENTITY_DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5433/identity_db",
+        default="postgresql+asyncpg://identity_user:identity_pass@localhost:5433/identity_db",
         description="Connection URL for Identity DB",
     )
     ELECTION_DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5433/election_db",
+        default="postgresql+asyncpg://election_user:election_pass@localhost:5433/election_db",
         description="Connection URL for Election DB",
     )
     BALLOT_DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5433/ballot_db",
+        default="postgresql+asyncpg://ballot_user:ballot_pass@localhost:5433/ballot_db",
         description="Connection URL for Ballot DB",
     )
 
