@@ -25,25 +25,25 @@ export const HomePage: React.FC = () => {
   return (
     <div className="space-y-16 lg:space-y-20 pb-16">
       {/* ==================================================================== */}
-      {/* 1. HERO SECTION (EXPANDED ARTWORK, FULL-FACE PRESENTATION)            */}
+      {/* 1. HERO SECTION (EXPANDED ARTWORK, FULL-VIEWPORT HERO PRESENTATION)   */}
       {/* ==================================================================== */}
-      <section className="relative w-full overflow-hidden bg-[#F6FAFE] border-b border-slate-100">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-8 py-8 lg:py-12 gap-8 lg:gap-6">
+      <section className="relative w-full overflow-hidden bg-[#F6FAFE] border-b border-slate-100 min-h-[calc(100vh-4.5rem)] flex flex-col justify-center">
+        <div className="max-w-7xl xl:max-w-[1440px] 2xl:max-w-[1560px] mx-auto w-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 lg:px-10 xl:px-12 py-10 sm:py-14 lg:py-16 xl:py-20 gap-10 lg:gap-8">
           {/* Left Column: Overline, Headline, Copy, Action Buttons, Trust Badges */}
-          <div className="w-full lg:w-[44%] xl:w-[42%] space-y-5 z-20 flex-shrink-0">
+          <div className="w-full lg:w-[45%] xl:w-[43%] space-y-6 sm:space-y-7 z-20 flex-shrink-0">
             {/* Tagline / Overline */}
-            <p className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-[0.16em] uppercase">
+            <p className="text-xs sm:text-sm font-bold text-blue-600 tracking-[0.18em] uppercase">
               INSTITUTIONAL VOTING PLATFORM
             </p>
 
             {/* Main Headline (Exact 2 lines matching the mockup) */}
-            <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-slate-900 tracking-tight leading-[1.1]">
+            <h1 className="text-3xl sm:text-5xl lg:text-[46px] xl:text-[54px] 2xl:text-[60px] font-extrabold text-slate-900 tracking-tight leading-[1.08]">
               <span className="block whitespace-nowrap">Secure Elections for</span>
               <span className="block text-blue-600 whitespace-nowrap">Stronger Institutions</span>
             </h1>
 
             {/* Subtitle / Description */}
-            <p className="text-sm sm:text-base text-slate-600 max-w-[480px] leading-relaxed">
+            <p className="text-base sm:text-lg lg:text-[18px] text-slate-600 max-w-[520px] leading-relaxed">
               PollWise is a modern, secure, and easy-to-use voting platform built for universities,
               organizations, and institutions. We make elections simple, transparent, and
               trustworthy — from eligibility to results.
@@ -54,41 +54,41 @@ export const HomePage: React.FC = () => {
               <Link to="/elections">
                 <button
                   type="button"
-                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 text-sm sm:text-base font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                  className="rounded-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 text-base sm:text-lg font-semibold shadow-md shadow-blue-500/20 hover:shadow-lg transition-all flex items-center gap-2.5 cursor-pointer"
                 >
                   <span>Get Started Free</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-5 w-5" />
                 </button>
               </Link>
 
               <button
                 type="button"
                 onClick={() => setVideoModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-blue-200 bg-white hover:bg-blue-50/60 text-blue-600 text-sm sm:text-base font-medium transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-full border border-blue-200 bg-white hover:bg-blue-50/60 text-blue-600 text-base sm:text-lg font-medium transition-all shadow-xs cursor-pointer"
               >
-                <div className="h-4 w-4 rounded-full border border-blue-600 flex items-center justify-center">
-                  <Play className="h-2 w-2 fill-blue-600 text-blue-600 ml-0.5" />
+                <div className="h-5 w-5 rounded-full border border-blue-600 flex items-center justify-center">
+                  <Play className="h-2.5 w-2.5 fill-blue-600 text-blue-600 ml-0.5" />
                 </div>
                 <span>Watch Demo</span>
               </button>
             </div>
 
             {/* Trust Badges Row (3 Checkpoints) */}
-            <div className="flex flex-wrap items-center gap-6 pt-2 text-xs sm:text-sm font-medium text-slate-600">
+            <div className="flex flex-wrap items-center gap-6 sm:gap-8 pt-2 text-xs sm:text-sm lg:text-base font-medium text-slate-600">
               <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                <span className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] sm:text-xs font-extrabold flex-shrink-0">
                   ✓
                 </span>
                 <span>Secure & Private</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                <span className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] sm:text-xs font-extrabold flex-shrink-0">
                   ✓
                 </span>
                 <span>Easy to Use</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-4 w-4 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] font-extrabold flex-shrink-0">
+                <span className="h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-[10px] sm:text-xs font-extrabold flex-shrink-0">
                   ✓
                 </span>
                 <span>Built for Institutions</span>
@@ -97,8 +97,8 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Right Column: Clean Visual Architecture (Enlarged to fill space) */}
-          <div className="w-full lg:w-[56%] xl:w-[58%] relative flex items-center justify-end pb-4 lg:pb-0">
-            <div className="relative w-full max-w-[720px]">
+          <div className="w-full lg:w-[55%] xl:w-[57%] relative flex items-center justify-end pb-4 lg:pb-0">
+            <div className="relative w-full max-w-[760px] lg:max-w-[840px] xl:max-w-[900px] 2xl:max-w-[960px]">
               <img
                 src="/hero-illustration.png"
                 alt="PollWise Institutional Voting Platform Architecture"
@@ -113,10 +113,10 @@ export const HomePage: React.FC = () => {
                 aria-label="Start Voting"
                 className="absolute z-10 rounded-lg cursor-pointer transition hover:ring-2 hover:ring-blue-400 hover:ring-offset-2 flex items-center justify-center"
                 style={{
-                  top: "54.5%",
-                  left: "5.5%",
-                  width: "34%",
-                  height: "7.5%",
+                  top: "56%",
+                  left: "8.6%",
+                  width: "33.9%",
+                  height: "7.3%",
                 }}
               >
                 <span className="sr-only">Start Voting</span>
