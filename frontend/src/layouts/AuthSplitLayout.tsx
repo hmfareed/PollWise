@@ -57,8 +57,18 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
           </Link>
         </div>
 
+        {/* Middle: Voting Type Comparison Illustration (Paper vs Digital) */}
+        <div className="relative z-10 my-auto py-4 max-w-lg w-full flex items-center justify-center">
+          <img
+            src="/voting-comparison-illustration.png"
+            srcSet="/voting-comparison-illustration.png 1x, /voting-comparison-illustration-2x.png 2x"
+            alt="Paper ballot voting versus Pollwise digital election"
+            className="w-full h-auto object-contain rounded-xl select-none pointer-events-none"
+          />
+        </div>
+
         {/* Hero Headline & Subtext matching mockup */}
-        <div className="relative z-10 max-w-lg my-auto pt-16 pb-12">
+        <div className="relative z-10 max-w-lg pt-4 pb-6">
           <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.15] text-white">
             Every Vote Matters.
             <br />
