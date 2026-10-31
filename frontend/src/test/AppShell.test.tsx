@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "../features/auth/AuthContext";
 import { AppShell } from "../layouts/AppShell";
+import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -51,5 +52,19 @@ describe("AppShell Component", () => {
     expect(screen.getByText("Elections")).toBeInTheDocument();
     expect(screen.getByText("Organizations")).toBeInTheDocument();
     expect(screen.getByText("Institutional Admin")).toBeInTheDocument();
+  });
+
+  it("renders AuthSplitLayout with left showcase and nested content", () => {
+    render(
+      <MemoryRouter>
+        <AuthSplitLayout>
+          <div data-testid="auth-card-content">Sign In Card Form</div>
+        </AuthSplitLayout>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/Every Vote Matters/i)).toBeInTheDocument();
+    expect(screen.getByText(/Counts\./i)).toBeInTheDocument();
+    expect(screen.getByTestId("auth-card-content")).toBeInTheDocument();
   });
 });
