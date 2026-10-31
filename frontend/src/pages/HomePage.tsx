@@ -16,11 +16,23 @@ import {
   FileText,
   Settings,
   X,
+  Lock,
+  Database,
+  Key,
+  ChevronDown,
+  Building,
+  GraduationCap,
+  Award,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 export const HomePage: React.FC = () => {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  const toggleFaq = (index: number) => {
+    setOpenFaq(openFaq === index ? null : index);
+  };
 
   return (
     <div className="space-y-16 lg:space-y-20 pb-16">
@@ -490,6 +502,258 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 4. HOW POLLWISE WORKS (Doc 27 Section 2.3)                           */}
+      {/* ==================================================================== */}
+      <section id="how-it-works" className="space-y-10 py-6 border-t border-slate-100">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">
+            WORKFLOW
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            How PollWise Works
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600">
+            A seamless three-phase lifecycle designed to guarantee institutional integrity at every step.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs relative space-y-4">
+            <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 font-extrabold text-lg flex items-center justify-center">
+              01
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Setup & Eligibility</h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Onboard your institution, configure faculties and departments, and verify eligible voters through roster import or approved email domain verification.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs relative space-y-4">
+            <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 font-extrabold text-lg flex items-center justify-center">
+              02
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Configure & Freeze</h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Define multi-position ballots, approve candidate slates, and compute a SHA-256 configuration fingerprint to lock election parameters before voting begins.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs relative space-y-4">
+            <div className="h-12 w-12 rounded-xl bg-purple-50 text-purple-600 font-extrabold text-lg flex items-center justify-center">
+              03
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Secret Vote & Certified Tally</h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Voters cast ballots through an anonymous credential redemption channel. Tallies are calculated deterministically and published with verifiable audit trails.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 5. BUILT FOR INSTITUTIONS (Doc 27 Section 2.3)                        */}
+      {/* ==================================================================== */}
+      <section id="institutions" className="space-y-10 py-6 border-t border-slate-100">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">
+            ORGANIZATIONAL REACH
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Built for Institutions
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600">
+            Tailored governance structures for academic, professional, and corporate bodies.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+            <div className="h-10 w-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-base">Universities & Colleges</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Senate elections, faculty dean representation, departmental board seats, and staff governance councils.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+            <div className="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <Users className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-base">Student Unions & SRCs</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              High-volume executive officer elections, campus referendums, and hall of residence representative ballots.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+            <div className="h-10 w-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+              <Award className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-base">Professional Associations</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Medical councils, bar associations, engineering boards, and certified licensing body executive appointments.
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+              <Building className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-slate-900 text-base">Nonprofit & Corporate</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Shareholder resolutions, board member elections, cooperative societies, and employee representative ballots.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 6. SECURITY ARCHITECTURE & BALLOT SECRECY (Doc 27 Section 2.3)        */}
+      {/* ==================================================================== */}
+      <section id="security" className="space-y-10 py-6 border-t border-slate-100">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">
+            BALLOT INTEGRITY
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Security & Ballot Secrecy
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600">
+            Real architectural controls that protect voter privacy and prevent tampering.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 rounded-2xl bg-slate-900 text-white space-y-4">
+            <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white">
+              <Database className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-base text-white">Isolated Data Stores</h4>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Voter identities, election metadata, and cast ballots reside in physically isolated database instances to ensure choices cannot be mapped back to voters.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-slate-900 text-white space-y-4">
+            <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white">
+              <Key className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-base text-white">Anonymous Ingestion</h4>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              The ballot-box submission endpoint strictly enforces omission of authentication cookies. Ballots are accepted via single-use blind token redemption.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-slate-900 text-white space-y-4">
+            <div className="h-10 w-10 rounded-xl bg-purple-600 flex items-center justify-center text-white">
+              <Lock className="h-5 w-5" />
+            </div>
+            <h4 className="font-bold text-base text-white">SHA-256 Configuration Locks</h4>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Every election computes a deterministic SHA-256 fingerprint upon launch. Any post-launch modification to candidates or rules invalidates the certified tally.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 7. FREQUENTLY ASKED QUESTIONS (Doc 27 Section 2.3)                   */}
+      {/* ==================================================================== */}
+      <section id="faq" className="space-y-10 py-6 border-t border-slate-100">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <span className="text-xs font-bold text-blue-600 tracking-wider uppercase">
+            QUESTIONS & ANSWERS
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600">
+            Clear, transparent answers about privacy, administration, and results verification.
+          </p>
+        </div>
+
+        <div className="max-w-3xl mx-auto space-y-3">
+          {[
+            {
+              q: "How does PollWise guarantee ballot secrecy?",
+              a: "PollWise uses architectural separation between voter authentication and ballot casting. Voter identity is stored in an isolated identity database, completely separated from the ballot-box database. When a vote is cast, authentication cookies are omitted, ensuring the system cannot associate a specific ballot choice with an individual voter.",
+            },
+            {
+              q: "Can an administrator see who I voted for?",
+              a: "No. Administrators only see aggregate participation status (whether an eligible member has participated or not) for turnout tracking. The administrative console has no mechanism to view or link individual selections.",
+            },
+            {
+              q: "How are vote results tallied and verified?",
+              a: "Once voting closes, the platform runs a deterministic tallying algorithm against the sealed ballot box. Results are hashed against the initial election configuration fingerprint to certify that no rules or candidate slates were modified during voting.",
+            },
+            {
+              q: "Can voters submit more than one ballot?",
+              a: "No. Eligibility records track voting credential redemption. Once a ballot is cast, the single-use credential is marked redeemed in the eligibility ledger, preventing duplicate submissions.",
+            },
+            {
+              q: "What roles are available for managing institutional elections?",
+              a: "PollWise supports 8 specialized roles: Organization Administrator, Election Manager, Candidate Reviewer, Voter Eligibility Manager, Tally Officer, Results Approver, Electoral Auditor, and Member.",
+            },
+          ].map((item, idx) => (
+            <div
+              key={idx}
+              className="border border-slate-200 rounded-xl bg-white overflow-hidden transition-all"
+            >
+              <button
+                type="button"
+                onClick={() => toggleFaq(idx)}
+                className="w-full px-5 py-4 text-left flex items-center justify-between gap-4 font-semibold text-slate-900 text-sm hover:bg-slate-50 transition-colors"
+              >
+                <span>{item.q}</span>
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-500 transition-transform flex-shrink-0 ${
+                    openFaq === idx ? "transform rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {openFaq === idx && (
+                <div className="px-5 pb-4 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                  {item.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* 8. FINAL CALL TO ACTION (Doc 27 Section 2.3)                          */}
+      {/* ==================================================================== */}
+      <section className="rounded-3xl bg-blue-600 text-white p-8 sm:p-12 text-center space-y-6 shadow-xl shadow-blue-500/10">
+        <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+          Ready to Modernize Your Institutional Elections?
+        </h2>
+        <p className="max-w-2xl mx-auto text-blue-100 text-sm sm:text-base leading-relaxed">
+          Join universities, associations, and governance bodies conducting verifiable, private, and transparent elections with PollWise.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+          <Link to="/register">
+            <button
+              type="button"
+              className="rounded-full bg-white text-blue-600 hover:bg-blue-50 px-8 py-3.5 text-base font-semibold shadow-md transition-all cursor-pointer"
+            >
+              Register Your Institution
+            </button>
+          </Link>
+          <Link to="/elections">
+            <button
+              type="button"
+              className="rounded-full border border-white/40 hover:bg-white/10 text-white px-8 py-3.5 text-base font-medium transition-all cursor-pointer"
+            >
+              Browse Active Elections
+            </button>
+          </Link>
         </div>
       </section>
       </div>

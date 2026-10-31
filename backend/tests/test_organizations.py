@@ -122,3 +122,75 @@ async def test_cross_organization_isolation(test_client):
         # Owner A tries to access Org B -> 403 Forbidden
         res_a_cross = await test_client.get(f"/api/v1/organizations/{org_b_id}")
         assert res_a_cross.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_institution_onboarding_wizard_workflow(test_client):
+    # 1. Register new institution admin
+    inst_reg = {
+        "account_type": "institution",
+        "first_name": "Chancellor",
+        "last_name": "Sterling",
+        "email": "sterling@cambridge-tech.edu",
+        "password": "ChancellorPass2026!",
+        "institution_name": "Cambridge Institute of Advanced Technology",
+        "institution_type": "University",
+        "country": "United Kingdom",
+        "terms_accepted": True,
+    }
+    reg_res = await test_client.post("/api/v1/auth/register", json=inst_reg)
+    assert reg_res.status_code == 201
+
+    # 2. Login
+    login_res = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "sterling@cambridge-tech.edu", "password": "ChancellorPass2026!"},
+    )
+    assert login_res.status_code == 200
+    me = login_res.json()["data"]
+    org_id = me["memberships"][0]["organization_id"]
+
+    # Organization is initially in draft state
+    org_res = await test_client.get(f"/api/v1/organizations/{org_id}")
+    assert org_res.status_code == 200
+    assert org_res.json()["data"]["status"] == "draft"
+
+    # 3. Submit complete multi-step onboarding wizard
+    onboarding_payload = {
+        "institution_name": "Cambridge Institute of Advanced Technology",
+        "abbreviation": "CIAT",
+        "institution_type": "University",
+        "country": "United Kingdom",
+        "city": "Cambridge",
+        "website": "https://ciat.ac.uk",
+        "contact_email": "admin@ciat.ac.uk",
+        "contact_phone": "+44 1223 123456",
+        "description": "Leading research and technical education institution.",
+        "approximate_members": 12500,
+        "department_count": 8,
+        "admin_title": "Chancellor & Electoral Oversight Chair",
+        "admin_department": "Office of the Vice-Chancellor",
+        "structure_units": [
+            {"name": "Faculty of Computer Science", "unit_type": "faculty"},
+            {"name": "Department of Artificial Intelligence", "unit_type": "department"},
+            {"name": "Student Union Board", "unit_type": "student_union"},
+        ],
+        "mfa_policy": "recommended",
+        "approved_domains": ["ciat.ac.uk", "alumni.ciat.ac.uk"],
+        "invitation_permission": "admin_only",
+        "session_idle_minutes": 60,
+        "session_absolute_hours": 12,
+        "require_dual_approval_for_launch": True,
+        "is_completed": True,
+    }
+
+    onboard_res = await test_client.post(
+        f"/api/v1/organizations/{org_id}/onboarding",
+        json=onboarding_payload,
+    )
+    assert onboard_res.status_code == 200
+    data = onboard_res.json()["data"]
+    assert data["status"] == "active"
+    assert data["metadata"]["abbreviation"] == "CIAT"
+    assert len(data["metadata"]["structure_units"]) == 3
+    assert data["metadata"]["structure_units"][0]["name"] == "Faculty of Computer Science"

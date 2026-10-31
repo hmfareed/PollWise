@@ -30,5 +30,17 @@ export interface LoginPayload {
 export interface RegisterPayload {
   email: string;
   password: string;
-  display_name: string;
+  display_name?: string;
+  account_type?: "personal" | "institution";
+  first_name?: string;
+  last_name?: string;
+  terms_accepted?: boolean;
+  institution_name?: string;
+  institution_type?: string;
+  country?: string;
+}
+
+export interface ChangePasswordPayload {
+  current_password: string;
+  new_password: string;
 }

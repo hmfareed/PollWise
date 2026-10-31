@@ -6,10 +6,12 @@ from app.core.rate_limit import rate_limit_login
 from app.db.session import get_identity_session
 from app.models.identity import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     MeResponse,
     RegisterRequest,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     UserResponse,
     VerifyEmailRequest,
@@ -92,6 +94,19 @@ async def verify_email(
     )
 
 
+@router.post("/resend-verification", response_model=ApiResponse[dict])
+async def resend_verification(
+    req: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[dict]:
+    """Resend email verification link. Always returns generic success to prevent email enumeration."""
+    await AuthService.resend_verification(db, req.email)
+    return ApiResponse(
+        data={"message": "If this account requires verification, a new confirmation link has been sent."},
+        error=None,
+    )
+
+
 @router.post("/forgot-password", response_model=ApiResponse[dict])
 async def forgot_password(
     req: ForgotPasswordRequest,
@@ -114,5 +129,19 @@ async def reset_password(
     await AuthService.reset_password(db, req.token, req.new_password)
     return ApiResponse(
         data={"message": "Password updated successfully. Please log in with your new credentials."},
+        error=None,
+    )
+
+
+@router.post("/change-password", response_model=ApiResponse[dict])
+async def change_password(
+    req: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[dict]:
+    """Change account password for authenticated user."""
+    await AuthService.change_password(db, current_user, req.current_password, req.new_password)
+    return ApiResponse(
+        data={"message": "Password changed successfully."},
         error=None,
     )

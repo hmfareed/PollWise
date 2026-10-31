@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -58,6 +59,10 @@ class OrganizationRole(str, Enum):
     ELECTION_MANAGER = "election_manager"
     AUDITOR = "auditor"
     MEMBER = "member"
+    CANDIDATE_REVIEWER = "candidate_reviewer"
+    VOTER_MANAGER = "voter_manager"
+    TALLY_OFFICER = "tally_officer"
+    RESULTS_APPROVER = "results_approver"
 
 
 class MembershipStatus(str, Enum):
@@ -65,6 +70,15 @@ class MembershipStatus(str, Enum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     REMOVED = "removed"
+
+
+class OrganizationStatus(str, Enum):
+    DRAFT = "draft"
+    PENDING_VERIFICATION = "pending_verification"
+    VERIFIED = "verified"
+    ACTIVE = "active"
+    REJECTED = "rejected"
+    SUSPENDED = "suspended"
 
 
 class EligibilityStatus(str, Enum):
@@ -160,6 +174,7 @@ class Organization(IdentityBase, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="active", nullable=False)
+    metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     memberships: Mapped[list["OrganizationMembership"]] = relationship(
         "OrganizationMembership", back_populates="organization", cascade="all, delete-orphan"

@@ -51,9 +51,9 @@ describe("Election Pages & Lifecycle UI", () => {
     );
 
     expect(screen.getByRole("heading", { name: /Create Institutional Election/i })).toBeInTheDocument();
-    expect(screen.getByText("Step 1: General Election Information")).toBeInTheDocument();
+    expect(screen.getByText(/Basic Information/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/2026 Student Union General Election/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Next: Positions & Candidates/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Next: Structure/i })).toBeInTheDocument();
   });
 
   it("renders AdminDashboardPage with metrics and create election link", () => {
@@ -71,7 +71,7 @@ describe("Election Pages & Lifecycle UI", () => {
     expect(screen.getByRole("heading", { name: /Institutional Admin Console/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Create Election/i })).toBeInTheDocument();
     expect(screen.getByText("Active Voting")).toBeInTheDocument();
-    expect(screen.getByText("Isolated Subsystems & Database Boundaries")).toBeInTheDocument();
+    expect(screen.getByText(/Subsystem Isolation & DB Health/i)).toBeInTheDocument();
   });
 
   it("renders ElectionDetailPage with election information", async () => {

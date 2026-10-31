@@ -102,3 +102,99 @@ async def test_password_recovery(test_client, test_identity_session):
         "/api/v1/auth/forgot-password", json={"email": "nobody@university.edu"}
     )
     assert res_nonexistent.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_change_password(test_client):
+    # 1. Register & Login
+    reg_payload = {
+        "email": "pwchange@university.edu",
+        "password": "InitialPassword123!",
+        "display_name": "Dave Change",
+    }
+    await test_client.post("/api/v1/auth/register", json=reg_payload)
+    login_res = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "pwchange@university.edu", "password": "InitialPassword123!"},
+    )
+    assert login_res.status_code == 200
+
+    # 2. Change password with wrong current password
+    bad_res = await test_client.post(
+        "/api/v1/auth/change-password",
+        json={"current_password": "WrongPassword!", "new_password": "NewValidPassword123!"},
+    )
+    assert bad_res.status_code == 422
+    assert "Current password is incorrect" in bad_res.json()["error"]["message"]
+
+    # 3. Change password successfully
+    good_res = await test_client.post(
+        "/api/v1/auth/change-password",
+        json={
+            "current_password": "InitialPassword123!",
+            "new_password": "NewValidPassword123!",
+        },
+    )
+    assert good_res.status_code == 200
+    assert "Password changed successfully" in good_res.json()["data"]["message"]
+
+    # 4. Old password can no longer log in
+    old_login = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "pwchange@university.edu", "password": "InitialPassword123!"},
+    )
+    assert old_login.status_code == 401
+
+    # 5. New password logs in successfully
+    new_login = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "pwchange@university.edu", "password": "NewValidPassword123!"},
+    )
+    assert new_login.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_institutional_registration_and_resend_verification(test_client):
+    # 1. Register Institution Account
+    inst_payload = {
+        "account_type": "institution",
+        "first_name": "Dean",
+        "last_name": "Henderson",
+        "email": "dean.henderson@oxford-tech.edu",
+        "password": "DeanSecurePassword2026!",
+        "institution_name": "Oxford Institute of Technology",
+        "institution_type": "University",
+        "country": "United Kingdom",
+        "terms_accepted": True,
+    }
+    res = await test_client.post("/api/v1/auth/register", json=inst_payload)
+    assert res.status_code == 201
+    user_data = res.json()["data"]
+    assert user_data["display_name"] == "Dean Henderson"
+    assert user_data["email"] == "dean.henderson@oxford-tech.edu"
+
+    # 2. Login as the newly registered institution administrator
+    login_res = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "dean.henderson@oxford-tech.edu", "password": "DeanSecurePassword2026!"},
+    )
+    assert login_res.status_code == 200
+    me = login_res.json()["data"]
+    assert len(me["memberships"]) == 1
+    assert me["memberships"][0]["organization_name"] == "Oxford Institute of Technology"
+    assert me["memberships"][0]["role"] == "organization_admin"
+
+    # 3. Resend email verification
+    resend_res = await test_client.post(
+        "/api/v1/auth/resend-verification",
+        json={"email": "dean.henderson@oxford-tech.edu"},
+    )
+    assert resend_res.status_code == 200
+    assert "confirmation link has been sent" in resend_res.json()["data"]["message"]
+
+    # 4. Resend for non-existent email returns generic success (prevents account enumeration)
+    generic_resend = await test_client.post(
+        "/api/v1/auth/resend-verification",
+        json={"email": "unknown-ghost@nowhere.edu"},
+    )
+    assert generic_resend.status_code == 200

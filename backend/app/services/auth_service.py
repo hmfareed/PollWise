@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -18,7 +19,9 @@ from app.core.security import (
 from app.models.identity import (
     AccountStatus,
     EmailVerificationToken,
+    Organization,
     OrganizationMembership,
+    OrganizationRole,
     PasswordResetToken,
     User,
     UserSession,
@@ -55,17 +58,52 @@ class AuthService:
 
         # Hash password and create user
         pw_hash = hash_password(req.password)
+        display_name = req.display_name.strip() if req.display_name else "Voter"
         user = User(
             id=uuid.uuid4(),
             email_normalized=normalized_email,
             password_hash=pw_hash,
-            display_name=req.display_name.strip(),
+            display_name=display_name,
             email_verified_at=None,
             account_status=AccountStatus.ACTIVE.value,
             is_platform_admin=False,
         )
         db.add(user)
         await db.flush()
+
+        # If institutional account, create organization workspace in draft state (Doc 27 Section 3 & 5)
+        if req.account_type == "institution" and req.institution_name:
+            inst_name = req.institution_name.strip()
+            base_slug = re.sub(r"[^a-z0-9]+", "-", inst_name.lower()).strip("-") or "inst"
+            slug = base_slug
+            suffix = 1
+            while True:
+                existing_slug = (
+                    await db.execute(select(Organization).where(Organization.slug == slug))
+                ).scalar_one_or_none()
+                if not existing_slug:
+                    break
+                slug = f"{base_slug}-{suffix}"
+                suffix += 1
+
+            organization = Organization(
+                id=uuid.uuid4(),
+                name=inst_name,
+                slug=slug,
+                status="draft",  # Onboarding pending
+            )
+            db.add(organization)
+            await db.flush()
+
+            # Assign administrator role
+            membership = OrganizationMembership(
+                id=uuid.uuid4(),
+                organization_id=organization.id,
+                user_id=user.id,
+                role=OrganizationRole.ORGANIZATION_ADMIN.value,
+                status="active",
+            )
+            db.add(membership)
 
         # Generate verification token (24-hour expiry)
         raw_token = generate_secure_token()
@@ -203,6 +241,45 @@ class AuthService:
         return user
 
     @classmethod
+    async def resend_verification(
+        cls,
+        db: AsyncSession,
+        email: str,
+    ) -> str | None:
+        """Resend email verification token. Generic response prevents account enumeration."""
+        normalized_email = cls.normalize_email(email)
+        stmt = select(User).where(User.email_normalized == normalized_email)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user or user.email_verified_at is not None:
+            return None
+
+        now = datetime.now(UTC)
+        # Invalidate old unused tokens
+        await db.execute(
+            update(EmailVerificationToken)
+            .where(
+                EmailVerificationToken.user_id == user.id,
+                EmailVerificationToken.used_at == None,
+            )
+            .values(used_at=now)
+        )
+
+        raw_token = generate_secure_token()
+        token_hash = hash_token(raw_token)
+        verification_token = EmailVerificationToken(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=now + timedelta(hours=24),
+            used_at=None,
+        )
+        db.add(verification_token)
+        await db.commit()
+        return raw_token
+
+    @classmethod
     async def forgot_password(
         cls,
         db: AsyncSession,
@@ -267,6 +344,29 @@ class AuthService:
             update(UserSession).where(UserSession.user_id == user.id).values(is_revoked=True)
         )
         await db.execute(revoke_stmt)
+        await db.commit()
+
+    @classmethod
+    async def change_password(
+        cls,
+        db: AsyncSession,
+        user: User,
+        current_password: str,
+        new_password: str,
+    ) -> None:
+        if not verify_password(current_password, user.password_hash):
+            raise AppException(
+                code=ErrorCode.VALIDATION_ERROR,
+                message="Current password is incorrect.",
+            )
+
+        if current_password == new_password:
+            raise AppException(
+                code=ErrorCode.VALIDATION_ERROR,
+                message="New password must be different from current password.",
+            )
+
+        user.password_hash = hash_password(new_password)
         await db.commit()
 
     @classmethod
