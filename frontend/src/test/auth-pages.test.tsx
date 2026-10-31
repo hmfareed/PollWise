@@ -86,12 +86,13 @@ describe("Auth & Organizations Pages", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByRole("heading", { name: /Create Pollwise Account/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Create an Account/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Personal Account$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Institution Account$/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Alice")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Smith")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Create Personal Account$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Your data is secure with Pollwise/i)).toBeInTheDocument();
   });
 
   it("renders OrganizationsPage", () => {
