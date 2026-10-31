@@ -28,6 +28,22 @@ export const AppShell: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+
+  // Full-bleed standalone pages with zero sidebar and zero header chrome
+  const isAuthRoute = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/verify-email",
+  ].some(
+    (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
+
+  if (isAuthRoute) {
+    return <Outlet />;
+  }
+
   const isLandingPage = location.pathname === "/";
 
   const consoleNavItems = [

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "../features/auth/AuthContext";
 import { AppShell } from "../layouts/AppShell";
@@ -52,6 +52,32 @@ describe("AppShell Component", () => {
     expect(screen.getByText("Elections")).toBeInTheDocument();
     expect(screen.getByText("Organizations")).toBeInTheDocument();
     expect(screen.getByText("Institutional Admin")).toBeInTheDocument();
+  });
+
+  it("does not render sidebar or top navigation on auth routes (login, register)", () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={["/login"]}>
+            <Routes>
+              <Route path="/" element={<AppShell />}>
+                <Route
+                  path="login"
+                  element={<div data-testid="login-content">Full Page Login Screen</div>}
+                />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByTestId("login-content")).toBeInTheDocument();
+    expect(screen.queryByText("Institutional Admin")).not.toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(/Search elections, candidates, or users/i)
+    ).not.toBeInTheDocument();
   });
 
   it("renders AuthSplitLayout with left showcase and nested content", () => {
