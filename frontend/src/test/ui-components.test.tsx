@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { StatusBadge } from "../components/ui/status-badge";
+import { PollwiseBrand, PollwiseEmblem } from "../components/PollwiseBrand";
 
 describe("UI Primitives", () => {
   it("renders Button with text and handles default variant", () => {
@@ -19,5 +20,16 @@ describe("UI Primitives", () => {
   it("renders StatusBadge with state label", () => {
     render(<StatusBadge status="open" />);
     expect(screen.getByText(/Active \/ Open/i)).toBeInTheDocument();
+  });
+
+  it("renders PollwiseBrand with emblem and dual-tone wordmark", () => {
+    render(<PollwiseBrand theme="light" />);
+    expect(screen.getByText("Poll")).toBeInTheDocument();
+    expect(screen.getByText("wise")).toBeInTheDocument();
+  });
+
+  it("renders PollwiseEmblem svg", () => {
+    const { container } = render(<PollwiseEmblem className="h-10 w-10" />);
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 });
