@@ -46,7 +46,7 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
         {/* Top brand lockup */}
         <div className="relative z-10">
           <Link to="/" className="inline-flex flex-col items-start group">
-            <PollwiseBrand theme="dark" size="xl" stacked={false} />
+            <PollwiseBrand theme="dark" size="lg" stacked={false} />
             <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-white/20 text-xs tracking-wider uppercase text-blue-100/90 font-medium">
               <span>Secure</span>
               <span className="text-sky-300">•</span>

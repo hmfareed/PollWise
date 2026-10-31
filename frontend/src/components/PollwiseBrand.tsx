@@ -50,10 +50,10 @@ export const PollwiseBrand: React.FC<BrandProps> = ({
   stacked = false,
 }) => {
   const sizeMap = {
-    sm: { emblem: "h-7 w-auto", text: "text-xl", tagline: "text-[10px]" },
-    md: { emblem: "h-10 w-auto", text: "text-2xl", tagline: "text-xs" },
-    lg: { emblem: "h-14 w-auto", text: "text-4xl", tagline: "text-sm" },
-    xl: { emblem: "h-16 w-auto", text: "text-5xl sm:text-6xl", tagline: "text-base tracking-widest" },
+    sm: { emblem: "h-6 w-auto", text: "text-lg", tagline: "text-[10px]" },
+    md: { emblem: "h-8 w-auto", text: "text-2xl", tagline: "text-xs" },
+    lg: { emblem: "h-10 w-auto", text: "text-3xl sm:text-4xl", tagline: "text-sm" },
+    xl: { emblem: "h-12 w-auto", text: "text-4xl sm:text-5xl", tagline: "text-sm tracking-wider" },
   };
 
   const currentSize = sizeMap[size];

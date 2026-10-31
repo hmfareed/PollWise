@@ -19,6 +19,29 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 
 export const router = createBrowserRouter([
+  // Full-page standalone Authentication routes (no AppShell, no sidebar, no navbar)
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/register",
+    element: <RegisterPage />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPasswordPage />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPasswordPage />,
+  },
+  {
+    path: "/verify-email",
+    element: <VerifyEmailPage />,
+  },
+
+  // Main application shell
   {
     path: "/",
     element: <AppShell />,
@@ -138,26 +161,6 @@ export const router = createBrowserRouter([
             <SettingsPage />
           </ProtectedRoute>
         ),
-      },
-      {
-        path: "login",
-        element: <LoginPage />,
-      },
-      {
-        path: "register",
-        element: <RegisterPage />,
-      },
-      {
-        path: "forgot-password",
-        element: <ForgotPasswordPage />,
-      },
-      {
-        path: "reset-password",
-        element: <ResetPasswordPage />,
-      },
-      {
-        path: "verify-email",
-        element: <VerifyEmailPage />,
       },
       {
         path: "*",
