@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Landmark,
   Shield,
   ShieldCheck,
   CheckCircle2,
@@ -269,7 +268,7 @@ export const HomePage: React.FC = () => {
                   <div className="space-y-4">
                     {/* Brand */}
                     <div className="flex items-center gap-1.5 px-2 py-1 text-white font-bold text-sm">
-                      <Landmark className="h-4 w-4 text-blue-400" />
+                      <img src="/pollwise-emblem.png" alt="PollWise" className="h-4 w-auto object-contain" />
                       <span>PollWise</span>
                     </div>
 
@@ -766,7 +765,7 @@ export const HomePage: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative space-y-4">
             <div className="flex items-center justify-between border-b pb-3">
               <div className="flex items-center gap-2">
-                <Landmark className="h-5 w-5 text-blue-600" />
+                <img src="/pollwise-emblem.png" alt="PollWise" className="h-5 w-auto object-contain" />
                 <h3 className="font-bold text-slate-900 text-lg">
                   PollWise Platform Walkthrough
                 </h3>

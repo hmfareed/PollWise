@@ -28,8 +28,8 @@ describe("UI Primitives", () => {
     expect(screen.getByText("wise")).toBeInTheDocument();
   });
 
-  it("renders PollwiseEmblem svg", () => {
+  it("renders PollwiseEmblem", () => {
     const { container } = render(<PollwiseEmblem className="h-10 w-10" />);
-    expect(container.querySelector("svg")).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeInTheDocument();
   });
 });

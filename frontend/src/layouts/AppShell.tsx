@@ -14,7 +14,6 @@ import {
   Layers,
   UserCheck,
   BarChart3,
-  CheckCircle2,
   Bell,
   Search,
   ChevronDown,
@@ -65,8 +64,12 @@ export const AppShell: React.FC = () => {
           {/* Left: Brand Logo */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2.5 font-bold tracking-tight group">
-              <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-sm group-hover:bg-blue-700 transition">
-                <Landmark className="h-5 w-5" />
+              <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center p-1.5 shadow-sm group-hover:bg-blue-700 transition">
+                <img
+                  src="/pollwise-emblem.png"
+                  alt="PollWise Emblem"
+                  className="h-full w-auto object-contain"
+                />
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-2xl font-extrabold text-blue-950 tracking-tight">
@@ -260,9 +263,11 @@ export const AppShell: React.FC = () => {
             <div className="space-y-5 relative z-10">
               {/* Brand in Sidebar matching Mockup */}
               <div className="flex items-center gap-2.5 px-2 pt-1 pb-2 border-b border-white/10">
-                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-md">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
+                <img
+                  src="/pollwise-emblem.png"
+                  alt="Pollwise"
+                  className="h-7 w-auto object-contain drop-shadow"
+                />
                 <div className="flex items-baseline gap-1">
                   <span className="text-xl font-extrabold text-white tracking-tight">Pollwise</span>
                 </div>
@@ -469,8 +474,12 @@ export const AppShell: React.FC = () => {
       <footer className="border-t border-slate-100 bg-white py-8 text-xs text-slate-500 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-blue-600 flex items-center justify-center text-white">
-              <Landmark className="h-3.5 w-3.5" />
+            <div className="h-6 w-6 rounded-md bg-blue-600 flex items-center justify-center p-1 text-white shadow-xs">
+              <img
+                src="/pollwise-emblem.png"
+                alt="PollWise Emblem"
+                className="h-full w-auto object-contain"
+              />
             </div>
             <p className="font-medium text-slate-700">
               © {CURRENT_YEAR} PollWise — Institutional Voting Platform.
