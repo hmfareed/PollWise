@@ -51,7 +51,7 @@ Pollwise/
 ├── backend/                   # FastAPI application & ballot-box services
 │   ├── app/
 │   │   ├── api/               # API endpoints (/v1 and /ballot-box/v1)
-│   │   ├── commands/          # DB init and realistic demo seed commands
+│   │   ├── commands/          # DB init and admin account creation CLI commands
 │   │   ├── core/              # Config, settings validation, security, errors
 │   │   ├── db/                # Async engine & session pooling for isolated DBs
 │   │   ├── models/            # SQLAlchemy 2.0 models (identity, election, ballot)
@@ -123,9 +123,11 @@ cd backend
 uv venv
 uv pip install -e ".[dev]"
 
-# Optional: Initialize and seed demo dataset
+# Initialize database schema migrations
 .\.venv\Scripts\python -m app.commands.init_db
-.\.venv\Scripts\python -m app.commands.seed
+
+# Create an initial platform administrator account
+.\.venv\Scripts\python -m app.commands.create_admin --email admin@yourinstitution.edu --password SecurePassword123! --name "Platform Administrator"
 
 # Start backend server
 .\.venv\Scripts\uvicorn app.main:app --reload --port 8000
@@ -145,20 +147,16 @@ npm run dev
 
 ---
 
-## Demo Accounts & Sample Institutional Dataset
+## Administrative Setup & Clean Slate Initialization
 
-When seeded using `python -m app.commands.seed`, Pollwise populates:
-- **Organization**: Northwestern Polytechnic University (`northwestern-poly`)
-- **Accounts**:
-  - **Platform Admin**: `admin@pollwise.local` / `PollwiseAdmin2026!`
-  - **Election Manager**: `manager@polytechnic.edu` / `ManagerSecure123!`
-  - **Electoral Auditor**: `auditor@polytechnic.edu` / `AuditorSecure123!`
-  - **Student Voter**: `alice@polytechnic.edu` / `StudentVote2026!`
-- **Sample Elections**:
-  - **2026 Student Union General Election** (Status: **Open**, live voting booth ready)
-  - **Faculty Senate Representative Election 2026** (Status: **Scheduled**, configuration frozen)
-  - **Alumni Advisory Board Election 2025** (Status: **Published**, with certified audit results)
-  - **Engineering Department Curriculum Committee 2026** (Status: **Draft**)
+Pollwise operates on an empty, unseeded database baseline for security and multi-tenant integrity. To provision the initial platform administrator:
+
+```bash
+cd backend
+python -m app.commands.create_admin --email admin@yourinstitution.edu --password <YourStrongPassword> --name "Platform Admin"
+```
+
+Once provisioned, sign in via the Pollwise web interface to onboard your institution and manage elections.
 
 ---
 
