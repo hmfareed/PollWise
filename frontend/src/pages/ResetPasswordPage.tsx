@@ -4,6 +4,7 @@ import { Lock, CheckCircle, AlertCircle, ArrowRight, ArrowLeft } from "lucide-re
 import { apiClient } from "../lib/api-client";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { PasswordInput } from "../components/ui/input";
 
 export const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -109,32 +110,24 @@ export const ResetPasswordPage: React.FC = () => {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">New Password (min 8 chars)</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
+                <PasswordInput
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your new password"
+                  autoComplete="new-password"
+                />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">Confirm New Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
+                <PasswordInput
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                />
               </div>
 
               <Button type="submit" className="w-full gap-2 mt-2" disabled={isSubmitting}>

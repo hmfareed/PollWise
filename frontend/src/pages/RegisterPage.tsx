@@ -1,23 +1,17 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  User,
-  Mail,
-  Lock,
-  Building2,
-  Globe,
   ArrowRight,
   AlertCircle,
   CheckCircle2,
   MailCheck,
   RefreshCw,
-  Eye,
-  EyeOff,
   ShieldCheck,
-  GraduationCap
 } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
+import { Input, PasswordInput } from "../components/ui/input";
+import { Select } from "../components/ui/select";
 
 const INSTITUTION_TYPES = [
   "University",
@@ -261,33 +255,27 @@ export const RegisterPage: React.FC = () => {
               <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 First Name
               </label>
-              <div className="relative flex items-center">
-                <User className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Alice"
-                  className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-                />
-              </div>
+              <Input
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Alice"
+                autoComplete="given-name"
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 Last Name
               </label>
-              <div className="relative flex items-center">
-                <User className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Smith"
-                  className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-                />
-              </div>
+              <Input
+                type="text"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Smith"
+                autoComplete="family-name"
+              />
             </div>
           </div>
 
@@ -296,21 +284,18 @@ export const RegisterPage: React.FC = () => {
             <label className="block text-xs font-semibold text-slate-800 mb-1.5">
               {accountType === "institution" ? "Official Institution Email" : "Email Address"}
             </label>
-            <div className="relative flex items-center">
-              <Mail className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={
-                  accountType === "institution"
-                    ? "admin@university.edu"
-                    : "Enter your email address"
-                }
-                className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-              />
-            </div>
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={
+                accountType === "institution"
+                  ? "admin@university.edu"
+                  : "Enter your email address"
+              }
+              autoComplete="email"
+            />
           </div>
 
           {/* Conditional Institution Fields */}
@@ -320,17 +305,13 @@ export const RegisterPage: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   Institution Name
                 </label>
-                <div className="relative flex items-center">
-                  <Building2 className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    value={institutionName}
-                    onChange={(e) => setInstitutionName(e.target.value)}
-                    placeholder="e.g. Northwestern Polytechnic University"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-                  />
-                </div>
+                <Input
+                  type="text"
+                  required
+                  value={institutionName}
+                  onChange={(e) => setInstitutionName(e.target.value)}
+                  placeholder="e.g. Northwestern Polytechnic University"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -338,40 +319,32 @@ export const RegisterPage: React.FC = () => {
                   <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                     Institution Type
                   </label>
-                  <div className="relative flex items-center">
-                    <GraduationCap className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                    <select
-                      value={institutionType}
-                      onChange={(e) => setInstitutionType(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-                    >
-                      {INSTITUTION_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Select
+                    value={institutionType}
+                    onChange={(e) => setInstitutionType(e.target.value)}
+                  >
+                    {INSTITUTION_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                     Country
                   </label>
-                  <div className="relative flex items-center">
-                    <Globe className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-                    <select
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-                    >
-                      {COMMON_COUNTRIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                  >
+                    {COMMON_COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
               </div>
             </>
@@ -382,24 +355,15 @@ export const RegisterPage: React.FC = () => {
             <label className="block text-xs font-semibold text-slate-800 mb-1.5">
               Password
             </label>
-            <div className="relative flex items-center">
-              <Lock className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 focus:outline-none"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <PasswordInput
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              isPasswordVisible={showPassword}
+              onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+              autoComplete="new-password"
+            />
           </div>
 
           {/* Confirm Password */}
@@ -407,24 +371,15 @@ export const RegisterPage: React.FC = () => {
             <label className="block text-xs font-semibold text-slate-800 mb-1.5">
               Confirm Password
             </label>
-            <div className="relative flex items-center">
-              <Lock className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter your password"
-                className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 p-1 text-slate-400 hover:text-slate-600 focus:outline-none"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <PasswordInput
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter your password"
+              isPasswordVisible={showConfirmPassword}
+              onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
+              autoComplete="new-password"
+            />
           </div>
 
           {/* Terms Checkbox */}

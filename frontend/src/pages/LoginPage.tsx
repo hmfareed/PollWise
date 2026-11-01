@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Lock, Mail, Eye, EyeOff, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
 import { useAuth } from "../features/auth/useAuth";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
+import { Input, PasswordInput } from "../components/ui/input";
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -60,17 +61,14 @@ export const LoginPage: React.FC = () => {
             <label className="block text-sm font-semibold text-slate-800 mb-2">
               Email Address
             </label>
-            <div className="relative flex items-center">
-              <Mail className="absolute left-4 h-5 w-5 text-slate-400 pointer-events-none" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="w-full pl-12 pr-4 py-3.5 text-sm sm:text-base rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all shadow-sm"
-              />
-            </div>
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email address"
+              autoComplete="email"
+            />
           </div>
 
           {/* Password Field */}
@@ -78,29 +76,15 @@ export const LoginPage: React.FC = () => {
             <label className="block text-sm font-semibold text-slate-800 mb-2">
               Password
             </label>
-            <div className="relative flex items-center">
-              <Lock className="absolute left-4 h-5 w-5 text-slate-400 pointer-events-none" />
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full pl-12 pr-12 py-3.5 text-sm sm:text-base rounded-xl border border-slate-200 bg-white placeholder:text-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent transition-all shadow-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 p-1 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
+            <PasswordInput
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              isPasswordVisible={showPassword}
+              onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
+              autoComplete="current-password"
+            />
           </div>
 
           {/* Options Row: Remember Me & Forgot Password */}

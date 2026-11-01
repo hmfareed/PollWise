@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { KeyRound, Mail, ArrowRight, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
+import { KeyRound, ArrowRight, ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -72,17 +73,14 @@ export const ForgotPasswordPage: React.FC = () => {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">Institutional Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@university.edu"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
+                <Input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@university.edu"
+                  autoComplete="email"
+                />
               </div>
 
               <Button type="submit" className="w-full gap-2 mt-2" disabled={isSubmitting}>

@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { StatusBadge } from "../components/ui/status-badge";
+import { Input, PasswordInput } from "../components/ui/input";
 import { PollwiseBrand, PollwiseEmblem } from "../components/PollwiseBrand";
 
 describe("UI Primitives", () => {
@@ -31,5 +32,25 @@ describe("UI Primitives", () => {
   it("renders PollwiseEmblem", () => {
     const { container } = render(<PollwiseEmblem className="h-10 w-10" />);
     expect(container.querySelector("img")).toBeInTheDocument();
+  });
+
+  it("renders Input with smooth rounded style and placeholder", () => {
+    render(<Input placeholder="Enter your email address" />);
+    const input = screen.getByPlaceholderText("Enter your email address");
+    expect(input).toBeInTheDocument();
+    expect(input.className).toContain("rounded-2xl");
+  });
+
+  it("renders PasswordInput with visibility toggle", () => {
+    render(<PasswordInput placeholder="Enter your password" />);
+    const input = screen.getByPlaceholderText("Enter your password");
+    expect(input).toHaveAttribute("type", "password");
+
+    const toggleBtn = screen.getByRole("button", { name: /Show password/i });
+    expect(toggleBtn).toBeInTheDocument();
+
+    fireEvent.click(toggleBtn);
+    expect(input).toHaveAttribute("type", "text");
+    expect(screen.getByRole("button", { name: /Hide password/i })).toBeInTheDocument();
   });
 });
