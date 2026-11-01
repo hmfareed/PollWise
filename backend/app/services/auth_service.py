@@ -67,6 +67,10 @@ class AuthService:
             email_verified_at=None,
             account_status=AccountStatus.ACTIVE.value,
             is_platform_admin=False,
+            first_name=req.first_name.strip() if req.first_name else None,
+            last_name=req.last_name.strip() if req.last_name else None,
+            account_type=req.account_type or "personal",
+            country=req.country.strip() if req.country else None,
         )
         db.add(user)
         await db.flush()
@@ -379,6 +383,14 @@ class AuthService:
             account_status=user.account_status,
             is_platform_admin=user.is_platform_admin,
             created_at=user.created_at,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            phone_number=user.phone_number,
+            profile_image_url=user.profile_image_url,
+            country=user.country,
+            preferred_language=user.preferred_language or "en",
+            mfa_enabled=user.mfa_enabled if user.mfa_enabled is not None else False,
+            account_type=user.account_type or "personal",
         )
 
     @classmethod

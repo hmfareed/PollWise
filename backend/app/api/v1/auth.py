@@ -10,16 +10,22 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
     MeResponse,
+    PersonalOnboardingResponse,
+    PersonalRegisterRequest,
     RegisterRequest,
     ResendVerificationRequest,
     ResetPasswordRequest,
+    UpdatePersonalOnboardingRequest,
+    UpdateUserProfileRequest,
     UserResponse,
     VerifyEmailRequest,
 )
 from app.schemas.common import ApiResponse
 from app.services.auth_service import AuthService
+from app.services.personal_onboarding_service import PersonalOnboardingService
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Identity"])
+users_router = APIRouter(prefix="/users", tags=["User Profile & Onboarding"])
 
 
 @router.post(
@@ -31,6 +37,23 @@ async def register(
 ) -> ApiResponse[UserResponse]:
     """Register a new user account."""
     user, _ = await AuthService.register(db, req)
+    return ApiResponse(
+        data=AuthService.serialize_user(user),
+        error=None,
+    )
+
+
+@router.post(
+    "/register/personal",
+    response_model=ApiResponse[UserResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def register_personal(
+    req: PersonalRegisterRequest,
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[UserResponse]:
+    """Register a new personal user account."""
+    user, _ = await PersonalOnboardingService.register_personal(db, req)
     return ApiResponse(
         data=AuthService.serialize_user(user),
         error=None,
@@ -145,3 +168,50 @@ async def change_password(
         data={"message": "Password changed successfully."},
         error=None,
     )
+
+
+@users_router.get("/me/onboarding", response_model=ApiResponse[PersonalOnboardingResponse])
+async def get_my_onboarding(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[PersonalOnboardingResponse]:
+    """Retrieve current user's personal onboarding progress."""
+    onboarding = await PersonalOnboardingService.get_onboarding(db, current_user.id)
+    return ApiResponse(
+        data=PersonalOnboardingService.serialize_onboarding(onboarding),
+        error=None,
+    )
+
+
+@users_router.patch("/me/onboarding", response_model=ApiResponse[PersonalOnboardingResponse])
+async def update_my_onboarding(
+    req: UpdatePersonalOnboardingRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[PersonalOnboardingResponse]:
+    """Update current user's personal onboarding step or status."""
+    onboarding = await PersonalOnboardingService.update_onboarding(db, current_user.id, req)
+    return ApiResponse(
+        data=PersonalOnboardingService.serialize_onboarding(onboarding),
+        error=None,
+    )
+
+
+@users_router.patch("/me/profile", response_model=ApiResponse[UserResponse])
+@users_router.patch("/me", response_model=ApiResponse[UserResponse])
+async def update_my_profile(
+    req: UpdateUserProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[UserResponse]:
+    """Update personal profile information."""
+    updated_user = await PersonalOnboardingService.update_profile(db, current_user, req)
+    return ApiResponse(
+        data=AuthService.serialize_user(updated_user),
+        error=None,
+    )
+
+
+# Also mount user routes on auth router to support both /users/me/... and /auth/users/me/...
+router.include_router(users_router)
+
