@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { PollwiseBrand } from "../components/PollwiseBrand";
-import comparisonArtwork from "../assets/voting-comparison-illustration.png";
-import comparisonArtwork2x from "../assets/voting-comparison-illustration-2x.png";
+import showcaseArtwork from "../assets/pollwise-auth-showcase.png";
+import showcaseArtwork2x from "../assets/pollwise-auth-showcase-2x.png";
 
 interface AuthSplitLayoutProps {
   children: React.ReactNode;
@@ -26,65 +26,39 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
       </div>
 
       {/* Left Brand Showcase (visible on lg+) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-b from-[#0048E2] via-[#003DBF] to-[#002B98] text-white flex-col justify-between select-none">
-        {/* Background decorative fluid ambient shapes */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
-          <svg
-            className="absolute -top-32 -left-32 w-[650px] h-[650px] text-blue-400 blur-3xl opacity-20"
-            fill="currentColor"
-            viewBox="0 0 200 200"
-          >
-            <path d="M42.7,-62.9C53.8,-52.8,60.5,-38.7,66.3,-24C72.1,-9.3,77,6,73.4,19.8C69.8,33.6,57.7,45.8,44.5,55.8C31.3,65.8,17,73.6,1.4,71.7C-14.2,69.8,-28.4,58.2,-41.8,47.4C-55.2,36.6,-67.8,26.6,-73.2,13.2C-78.6,-0.2,-76.8,-17,-68.8,-30.4C-60.8,-43.8,-46.6,-53.8,-32.8,-62.9C-19,-72,-5.6,-80.2,7,-91.1C19.6,-102,31.6,-73,42.7,-62.9Z" transform="translate(100 100)" />
-          </svg>
-          <svg
-            className="absolute bottom-0 right-0 w-[800px] h-[800px] text-sky-300 blur-3xl opacity-15"
-            fill="currentColor"
-            viewBox="0 0 200 200"
-          >
-            <path d="M45.7,-77.3C58.8,-71.1,68.7,-58,74.5,-43.7C80.3,-29.4,82,-13.9,81.1,1.5C80.2,16.9,76.7,32.2,68.9,45.2C61.1,58.2,49,68.9,35.3,74.8C21.6,80.7,6.3,81.8,-8.9,80.2C-24.1,78.6,-39.2,74.3,-51.7,66.1C-64.2,57.9,-74.1,45.8,-79.3,32C-84.5,18.2,-85,2.7,-81.4,-11.7C-77.8,-26.1,-70.1,-39.4,-59.4,-47.9C-48.7,-56.4,-35,-60.1,-21.8,-66.2C-8.6,-72.3,4.1,-80.8,18.9,-84.8C33.7,-88.8,32.6,-83.5,45.7,-77.3Z" transform="translate(100 100)" />
-          </svg>
-        </div>
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#004BDC] text-white flex-col justify-between select-none">
+        {/* Full Showcase Artwork seamlessly integrated */}
+        <img
+          src={showcaseArtwork}
+          srcSet={`${showcaseArtwork} 1x, ${showcaseArtwork2x} 2x`}
+          alt="Pollwise Institutional Voting - Every Vote Matters, Every Election Counts"
+          className="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
+          loading="eager"
+          fetchPriority="high"
+        />
 
-        {/* Top brand lockup */}
-        <div className="relative z-10 px-10 xl:px-16 pt-10 xl:pt-14">
-          <Link to="/" className="inline-flex flex-col items-start group">
-            <PollwiseBrand theme="dark" size="lg" stacked={false} />
-            <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-white/20 text-xs tracking-wider uppercase text-blue-100/90 font-medium">
-              <span>Secure</span>
-              <span className="text-sky-300">•</span>
-              <span>Transparent</span>
-              <span className="text-sky-300">•</span>
-              <span>Trusted</span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Middle: Hands voting comparison illustration emerging seamlessly from left & right sides */}
-        <div className="relative z-10 w-full my-auto flex items-center justify-center">
-          <img
-            src={comparisonArtwork}
-            srcSet={`${comparisonArtwork} 1x, ${comparisonArtwork2x} 2x`}
-            alt="Paper ballot voting versus Pollwise digital election"
-            className="w-full h-auto object-cover select-none pointer-events-none block"
-            loading="eager"
-            fetchPriority="high"
+        {/* Top Brand Link overlay for accessibility & navigation */}
+        <div className="relative z-10 px-8 xl:px-14 pt-8 xl:pt-12">
+          <Link
+            to="/"
+            className="inline-block w-52 h-20 cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-white/40"
+            aria-label="Pollwise Home"
           />
         </div>
 
-        {/* Hero Headline & Subtext matching mockup */}
-        <div className="relative z-10 px-10 xl:px-16 pb-8 xl:pb-12 max-w-xl">
-          <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.15] text-white">
+        {/* Semantic accessible headline for screen readers and SEO */}
+        <div className="sr-only">
+          <h1>
             Every Vote Matters.
             <br />
-            Every Election{" "}
-            <span className="text-[#38BDF8] drop-shadow-sm">Counts.</span>
+            Every Election <span className="text-[#38BDF8]">Counts.</span>
           </h1>
-          <p className="mt-4 text-base xl:text-lg text-blue-100/85 leading-relaxed font-normal">
-            A modern platform for secure and transparent institutional elections.
-          </p>
-          <div className="mt-6 text-xs text-blue-200/60 font-normal">
-            © {new Date().getFullYear()} Pollwise Inc. Protected by cryptographic ballot assurance.
-          </div>
+          <p>A modern platform for secure and transparent institutional elections.</p>
+        </div>
+
+        {/* Bottom subtle copyright assurance banner */}
+        <div className="relative z-10 px-8 xl:px-14 pb-5 text-xs text-blue-200/60 font-normal">
+          © {new Date().getFullYear()} Pollwise Inc. Protected by cryptographic ballot assurance.
         </div>
       </div>
 
