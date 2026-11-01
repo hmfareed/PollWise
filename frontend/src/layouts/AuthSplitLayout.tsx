@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { PollwiseBrand } from "../components/PollwiseBrand";
+import comparisonArtwork from "../assets/voting-comparison-illustration.png";
+import comparisonArtwork2x from "../assets/voting-comparison-illustration-2x.png";
 
 interface AuthSplitLayoutProps {
   children: React.ReactNode;
@@ -57,17 +59,15 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
           </Link>
         </div>
 
-        {/* Middle: Voting Type Comparison Illustration emerging seamlessly from left & right sides */}
+        {/* Middle: Hands voting comparison illustration emerging seamlessly from left & right sides */}
         <div className="relative z-10 w-full my-auto flex items-center justify-center">
           <img
-            src="/voting-comparison-illustration.png"
-            srcSet="/voting-comparison-illustration.png 1x, /voting-comparison-illustration-2x.png 2x"
+            src={comparisonArtwork}
+            srcSet={`${comparisonArtwork} 1x, ${comparisonArtwork2x} 2x`}
             alt="Paper ballot voting versus Pollwise digital election"
             className="w-full h-auto object-cover select-none pointer-events-none block"
-            style={{
-              maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
-            }}
+            loading="eager"
+            fetchPriority="high"
           />
         </div>
 
