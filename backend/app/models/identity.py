@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -94,6 +95,19 @@ class EntitlementStatus(str, Enum):
     REVOKED = "revoked"
 
 
+class OnboardingStatus(str, Enum):
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+
+
+class InvitationStatus(str, Enum):
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    EXHAUSTED = "exhausted"
+    REVOKED = "revoked"
+
+
 class User(IdentityBase, TimestampMixin):
     __tablename__ = "users"
 
@@ -110,6 +124,14 @@ class User(IdentityBase, TimestampMixin):
         String(50), default=AccountStatus.ACTIVE.value, nullable=False
     )
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    profile_image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    preferred_language: Mapped[str | None] = mapped_column(String(20), default="en", nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    account_type: Mapped[str] = mapped_column(String(50), default="personal", nullable=False)
 
     memberships: Mapped[list["OrganizationMembership"]] = relationship(
         "OrganizationMembership", back_populates="user", cascade="all, delete-orphan"
@@ -119,6 +141,13 @@ class User(IdentityBase, TimestampMixin):
     )
     eligibilities: Mapped[list["ElectionEligibility"]] = relationship(
         "ElectionEligibility", back_populates="user", cascade="all, delete-orphan"
+    )
+    personal_onboarding: Mapped["PersonalOnboarding | None"] = relationship(
+        "PersonalOnboarding",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
@@ -178,6 +207,12 @@ class Organization(IdentityBase, TimestampMixin):
 
     memberships: Mapped[list["OrganizationMembership"]] = relationship(
         "OrganizationMembership", back_populates="organization", cascade="all, delete-orphan"
+    )
+    invitations: Mapped[list["InstitutionInvitation"]] = relationship(
+        "InstitutionInvitation",
+        back_populates="institution",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 
@@ -257,4 +292,54 @@ class VotingCredential(IdentityBase, TimestampMixin):
 
     eligibility: Mapped["ElectionEligibility"] = relationship(
         "ElectionEligibility", back_populates="credentials"
+    )
+
+
+class PersonalOnboarding(IdentityBase, TimestampMixin):
+    __tablename__ = "personal_onboardings"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
+    )
+    onboarding_status: Mapped[str] = mapped_column(
+        String(50), default=OnboardingStatus.NOT_STARTED.value, nullable=False
+    )
+    current_step: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    profile_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    security_setup_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    institution_step_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship(
+        "User", back_populates="personal_onboarding", lazy="selectin"
+    )
+
+
+class InstitutionInvitation(IdentityBase, TimestampMixin):
+    __tablename__ = "institution_invitations"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    institution_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    invitation_code: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    invitation_type: Mapped[str] = mapped_column(String(50), default="member", nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    max_uses: Mapped[int | None] = mapped_column(Integer, default=1, nullable=True)
+    used_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(50), default=InvitationStatus.ACTIVE.value, nullable=False
+    )
+
+    institution: Mapped["Organization"] = relationship(
+        "Organization", back_populates="invitations", lazy="selectin"
     )
