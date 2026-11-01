@@ -39,7 +39,7 @@ describe("Auth & Organizations Pages", () => {
     expect(screen.getByRole("button", { name: /Sign In/i })).toBeInTheDocument();
     expect(screen.getByText(/Remember me/i)).toBeInTheDocument();
     expect(screen.getByText(/Forgot password\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Your data is secure with Pollwise/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Your data is secure with Pollwise/i)).not.toBeInTheDocument();
   });
 
   it("renders ForgotPasswordPage with email input", () => {
@@ -92,7 +92,7 @@ describe("Auth & Organizations Pages", () => {
     expect(screen.getByPlaceholderText("Alice")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Smith")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Create Personal Account$/i })).toBeInTheDocument();
-    expect(screen.getByText(/Your data is secure with Pollwise/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Your data is secure with Pollwise/i)).not.toBeInTheDocument();
   });
 
   it("renders OrganizationsPage", () => {

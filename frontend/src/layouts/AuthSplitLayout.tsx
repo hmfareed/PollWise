@@ -16,7 +16,7 @@ interface AuthSplitLayoutProps {
  */
 export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F8FAFC]">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white">
       {/* Mobile Branding Bar (visible on < lg) */}
       <div className="lg:hidden bg-gradient-to-r from-[#0037D4] to-[#00228C] p-6 text-white flex items-center justify-between">
         <Link to="/" className="inline-block">
@@ -62,9 +62,9 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
         </div>
       </div>
 
-      {/* Right Form Card Area */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 lg:p-12 xl:p-16 overflow-y-auto">
-        <div className="w-full max-w-lg my-auto py-6">
+      {/* Right Form Area (seamless white background) */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-14 xl:p-18 overflow-y-auto bg-white">
+        <div className="w-full max-w-[460px] my-auto py-4">
           {children}
         </div>
       </div>

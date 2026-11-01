@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, AlertCircle } from "lucide-react";
 import { useAuth } from "../features/auth/useAuth";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
 import { Input, PasswordInput } from "../components/ui/input";
@@ -34,8 +34,7 @@ export const LoginPage: React.FC = () => {
 
   return (
     <AuthSplitLayout>
-      {/* Floating White Card matching mockup */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-100 p-8 sm:p-11 w-full transition-all">
+      <div className="w-full transition-all">
         {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1528] tracking-tight">
@@ -132,21 +131,6 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
         </form>
-
-        {/* Security & Data Trust Badge */}
-        <div className="mt-8 bg-blue-50/80 border border-blue-100 rounded-2xl p-4 flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-blue-100/80 flex items-center justify-center text-[#0055FF] flex-shrink-0">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-900 leading-tight">
-              Your data is secure with Pollwise
-            </h4>
-            <p className="text-xs text-slate-500 mt-0.5 leading-snug">
-              Built with advanced security standards.
-            </p>
-          </div>
-        </div>
       </div>
     </AuthSplitLayout>
   );
