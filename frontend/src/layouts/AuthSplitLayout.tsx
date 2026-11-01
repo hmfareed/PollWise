@@ -24,7 +24,7 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
       </div>
 
       {/* Left Brand Showcase (visible on lg+) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#0055FF] via-[#002FA7] to-[#021359] text-white flex-col justify-between p-14 xl:p-18 select-none">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-b from-[#0048E2] via-[#003DBF] to-[#002B98] text-white flex-col justify-between select-none">
         {/* Background decorative fluid ambient shapes */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
           <svg
@@ -44,7 +44,7 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
         </div>
 
         {/* Top brand lockup */}
-        <div className="relative z-10">
+        <div className="relative z-10 px-10 xl:px-16 pt-10 xl:pt-14">
           <Link to="/" className="inline-flex flex-col items-start group">
             <PollwiseBrand theme="dark" size="lg" stacked={false} />
             <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-white/20 text-xs tracking-wider uppercase text-blue-100/90 font-medium">
@@ -57,32 +57,34 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
           </Link>
         </div>
 
-        {/* Middle: Voting Type Comparison Illustration (Paper vs Digital) */}
-        <div className="relative z-10 my-auto py-4 max-w-lg w-full flex items-center justify-center">
+        {/* Middle: Voting Type Comparison Illustration emerging seamlessly from left & right sides */}
+        <div className="relative z-10 w-full my-auto flex items-center justify-center">
           <img
             src="/voting-comparison-illustration.png"
             srcSet="/voting-comparison-illustration.png 1x, /voting-comparison-illustration-2x.png 2x"
             alt="Paper ballot voting versus Pollwise digital election"
-            className="w-full h-auto object-contain rounded-xl select-none pointer-events-none"
+            className="w-full h-auto object-cover select-none pointer-events-none block"
+            style={{
+              maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+            }}
           />
         </div>
 
         {/* Hero Headline & Subtext matching mockup */}
-        <div className="relative z-10 max-w-lg pt-4 pb-6">
+        <div className="relative z-10 px-10 xl:px-16 pb-8 xl:pb-12 max-w-xl">
           <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.15] text-white">
             Every Vote Matters.
             <br />
             Every Election{" "}
             <span className="text-[#38BDF8] drop-shadow-sm">Counts.</span>
           </h1>
-          <p className="mt-6 text-base xl:text-lg text-blue-100/85 leading-relaxed font-normal">
+          <p className="mt-4 text-base xl:text-lg text-blue-100/85 leading-relaxed font-normal">
             A modern platform for secure and transparent institutional elections.
           </p>
-        </div>
-
-        {/* Bottom subtle copyright / reassurance */}
-        <div className="relative z-10 text-xs text-blue-200/60 font-normal">
-          © {new Date().getFullYear()} Pollwise Inc. Protected by cryptographic ballot assurance.
+          <div className="mt-6 text-xs text-blue-200/60 font-normal">
+            © {new Date().getFullYear()} Pollwise Inc. Protected by cryptographic ballot assurance.
+          </div>
         </div>
       </div>
 
