@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+from app.models.identity import OnboardingStatus
 
 
 class RegisterRequest(BaseModel):
@@ -86,6 +88,17 @@ class UpdatePersonalOnboardingRequest(BaseModel):
     current_step: int | None = Field(default=None, ge=1, le=5)
     onboarding_status: str | None = Field(default=None)
 
+    @field_validator("onboarding_status")
+    @classmethod
+    def validate_onboarding_status(cls, v: str | None) -> str | None:
+        if v is not None:
+            valid_statuses = {s.value for s in OnboardingStatus}
+            if v not in valid_statuses:
+                raise ValueError(
+                    f"Invalid onboarding status '{v}'. Must be one of: {', '.join(sorted(valid_statuses))}"
+                )
+        return v
+
 
 class UpdateUserProfileRequest(BaseModel):
     first_name: str | None = Field(default=None, max_length=100)
@@ -153,3 +166,42 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(
         ..., min_length=8, max_length=128, description="New account password (min 8 characters)"
     )
+
+
+class MfaSetupResponse(BaseModel):
+    secret: str
+    qr_uri: str
+    recovery_codes: list[str]
+
+
+class MfaVerifyRequest(BaseModel):
+    code: str = Field(..., min_length=6, max_length=8, description="6-8 digit MFA verification code")
+
+
+class ValidateInvitationRequest(BaseModel):
+    invitation_code: str = Field(..., min_length=1, description="Institution invitation code")
+
+
+class InvitationValidationResponse(BaseModel):
+    invitation_code: str
+    institution_id: uuid.UUID
+    institution_name: str
+    invitation_type: str
+    expires_at: datetime | None = None
+
+
+class AcceptInvitationRequest(BaseModel):
+    invitation_code: str = Field(..., min_length=1, description="Institution invitation code to accept")
+
+
+class UserElectionSummary(BaseModel):
+    id: uuid.UUID
+    title: str
+    status: str
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    institution_name: str | None = None
+    has_voted: bool = False
+
+
+ElectionSummary = UserElectionSummary

@@ -3,13 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user, get_token_from_request
 from app.core.rate_limit import rate_limit_login
-from app.db.session import get_identity_session
+from app.db.session import get_election_session, get_identity_session
 from app.models.identity import User
 from app.schemas.auth import (
     ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     MeResponse,
+    MfaSetupResponse,
+    MfaVerifyRequest,
     PersonalOnboardingResponse,
     PersonalRegisterRequest,
     RegisterRequest,
@@ -17,6 +19,7 @@ from app.schemas.auth import (
     ResetPasswordRequest,
     UpdatePersonalOnboardingRequest,
     UpdateUserProfileRequest,
+    UserElectionSummary,
     UserResponse,
     VerifyEmailRequest,
 )
@@ -210,6 +213,43 @@ async def update_my_profile(
         data=AuthService.serialize_user(updated_user),
         error=None,
     )
+
+
+@users_router.post("/me/mfa/setup", response_model=ApiResponse[MfaSetupResponse])
+async def setup_my_mfa(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[MfaSetupResponse]:
+    """Generate MFA secret, TOTP QR URI, and emergency recovery codes."""
+    res = await PersonalOnboardingService.setup_mfa(db, current_user)
+    return ApiResponse(data=res, error=None)
+
+
+@users_router.post("/me/mfa/verify", response_model=ApiResponse[dict])
+async def verify_my_mfa(
+    req: MfaVerifyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[dict]:
+    """Verify MFA code and enable two-factor authentication."""
+    updated_user = await PersonalOnboardingService.verify_mfa(db, current_user, req.code)
+    return ApiResponse(
+        data={"message": "MFA verified and enabled successfully.", "mfa_enabled": updated_user.mfa_enabled},
+        error=None,
+    )
+
+
+@users_router.get("/me/elections", response_model=ApiResponse[list[UserElectionSummary]])
+async def get_my_elections(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_identity_session),
+    election_db: AsyncSession = Depends(get_election_session),
+) -> ApiResponse[list[UserElectionSummary]]:
+    """Retrieve accessible elections and participation status for authenticated user."""
+    elections = await PersonalOnboardingService.get_user_elections(
+        db, current_user, election_db=election_db
+    )
+    return ApiResponse(data=elections, error=None)
 
 
 # Also mount user routes on auth router to support both /users/me/... and /auth/users/me/...
