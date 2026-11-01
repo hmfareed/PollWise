@@ -13,19 +13,19 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="relative flex items-center w-full">
         {leftElement && (
-          <div className="absolute left-4 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute left-5 flex items-center pointer-events-none text-slate-400">
             {leftElement}
           </div>
         )}
         <input
           type={type}
           className={cn(
-            "w-full rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 shadow-sm transition-all",
+            "w-full h-[52px] sm:h-[54px] rounded-2xl border border-slate-200 bg-white px-5 sm:px-6 text-[15px] sm:text-base text-slate-900 placeholder:text-slate-400 transition-all outline-none",
             "hover:border-slate-300",
-            "focus:outline-none focus:ring-2 focus:ring-[#0055FF] focus:border-transparent",
+            "focus:border-[#0055FF] focus:ring-2 focus:ring-[#0055FF]/15",
             "disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-50",
-            error && "border-red-300 focus:ring-red-500",
-            leftElement && "pl-11 sm:pl-12",
+            error && "border-red-400 focus:border-red-500 focus:ring-red-500/15",
+            leftElement && "pl-12 sm:pl-14",
             rightElement && "pr-12 sm:pr-14",
             className
           )}
@@ -73,6 +73,8 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
       }
     };
 
+    // When visible is false (masked password), render EyeOff matching the reference image.
+    // When visible is true (revealed text), render Eye.
     const toggleButton = showPasswordToggle ? (
       <button
         type="button"
@@ -81,9 +83,9 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
         aria-label={visible ? "Hide password" : "Show password"}
       >
         {visible ? (
-          <EyeOff className="h-5 w-5 stroke-[1.75]" />
-        ) : (
           <Eye className="h-5 w-5 stroke-[1.75]" />
+        ) : (
+          <EyeOff className="h-5 w-5 stroke-[1.75]" />
         )}
       </button>
     ) : null;
