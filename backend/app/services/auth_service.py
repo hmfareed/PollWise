@@ -56,6 +56,7 @@ class AuthService:
                 message="An account with this email address already exists.",
             )
 
+        now = datetime.now(UTC)
         # Hash password and create user
         pw_hash = hash_password(req.password)
         display_name = req.display_name.strip() if req.display_name else "Voter"
@@ -64,7 +65,7 @@ class AuthService:
             email_normalized=normalized_email,
             password_hash=pw_hash,
             display_name=display_name,
-            email_verified_at=None,
+            email_verified_at=now,
             account_status=AccountStatus.ACTIVE.value,
             is_platform_admin=False,
             first_name=req.first_name.strip() if req.first_name else None,
@@ -116,7 +117,7 @@ class AuthService:
             id=uuid.uuid4(),
             user_id=user.id,
             token_hash=token_hash,
-            expires_at=datetime.now(UTC) + timedelta(hours=24),
+            expires_at=now + timedelta(hours=24),
             used_at=None,
         )
         db.add(verification_token)
@@ -124,6 +125,45 @@ class AuthService:
         await db.refresh(user)
 
         return user, raw_token
+
+    @classmethod
+    async def create_session(
+        cls,
+        db: AsyncSession,
+        user: User,
+        request: Request,
+        response: Response,
+    ) -> tuple[UserSession, str]:
+        raw_token = generate_secure_token(32)
+        token_hash = hash_token(raw_token)
+        now = datetime.now(UTC)
+        expires_at = now + timedelta(hours=settings.SESSION_ABSOLUTE_HOURS)
+
+        session = UserSession(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            session_token_hash=token_hash,
+            expires_at=expires_at,
+            last_active_at=now,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+            is_revoked=False,
+        )
+        db.add(session)
+        await db.commit()
+
+        # Set secure HttpOnly session cookie
+        response.set_cookie(
+            key=settings.SESSION_COOKIE_NAME,
+            value=raw_token,
+            httponly=True,
+            secure=settings.SESSION_COOKIE_SECURE,
+            samesite=settings.SESSION_COOKIE_SAMESITE,
+            max_age=settings.SESSION_ABSOLUTE_HOURS * 3600,
+            path="/",
+        )
+
+        return session, raw_token
 
     @classmethod
     async def login(
@@ -158,36 +198,7 @@ class AuthService:
                 message=f"Your account is {user.account_status}. Please contact an administrator.",
             )
 
-        # Create session
-        raw_token = generate_secure_token(32)
-        token_hash = hash_token(raw_token)
-        now = datetime.now(UTC)
-        expires_at = now + timedelta(hours=settings.SESSION_ABSOLUTE_HOURS)
-
-        session = UserSession(
-            id=uuid.uuid4(),
-            user_id=user.id,
-            session_token_hash=token_hash,
-            expires_at=expires_at,
-            last_active_at=now,
-            ip_address=request.client.host if request.client else None,
-            user_agent=request.headers.get("user-agent"),
-            is_revoked=False,
-        )
-        db.add(session)
-        await db.commit()
-
-        # Set secure HttpOnly session cookie
-        response.set_cookie(
-            key=settings.SESSION_COOKIE_NAME,
-            value=raw_token,
-            httponly=True,
-            secure=settings.SESSION_COOKIE_SECURE,
-            samesite=settings.SESSION_COOKIE_SAMESITE,
-            max_age=settings.SESSION_ABSOLUTE_HOURS * 3600,
-            path="/",
-        )
-
+        _, raw_token = await cls.create_session(db, user, request, response)
         return user, raw_token
 
     @classmethod

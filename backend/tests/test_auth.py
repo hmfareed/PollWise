@@ -17,7 +17,7 @@ async def test_register_and_login_flow(test_client, test_identity_session):
     data = res.json()["data"]
     assert data["email"] == "voter@university.edu"
     assert data["display_name"] == "Alice Voter"
-    assert data["email_verified"] is False
+    assert data["email_verified"] is True
 
     # 2. Duplicate registration rejected
     res_dup = await test_client.post("/api/v1/auth/register", json=reg_payload)

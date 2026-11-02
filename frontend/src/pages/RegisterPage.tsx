@@ -1,11 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   AlertCircle,
-  CheckCircle2,
-  MailCheck,
-  RefreshCw,
 } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
@@ -38,6 +35,7 @@ const COMMON_COUNTRIES = [
 ];
 
 export const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
   const [accountType, setAccountType] = useState<"personal" | "institution">("personal");
 
   // Personal Fields
@@ -55,25 +53,9 @@ export const RegisterPage: React.FC = () => {
   const [institutionType, setInstitutionType] = useState("University");
   const [country, setCountry] = useState("United States");
 
-  // Status & Verification state
+  // Status state
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
-  const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
-
-  // Resend state
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resendMessage, setResendMessage] = useState<string | null>(null);
-  const timerRef = useRef<any>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
 
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
@@ -124,9 +106,8 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      let registeredUser: any;
       if (accountType === "institution") {
-        registeredUser = await apiClient.register({
+        await apiClient.register({
           account_type: "institution",
           first_name: trimmedFirstName,
           last_name: trimmedLastName,
@@ -137,145 +118,23 @@ export const RegisterPage: React.FC = () => {
           country,
           terms_accepted: true,
         });
+        navigate("/dashboard");
       } else {
-        registeredUser = await apiClient.registerPersonal({
+        await apiClient.registerPersonal({
           first_name: trimmedFirstName,
           last_name: trimmedLastName,
           email: trimmedEmail,
           password,
           terms_accepted: true,
         });
+        navigate("/onboarding/personal");
       }
-
-      setRegisteredEmail(trimmedEmail);
-      if (registeredUser?.verification_url) {
-        setDevVerifyUrl(registeredUser.verification_url);
-      } else if (registeredUser?.verification_token) {
-        setDevVerifyUrl(`/verify-email?token=${registeredUser.verification_token}`);
-      }
-      setIsRegistered(true);
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please check your information.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const handleResend = async () => {
-    if (resendCooldown > 0 || !registeredEmail) return;
-
-    try {
-      const res = await apiClient.resendVerification(registeredEmail);
-      setResendMessage(res.message || "A fresh verification link has been sent to your email.");
-      if (res.verification_url) {
-        setDevVerifyUrl(res.verification_url);
-      } else if (res.verification_token) {
-        setDevVerifyUrl(`/verify-email?token=${res.verification_token}`);
-      }
-      setResendCooldown(60);
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setResendCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch {
-      setResendMessage("Unable to send another link right now. Please check your spam folder.");
-    }
-  };
-
-  // ========================================================================
-  // VIEW: POST-REGISTRATION EMAIL VERIFICATION SCREEN (Section 3.1)
-  // ========================================================================
-  if (isRegistered) {
-    return (
-      <AuthSplitLayout>
-        <div className="w-full text-center py-4">
-          <div className="h-16 w-16 rounded-2xl bg-blue-50 text-[#0055FF] flex items-center justify-center mx-auto mb-4 border border-blue-100">
-            <MailCheck className="h-8 w-8" />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0B1528] tracking-tight">
-            Verify your email address
-          </h2>
-          <p className="text-slate-500 text-sm mt-2">
-            We sent a verification link to the email address you entered. Verify your email to activate your Pollwise account.
-          </p>
-          <div className="my-4">
-            <p className="font-mono text-sm font-semibold text-slate-800 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl inline-block">
-              {registeredEmail}
-            </p>
-          </div>
-
-          <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto mb-6">
-            Check your inbox and spam folder for an email with your verification link. Click the link to verify your identity and activate your Pollwise account.
-          </p>
-
-          {resendMessage && (
-            <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2 text-left">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-              <span>{resendMessage}</span>
-            </div>
-          )}
-
-          {devVerifyUrl && (
-            <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-left">
-              <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs uppercase tracking-wider">
-                <CheckCircle2 className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                <span>Local Development Mode</span>
-              </div>
-              <p className="text-xs text-amber-800 mt-1.5 leading-relaxed">
-                External email delivery is not configured in local development. Click the button below to verify your email address immediately:
-              </p>
-              <div className="mt-3">
-                <a
-                  href={devVerifyUrl}
-                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#0055FF] hover:bg-blue-600 text-white font-semibold text-xs transition-colors shadow-sm"
-                >
-                  <span>Verify Email Instantly &amp; Continue →</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </a>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-3 pt-2">
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resendCooldown > 0}
-              className="w-full py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${resendCooldown > 0 ? "animate-spin" : ""}`} />
-              <span>
-                {resendCooldown > 0
-                  ? `Resend available in ${resendCooldown}s`
-                  : "Resend Verification Email"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsRegistered(false)}
-              className="w-full py-3 px-4 rounded-xl border border-transparent bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              Change Email Address
-            </button>
-
-            <Link
-              to="/login"
-              className="block w-full py-3 px-4 rounded-xl text-center font-semibold text-[#0055FF] hover:bg-blue-50/50 text-sm transition-all"
-            >
-              Return to Sign In
-            </Link>
-          </div>
-        </div>
-      </AuthSplitLayout>
-    );
-  }
 
   // ========================================================================
   // VIEW: REGISTRATION FORM SCREEN
@@ -321,9 +180,18 @@ export const RegisterPage: React.FC = () => {
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-3.5 rounded-xl bg-red-50/90 border border-red-200 text-sm text-red-700 flex items-center gap-2.5">
-            <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
-            <span className="font-medium">{error}</span>
+          <div className="mb-6 p-3.5 rounded-xl bg-red-50/90 border border-red-200 text-sm text-red-700 flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 flex-shrink-0 text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-medium">{error}</span>
+              {error.toLowerCase().includes("already exists") && (
+                <div className="mt-1.5">
+                  <Link to="/login" className="text-[#0055FF] hover:underline font-semibold text-xs">
+                    Sign in to your existing account →
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

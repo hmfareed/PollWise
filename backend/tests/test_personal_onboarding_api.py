@@ -31,7 +31,7 @@ async def test_personal_registration_and_onboarding_flow(client: AsyncClient, te
     assert data["display_name"] == "Jane Doe"
     assert data["first_name"] == "Jane"
     assert data["last_name"] == "Doe"
-    assert data["email_verified"] is False
+    assert data["email_verified"] is True
     assert data["account_type"] == "personal"
     assert data["mfa_enabled"] is False
 

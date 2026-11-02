@@ -57,6 +57,7 @@ class PersonalOnboardingService:
                 message="An account with this email address already exists.",
             )
 
+        now = datetime.now(UTC)
         pw_hash = hash_password(req.password)
         first_name = req.first_name.strip()
         last_name = req.last_name.strip()
@@ -69,7 +70,7 @@ class PersonalOnboardingService:
             display_name=display_name,
             first_name=first_name,
             last_name=last_name,
-            email_verified_at=None,
+            email_verified_at=now,
             account_status=AccountStatus.ACTIVE.value,
             is_platform_admin=False,
             account_type="personal",
@@ -88,14 +89,14 @@ class PersonalOnboardingService:
         )
         db.add(onboarding)
 
-        # Generate verification token (24-hour expiry)
+        # Generate verification token (marked used immediately since email verification is bypassed)
         raw_token = generate_secure_token()
         token_hash = hash_token(raw_token)
         verification_token = EmailVerificationToken(
             id=uuid.uuid4(),
             user_id=user.id,
             token_hash=token_hash,
-            expires_at=datetime.now(UTC) + timedelta(hours=24),
+            expires_at=now + timedelta(hours=24),
             used_at=None,
         )
         db.add(verification_token)

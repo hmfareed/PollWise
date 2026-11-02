@@ -64,23 +64,26 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
     expect(await screen.findByText(/You must agree to the Terms of Service and Privacy Policy/i)).toBeInTheDocument();
   });
 
-  it("trims fields and calls apiClient.registerPersonal for personal accounts", async () => {
+  it("trims fields and calls apiClient.registerPersonal and redirects to /onboarding/personal", async () => {
     const registerPersonalSpy = vi
       .spyOn(apiClient, "registerPersonal")
       .mockResolvedValueOnce({
         id: "user-123",
         email: "john.doe@example.com",
         display_name: "John Doe",
-        email_verified: false,
-        account_status: "pending_verification",
+        email_verified: true,
+        account_status: "active",
         account_type: "personal",
         is_platform_admin: false,
         created_at: new Date().toISOString(),
       });
 
     render(
-      <MemoryRouter>
-        <RegisterPage />
+      <MemoryRouter initialEntries={["/register"]}>
+        <Routes>
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/onboarding/personal" element={<div data-testid="onboarding-page">Onboarding Page</div>} />
+        </Routes>
       </MemoryRouter>
     );
 
@@ -115,31 +118,14 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
       });
     });
 
-    // Should transition to Verify Email screen (Section 3.1)
-    expect(await screen.findByRole("heading", { name: /^Verify your email address$/i })).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /We sent a verification link to the email address you entered\. Verify your email to activate your Pollwise account\./i
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByText("john.doe@example.com")).toBeInTheDocument();
-    expect(screen.getByText(/spam/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Resend Verification Email/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Change Email Address/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Return to Sign In/i })).toHaveAttribute("href", "/login");
+    // Should transition directly to personal onboarding
+    expect(await screen.findByTestId("onboarding-page")).toBeInTheDocument();
   });
 
-  it("handles Change Email Address by returning to form with fields intact", async () => {
-    vi.spyOn(apiClient, "registerPersonal").mockResolvedValueOnce({
-      id: "user-123",
-      email: "typo@example.com",
-      display_name: "John Doe",
-      email_verified: false,
-      account_status: "pending_verification",
-      account_type: "personal",
-      is_platform_admin: false,
-      created_at: new Date().toISOString(),
-    });
+  it("displays error with sign-in link when email already exists", async () => {
+    vi.spyOn(apiClient, "registerPersonal").mockRejectedValueOnce(
+      new Error("An account with this email address already exists.")
+    );
 
     render(
       <MemoryRouter>
@@ -150,55 +136,7 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
     fireEvent.change(screen.getByPlaceholderText("Alice"), { target: { value: "John" } });
     fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "Doe" } });
     fireEvent.change(screen.getByPlaceholderText("Enter your email address"), {
-      target: { value: "typo@example.com" },
-    });
-    fireEvent.change(screen.getByPlaceholderText(/^Enter your password$/i), {
-      target: { value: "SecretPassword123!" },
-    });
-    fireEvent.change(screen.getByPlaceholderText(/^Re-enter your password$/i), {
-      target: { value: "SecretPassword123!" },
-    });
-    fireEvent.click(screen.getByRole("checkbox"));
-
-    fireEvent.click(screen.getByRole("button", { name: /^Create Personal Account$/i }));
-
-    // On verification screen
-    const changeEmailBtn = await screen.findByRole("button", { name: /Change Email Address/i });
-    fireEvent.click(changeEmailBtn);
-
-    // Form should be visible again with previous values intact
-    expect(await screen.findByRole("heading", { name: /Create an Account/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Alice")).toHaveValue("John");
-    expect(screen.getByPlaceholderText("Smith")).toHaveValue("Doe");
-    expect(screen.getByPlaceholderText("Enter your email address")).toHaveValue("typo@example.com");
-  });
-
-  it("handles Resend Verification Email and enters cooldown countdown", async () => {
-    vi.spyOn(apiClient, "registerPersonal").mockResolvedValueOnce({
-      id: "user-123",
-      email: "resend.user@example.com",
-      display_name: "Resend User",
-      email_verified: false,
-      account_status: "pending_verification",
-      account_type: "personal",
-      is_platform_admin: false,
-      created_at: new Date().toISOString(),
-    });
-
-    const resendSpy = vi.spyOn(apiClient, "resendVerification").mockResolvedValueOnce({
-      message: "A fresh verification link has been sent.",
-    });
-
-    render(
-      <MemoryRouter>
-        <RegisterPage />
-      </MemoryRouter>
-    );
-
-    fireEvent.change(screen.getByPlaceholderText("Alice"), { target: { value: "Resend" } });
-    fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "User" } });
-    fireEvent.change(screen.getByPlaceholderText("Enter your email address"), {
-      target: { value: "resend.user@example.com" },
+      target: { value: "existing@example.com" },
     });
     fireEvent.change(screen.getByPlaceholderText(/^Enter your password$/i), {
       target: { value: "SecretPassword123!" },
@@ -209,15 +147,8 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: /^Create Personal Account$/i }));
 
-    const resendBtn = await screen.findByRole("button", { name: /Resend Verification Email/i });
-    fireEvent.click(resendBtn);
-
-    await waitFor(() => {
-      expect(resendSpy).toHaveBeenCalledWith("resend.user@example.com");
-    });
-
-    expect(await screen.findByText(/A fresh verification link has been sent/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Resend available in/i })).toBeDisabled();
+    expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Sign in to your existing account/i })).toHaveAttribute("href", "/login");
   });
 
   it("VerifyEmailPage links verified personal account to /onboarding/personal", async () => {

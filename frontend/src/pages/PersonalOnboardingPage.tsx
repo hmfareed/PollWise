@@ -69,13 +69,6 @@ export const PersonalOnboardingPage: React.FC = () => {
 
   const hasMarkedCompletedRef = useRef(false);
 
-  // Redirect unverified users to verify email page
-  useEffect(() => {
-    if (user && !user.email_verified) {
-      navigate("/verify-email", { replace: true });
-    }
-  }, [user, navigate]);
-
   // Load existing onboarding progress on mount
   useEffect(() => {
     let isMounted = true;
@@ -384,10 +377,6 @@ export const PersonalOnboardingPage: React.FC = () => {
         </div>
       </div>
     );
-  }
-
-  if (user && !user.email_verified) {
-    return null;
   }
 
   return (

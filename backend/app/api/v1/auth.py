@@ -41,11 +41,13 @@ logger = logging.getLogger(__name__)
 )
 async def register(
     req: RegisterRequest,
+    request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_identity_session),
 ) -> ApiResponse[UserResponse]:
-    """Register a new user account."""
+    """Register a new user account and establish authenticated session."""
     user, raw_token = await AuthService.register(db, req)
-    logger.info("[DEV] Email verification link for %s: http://localhost:5173/verify-email?token=%s", user.email_normalized, raw_token)
+    await AuthService.create_session(db, user, request, response)
     return ApiResponse(
         data=AuthService.serialize_user(user, raw_token=raw_token),
         error=None,
@@ -59,11 +61,13 @@ async def register(
 )
 async def register_personal(
     req: PersonalRegisterRequest,
+    request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_identity_session),
 ) -> ApiResponse[UserResponse]:
-    """Register a new personal user account."""
+    """Register a new personal user account and establish authenticated session."""
     user, raw_token = await PersonalOnboardingService.register_personal(db, req)
-    logger.info("[DEV] Email verification link for %s: http://localhost:5173/verify-email?token=%s", user.email_normalized, raw_token)
+    await AuthService.create_session(db, user, request, response)
     return ApiResponse(
         data=AuthService.serialize_user(user, raw_token=raw_token),
         error=None,

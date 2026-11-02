@@ -70,7 +70,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
     vi.restoreAllMocks();
   });
 
-  it("redirects unverified user to /verify-email", async () => {
+  it("renders Welcome step directly without redirecting to verify-email", async () => {
     vi.spyOn(apiClient, "getPersonalOnboarding").mockResolvedValueOnce({
       id: "onb-1",
       user_id: "user-abc-123",
@@ -80,7 +80,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
 
     renderWithProviders({ email_verified: false });
 
-    expect(await screen.findByTestId("verify-email-screen")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Welcome to Pollwise/i })).toBeInTheDocument();
   });
 
   it("renders Welcome step (Step 1) and navigates to Profile setup on Get Started", async () => {
