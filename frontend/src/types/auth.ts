@@ -14,6 +14,8 @@ export interface User {
   preferred_language?: string | null;
   mfa_enabled?: boolean;
   account_type?: "personal" | "institution";
+  verification_token?: string | null;
+  verification_url?: string | null;
 }
 
 export interface MembershipSummary {

@@ -178,7 +178,11 @@ export const apiClient = {
   verifyEmail: (token: string) =>
     fetchApi<User>("/auth/verify-email", { method: "POST", body: JSON.stringify({ token }) }),
   resendVerification: (email: string) =>
-    fetchApi<{ message: string }>("/auth/resend-verification", {
+    fetchApi<{
+      message: string;
+      verification_token?: string | null;
+      verification_url?: string | null;
+    }>("/auth/resend-verification", {
       method: "POST",
       body: JSON.stringify({ email }),
     }),

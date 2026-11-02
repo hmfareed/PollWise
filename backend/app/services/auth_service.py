@@ -374,7 +374,13 @@ class AuthService:
         await db.commit()
 
     @classmethod
-    def serialize_user(cls, user: User) -> UserResponse:
+    def serialize_user(cls, user: User, raw_token: str | None = None) -> UserResponse:
+        verification_token = None
+        verification_url = None
+        if raw_token and not settings.is_production:
+            verification_token = raw_token
+            verification_url = f"http://localhost:5173/verify-email?token={raw_token}"
+
         return UserResponse(
             id=user.id,
             email=user.email_normalized,
@@ -391,6 +397,8 @@ class AuthService:
             preferred_language=user.preferred_language or "en",
             mfa_enabled=user.mfa_enabled if user.mfa_enabled is not None else False,
             account_type=user.account_type or "personal",
+            verification_token=verification_token,
+            verification_url=verification_url,
         )
 
     @classmethod

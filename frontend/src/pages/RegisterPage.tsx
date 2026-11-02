@@ -60,6 +60,7 @@ export const RegisterPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [devVerifyUrl, setDevVerifyUrl] = useState<string | null>(null);
 
   // Resend state
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -123,8 +124,9 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      let registeredUser: any;
       if (accountType === "institution") {
-        await apiClient.register({
+        registeredUser = await apiClient.register({
           account_type: "institution",
           first_name: trimmedFirstName,
           last_name: trimmedLastName,
@@ -136,7 +138,7 @@ export const RegisterPage: React.FC = () => {
           terms_accepted: true,
         });
       } else {
-        await apiClient.registerPersonal({
+        registeredUser = await apiClient.registerPersonal({
           first_name: trimmedFirstName,
           last_name: trimmedLastName,
           email: trimmedEmail,
@@ -146,6 +148,11 @@ export const RegisterPage: React.FC = () => {
       }
 
       setRegisteredEmail(trimmedEmail);
+      if (registeredUser?.verification_url) {
+        setDevVerifyUrl(registeredUser.verification_url);
+      } else if (registeredUser?.verification_token) {
+        setDevVerifyUrl(`/verify-email?token=${registeredUser.verification_token}`);
+      }
       setIsRegistered(true);
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please check your information.");
@@ -160,6 +167,11 @@ export const RegisterPage: React.FC = () => {
     try {
       const res = await apiClient.resendVerification(registeredEmail);
       setResendMessage(res.message || "A fresh verification link has been sent to your email.");
+      if (res.verification_url) {
+        setDevVerifyUrl(res.verification_url);
+      } else if (res.verification_token) {
+        setDevVerifyUrl(`/verify-email?token=${res.verification_token}`);
+      }
       setResendCooldown(60);
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
@@ -206,6 +218,27 @@ export const RegisterPage: React.FC = () => {
             <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2 text-left">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
               <span>{resendMessage}</span>
+            </div>
+          )}
+
+          {devVerifyUrl && (
+            <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-left">
+              <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs uppercase tracking-wider">
+                <CheckCircle2 className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                <span>Local Development Mode</span>
+              </div>
+              <p className="text-xs text-amber-800 mt-1.5 leading-relaxed">
+                External email delivery is not configured in local development. Click the button below to verify your email address immediately:
+              </p>
+              <div className="mt-3">
+                <a
+                  href={devVerifyUrl}
+                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#0055FF] hover:bg-blue-600 text-white font-semibold text-xs transition-colors shadow-sm"
+                >
+                  <span>Verify Email Instantly &amp; Continue →</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
+              </div>
             </div>
           )}
 

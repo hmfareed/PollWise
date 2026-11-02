@@ -126,6 +126,8 @@ class UserResponse(BaseModel):
     preferred_language: str | None = "en"
     mfa_enabled: bool = False
     account_type: str = "personal"
+    verification_token: str | None = None
+    verification_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

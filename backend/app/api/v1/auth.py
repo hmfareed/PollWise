@@ -1,6 +1,10 @@
+import logging
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.dependencies import get_current_user, get_token_from_request
 from app.core.rate_limit import rate_limit_login
 from app.db.session import get_election_session, get_identity_session
@@ -29,6 +33,7 @@ from app.services.personal_onboarding_service import PersonalOnboardingService
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Identity"])
 users_router = APIRouter(prefix="/users", tags=["User Profile & Onboarding"])
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -39,9 +44,10 @@ async def register(
     db: AsyncSession = Depends(get_identity_session),
 ) -> ApiResponse[UserResponse]:
     """Register a new user account."""
-    user, _ = await AuthService.register(db, req)
+    user, raw_token = await AuthService.register(db, req)
+    logger.info("[DEV] Email verification link for %s: http://localhost:5173/verify-email?token=%s", user.email_normalized, raw_token)
     return ApiResponse(
-        data=AuthService.serialize_user(user),
+        data=AuthService.serialize_user(user, raw_token=raw_token),
         error=None,
     )
 
@@ -56,9 +62,10 @@ async def register_personal(
     db: AsyncSession = Depends(get_identity_session),
 ) -> ApiResponse[UserResponse]:
     """Register a new personal user account."""
-    user, _ = await PersonalOnboardingService.register_personal(db, req)
+    user, raw_token = await PersonalOnboardingService.register_personal(db, req)
+    logger.info("[DEV] Email verification link for %s: http://localhost:5173/verify-email?token=%s", user.email_normalized, raw_token)
     return ApiResponse(
-        data=AuthService.serialize_user(user),
+        data=AuthService.serialize_user(user, raw_token=raw_token),
         error=None,
     )
 
@@ -126,9 +133,17 @@ async def resend_verification(
     db: AsyncSession = Depends(get_identity_session),
 ) -> ApiResponse[dict]:
     """Resend email verification link. Always returns generic success to prevent email enumeration."""
-    await AuthService.resend_verification(db, req.email)
+    raw_token = await AuthService.resend_verification(db, req.email)
+    data: dict[str, Any] = {
+        "message": "If this account requires verification, a new confirmation link has been sent."
+    }
+    if raw_token and not settings.is_production:
+        logger.info("[DEV] Resent verification link for %s: http://localhost:5173/verify-email?token=%s", req.email, raw_token)
+        data["verification_token"] = raw_token
+        data["verification_url"] = f"http://localhost:5173/verify-email?token={raw_token}"
+
     return ApiResponse(
-        data={"message": "If this account requires verification, a new confirmation link has been sent."},
+        data=data,
         error=None,
     )
 
