@@ -45,6 +45,12 @@ export const AppShell: React.FC = () => {
 
   const isLandingPage = location.pathname === "/";
 
+  // Suppress marketing footer on onboarding flows, voter dashboard, and voting booth
+  const hideFooter =
+    location.pathname.startsWith("/onboarding") ||
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.includes("/vote");
+
   const isPersonalUser = Boolean(
     isAuthenticated && user && user.account_type !== "institution"
   );
@@ -586,36 +592,38 @@ export const AppShell: React.FC = () => {
       {/* ==================================================================== */}
       {/* FOOTER                                                               */}
       {/* ==================================================================== */}
-      <footer className="border-t border-slate-100 bg-white py-8 text-xs text-slate-500 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-blue-600 flex items-center justify-center p-1 text-white shadow-xs">
-              <img
-                src="/pollwise-emblem.png"
-                alt="PollWise Emblem"
-                className="h-full w-auto object-contain"
-              />
+      {!hideFooter && (
+        <footer className="border-t border-slate-100 bg-white py-8 text-xs text-slate-500 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-md bg-blue-600 flex items-center justify-center p-1 text-white shadow-xs">
+                <img
+                  src="/pollwise-emblem.png"
+                  alt="PollWise Emblem"
+                  className="h-full w-auto object-contain"
+                />
+              </div>
+              <p className="font-medium text-slate-700">
+                © {CURRENT_YEAR} PollWise — Institutional Voting Platform.
+              </p>
             </div>
-            <p className="font-medium text-slate-700">
-              © {CURRENT_YEAR} PollWise — Institutional Voting Platform.
-            </p>
+            <div className="flex flex-wrap gap-6 text-slate-500">
+              <Link to="/audit" className="hover:text-blue-600 transition">
+                Security Protocol
+              </Link>
+              <Link to="/organizations" className="hover:text-blue-600 transition">
+                Institutions
+              </Link>
+              <Link to="/admin" className="hover:text-blue-600 transition">
+                Operations Console
+              </Link>
+              <span className="hover:text-blue-600 transition cursor-pointer">
+                Privacy & Governance
+              </span>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-6 text-slate-500">
-            <Link to="/audit" className="hover:text-blue-600 transition">
-              Security Protocol
-            </Link>
-            <Link to="/organizations" className="hover:text-blue-600 transition">
-              Institutions
-            </Link>
-            <Link to="/admin" className="hover:text-blue-600 transition">
-              Operations Console
-            </Link>
-            <span className="hover:text-blue-600 transition cursor-pointer">
-              Privacy & Governance
-            </span>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 };

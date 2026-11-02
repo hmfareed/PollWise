@@ -93,4 +93,48 @@ describe("AppShell Component", () => {
     expect(screen.getByText(/Counts\./i)).toBeInTheDocument();
     expect(screen.getByTestId("auth-card-content")).toBeInTheDocument();
   });
+
+  it("renders footer on root landing page", () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={["/"]}>
+            <AppShell />
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    expect(
+      screen.getByText(/PollWise — Institutional Voting Platform\./i)
+    ).toBeInTheDocument();
+    expect(screen.getByText("Security Protocol")).toBeInTheDocument();
+  });
+
+  it("does not render footer on onboarding routes", () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={["/onboarding/personal"]}>
+            <Routes>
+              <Route path="/" element={<AppShell />}>
+                <Route
+                  path="onboarding/personal"
+                  element={<div data-testid="onboarding-step">Welcome Step</div>}
+                />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByTestId("onboarding-step")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/PollWise — Institutional Voting Platform\./i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Security Protocol")).not.toBeInTheDocument();
+  });
 });
