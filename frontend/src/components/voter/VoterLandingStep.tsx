@@ -1,5 +1,6 @@
 import React from "react";
-import { Vote, ShieldCheck, Clock, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Vote, ShieldCheck, Clock, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -10,6 +11,8 @@ interface VoterLandingStepProps {
   opensAt?: string | null;
   closesAt?: string | null;
   isOpen: boolean;
+  electionStatus?: string;
+  electionId?: string;
   onStart: () => void;
 }
 
@@ -19,6 +22,8 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
   opensAt,
   closesAt,
   isOpen,
+  electionStatus = "draft",
+  electionId,
   onStart,
 }) => {
   return (
@@ -64,6 +69,43 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
               </div>
             </div>
           </div>
+
+          {!isOpen && (
+            <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs space-y-2">
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>
+                  {electionStatus === "draft"
+                    ? "Election In Draft Preparation"
+                    : electionStatus === "scheduled"
+                    ? "Voting Scheduled But Not Yet Open"
+                    : electionStatus === "closed"
+                    ? "Election Concluded"
+                    : "Voting Currently Unavailable"}
+                </span>
+              </div>
+              <p className="text-muted-foreground dark:text-amber-300/80 leading-relaxed">
+                {electionStatus === "draft"
+                  ? "This election is currently in draft preparation and has not yet been opened for voting. As an administrator, you can open it in the election controls to begin accepting ballots."
+                  : electionStatus === "scheduled"
+                  ? `This election is scheduled to open on ${opensAt ? new Date(opensAt).toLocaleString() : "the scheduled date"}.`
+                  : electionStatus === "closed"
+                  ? "The voting window for this election has closed. No further ballots may be submitted."
+                  : "Voting is not currently active for this election."}
+              </p>
+              {electionId && (
+                <div className="pt-1">
+                  <Link
+                    to={`/elections/${electionId}`}
+                    className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <span>Open Election Management Controls</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="text-xs text-muted-foreground text-center">
             You will identify yourself with your authorized institutional credentials, verify an on-screen code, and cast your ballot.

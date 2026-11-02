@@ -261,6 +261,8 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
           opensAt={election.opens_at}
           closesAt={election.closes_at}
           isOpen={isOpen}
+          electionStatus={election.status}
+          electionId={id}
           onStart={() => setPhase("identifier")}
         />
       )}
