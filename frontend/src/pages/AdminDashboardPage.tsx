@@ -496,9 +496,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
           {/* ==================================================================== */}
           {/* ROW 3: ELECTION OVERVIEW, STATUS DONUT, UPCOMING DEADLINES           */}
           {/* ==================================================================== */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* 1. Election Overview Line Chart - stretched across 6 columns */}
-            <div className="lg:col-span-6 flex flex-col">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* 1. Election Overview Line Chart */}
+            <div className="lg:col-span-5 flex flex-col">
               <ElectionOverviewChart
                 overview={dashboardSummary?.election_overview}
                 period={dashboardPeriod}
@@ -507,8 +507,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
               />
             </div>
 
-            {/* 2. Election Status Donut Card */}
-            <div className="lg:col-span-3 flex flex-col">
+            {/* 2. Election Status Donut Card - stretched to the left closer to Overview */}
+            <div className="lg:col-span-4 flex flex-col">
               <ElectionStatusDonut
                 statusData={dashboardSummary?.election_status}
                 isLoading={isSummaryLoading}
