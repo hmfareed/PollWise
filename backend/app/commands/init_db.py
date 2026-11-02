@@ -8,6 +8,8 @@ Usage:
 import asyncio
 import logging
 
+from sqlalchemy import text
+
 import app.models.ballot
 import app.models.election
 import app.models.identity  # noqa: F401
@@ -25,6 +27,23 @@ async def init_databases():
     logger.info("Creating tables for identity_db...")
     async with identity_engine.begin() as conn:
         await conn.run_sync(IdentityBase.metadata.create_all)
+        # Ensure user columns exist for personal onboarding if table was pre-existing
+        for col_name, col_type in [
+            ("first_name", "VARCHAR(100)"),
+            ("last_name", "VARCHAR(100)"),
+            ("phone_number", "VARCHAR(50)"),
+            ("profile_image_url", "VARCHAR(512)"),
+            ("preferred_language", "VARCHAR(10) DEFAULT 'en' NOT NULL"),
+            ("country", "VARCHAR(100)"),
+            ("mfa_enabled", "BOOLEAN DEFAULT FALSE NOT NULL"),
+            ("account_type", "VARCHAR(50) DEFAULT 'personal' NOT NULL"),
+        ]:
+            try:
+                await conn.execute(
+                    text(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type};")
+                )
+            except Exception:
+                pass
     logger.info("identity_db tables created successfully.")
 
     # 2. Election DB

@@ -78,11 +78,21 @@ export async function fetchApi<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include", // Transmits session cookies safely
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include", // Transmits session cookies safely
+    });
+  } catch (err: any) {
+    throw new ApiError(
+      "NETWORK_ERROR",
+      "Unable to connect to the Pollwise server. Please ensure the backend is running at http://localhost:8000 and try again.",
+      0,
+      err
+    );
+  }
 
   let payload: ApiResponse<T>;
   try {
