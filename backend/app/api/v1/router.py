@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.ballot_box import router as ballot_box_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.auth import users_router
+from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.elections import router as elections_router
 from app.api.v1.eligibility import router as eligibility_router
 from app.api.v1.health import router as health_router
@@ -16,6 +17,7 @@ api_v1_router.include_router(auth_router)
 api_v1_router.include_router(users_router)
 api_v1_router.include_router(invitations_router)
 api_v1_router.include_router(organizations_router)
+api_v1_router.include_router(dashboard_router)
 api_v1_router.include_router(elections_router)
 api_v1_router.include_router(eligibility_router)
 api_v1_router.include_router(results_router)
