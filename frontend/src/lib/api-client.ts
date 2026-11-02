@@ -42,6 +42,21 @@ import type {
 } from "../types/ballot";
 import type { ElectionResult } from "../types/results";
 import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
+import type {
+  BallotPosition,
+  BallotSubmissionReceipt,
+  TerminalHeartbeatResponse,
+  VoterAuthConfig,
+  VoterAuthConfigUpdate,
+  VoterBallotStructure,
+  VoterCSVPreviewReport,
+  VoterChallengeResponse,
+  VoterRecord,
+  VoterSelectionInput,
+  VoterVerifyResponse,
+  VotingCentre,
+  VotingTerminal,
+} from "../types/voter-participation";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 const BALLOT_BOX_URL = import.meta.env.VITE_BALLOT_BOX_URL || "http://localhost:8000/ballot-box/v1";
@@ -385,4 +400,154 @@ export const apiClient = {
       `/elections/${electionId}/publish`,
       { method: "POST" }
     ),
+
+  // Independent Voter Authentication & Participation
+  getVoterAuthConfig: (electionId: string) =>
+    fetchApi<VoterAuthConfig>(`/elections/${electionId}/voter-auth-config`),
+  updateVoterAuthConfig: (electionId: string, payload: VoterAuthConfigUpdate) =>
+    fetchApi<VoterAuthConfig>(`/elections/${electionId}/voter-auth-config`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  lockVoterAuthConfig: (electionId: string) =>
+    fetchApi<VoterAuthConfig>(`/elections/${electionId}/voter-auth-config/lock`, {
+      method: "POST",
+    }),
+  previewVoterRollCSV: async (electionId: string, file: File): Promise<VoterCSVPreviewReport> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE_URL}/elections/${electionId}/voters/preview`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new ApiError(err?.error?.code || "CSV_PREVIEW_FAILED", err?.error?.message || "Failed to preview CSV", res.status);
+    }
+    const json = await res.json();
+    return json.data;
+  },
+  importVoterRollCSV: async (electionId: string, file: File): Promise<{ imported_count: number }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE_URL}/elections/${electionId}/voters/import`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new ApiError(err?.error?.code || "CSV_IMPORT_FAILED", err?.error?.message || "Failed to import CSV", res.status);
+    }
+    const json = await res.json();
+    return json.data;
+  },
+  listVoterRoll: (
+    electionId: string,
+    page: number = 1,
+    pageSize: number = 50,
+    query?: string,
+    statusFilter?: string
+  ) => {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+    if (query) params.append("query", query);
+    if (statusFilter) params.append("eligibility_status", statusFilter);
+    return fetchApi<VoterRecord[]>(`/elections/${electionId}/voters?${params.toString()}`);
+  },
+  addSingleVoter: (
+    electionId: string,
+    payload: { identifier: string; voter_group?: string; eligibility_status?: string }
+  ) =>
+    fetchApi<VoterRecord>(`/elections/${electionId}/voters`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  deleteVoter: (electionId: string, voterId: string) =>
+    fetchApi<{ deleted: boolean }>(`/elections/${electionId}/voters/${voterId}`, {
+      method: "DELETE",
+    }),
+
+  // Voter Auth (On-screen Challenge)
+  requestVoterChallenge: (
+    electionId: string,
+    identifier: string,
+    terminalToken?: string
+  ) =>
+    fetchApi<VoterChallengeResponse>(`/elections/${electionId}/voter-auth/request-challenge`, {
+      method: "POST",
+      headers: terminalToken ? { "X-Terminal-Token": terminalToken } : undefined,
+      body: JSON.stringify({ identifier, terminal_token: terminalToken }),
+    }),
+  verifyVoterChallenge: (
+    electionId: string,
+    challengeId: string,
+    enteredOtp: string,
+    terminalToken?: string
+  ) =>
+    fetchApi<VoterVerifyResponse>(`/elections/${electionId}/voter-auth/verify-challenge`, {
+      method: "POST",
+      headers: terminalToken ? { "X-Terminal-Token": terminalToken } : undefined,
+      body: JSON.stringify({ challenge_id: challengeId, entered_otp: enteredOtp }),
+    }),
+  endVoterSession: (electionId: string, sessionToken: string) =>
+    fetchApi<{ ended: boolean }>(`/elections/${electionId}/voter-auth/end-session`, {
+      method: "POST",
+      headers: { "X-Voting-Session": sessionToken },
+    }),
+
+  // Voter Ballot & Submission
+  getVoterBallot: (electionId: string, sessionToken: string) =>
+    fetchApi<VoterBallotStructure>(`/elections/${electionId}/ballot`, {
+      headers: { "X-Voting-Session": sessionToken },
+    }),
+  saveVoterBallotDraft: (electionId: string, sessionToken: string, draftPayload: unknown) =>
+    fetchApi<{ saved: boolean }>(`/elections/${electionId}/ballot/draft`, {
+      method: "PUT",
+      headers: { "X-Voting-Session": sessionToken },
+      body: JSON.stringify(draftPayload),
+    }),
+  submitVoterBallot: (
+    electionId: string,
+    sessionToken: string,
+    selections: VoterSelectionInput[],
+    idempotencyKey: string
+  ) =>
+    fetchApi<BallotSubmissionReceipt>(`/elections/${electionId}/ballot/submit`, {
+      method: "POST",
+      headers: { "X-Voting-Session": sessionToken },
+      body: JSON.stringify({ selections, idempotency_key: idempotencyKey }),
+    }),
+
+  // Voting Centres & Terminal Management
+  createVotingCentre: (payload: { institution_id: string; name: string; location_description?: string }) =>
+    fetchApi<VotingCentre>("/voting-centres", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  listVotingCentres: (institutionId: string) =>
+    fetchApi<VotingCentre[]>(`/voting-centres?institution_id=${institutionId}`),
+  registerVotingTerminal: (centreId: string, terminalName: string, authorizedElectionId?: string) =>
+    fetchApi<VotingTerminal>(`/voting-centres/${centreId}/terminals`, {
+      method: "POST",
+      body: JSON.stringify({
+        terminal_name: terminalName,
+        authorized_election_id: authorizedElectionId,
+      }),
+    }),
+  listVotingTerminals: (centreId: string) =>
+    fetchApi<VotingTerminal[]>(`/voting-centres/${centreId}/terminals`),
+  terminalHeartbeat: (terminalId: string, terminalToken: string, currentStatus: string) =>
+    fetchApi<TerminalHeartbeatResponse>(`/voting-terminals/${terminalId}/heartbeat`, {
+      method: "POST",
+      headers: { "X-Terminal-Token": terminalToken },
+      body: JSON.stringify({ current_status: currentStatus }),
+    }),
+  supervisorResetTerminal: (terminalId: string) =>
+    fetchApi<{ reset_triggered: boolean }>(`/voting-terminals/${terminalId}/reset`, {
+      method: "POST",
+    }),
 };
