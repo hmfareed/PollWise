@@ -19,6 +19,14 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
   onOpenImportModal,
 }) => {
   const queryClient = useQueryClient();
+
+  const { data: authConfig } = useQuery({
+    queryKey: ["voter-auth-config", electionId],
+    queryFn: () => apiClient.getVoterAuthConfig(electionId),
+  });
+
+  const effectiveIdentifierLabel = authConfig?.identifier_label || identifierLabel;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -68,7 +76,7 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newIdentifier.trim()) {
-      setAddError(`Please enter a valid ${identifierLabel}`);
+      setAddError(`Please enter a valid ${effectiveIdentifierLabel}`);
       return;
     }
     addVoterMutation.mutate({
@@ -98,7 +106,7 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={onOpenImportModal}
-                className="gap-1.5 text-xs h-9"
+                className="gap-1.5 text-xs h-9 cursor-pointer"
               >
                 <UploadCloud className="h-3.5 w-3.5" />
                 Import CSV
@@ -109,7 +117,7 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
               type="button"
               size="sm"
               onClick={() => setShowAddModal(true)}
-              className="gap-1.5 text-xs h-9 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              className="gap-1.5 text-xs h-9 bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer"
             >
               <UserPlus className="h-3.5 w-3.5" />
               Add Voter
@@ -125,7 +133,7 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search by ${identifierLabel} or group...`}
+              placeholder={`Search by ${effectiveIdentifierLabel} or group...`}
               className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -155,7 +163,7 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
             <Users className="h-9 w-9 text-muted-foreground/40 mx-auto" />
             <p className="text-sm font-semibold text-foreground">No voters registered on this roll</p>
             <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              Add individual {identifierLabel} records or import a CSV roll to authorize eligible voters.
+              Add individual {effectiveIdentifierLabel} records or import a CSV roll to authorize eligible voters.
             </p>
           </div>
         ) : (
@@ -163,7 +171,7 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
             <table className="w-full text-left text-xs">
               <thead className="bg-muted/40 text-muted-foreground font-semibold border-b border-border">
                 <tr>
-                  <th className="px-4 py-3">{identifierLabel}</th>
+                  <th className="px-4 py-3">{effectiveIdentifierLabel}</th>
                   <th className="px-4 py-3">Group / Unit</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Source</th>
@@ -239,13 +247,13 @@ export const VoterRosterTable: React.FC<VoterRosterTableProps> = ({
               <form onSubmit={handleAddSubmit} className="space-y-4 text-xs">
                 <div className="space-y-1.5">
                   <label className="font-semibold text-foreground block">
-                    {identifierLabel} *
+                    {effectiveIdentifierLabel} *
                   </label>
                   <input
                     type="text"
                     value={newIdentifier}
                     onChange={(e) => setNewIdentifier(e.target.value)}
-                    placeholder={`Enter ${identifierLabel}`}
+                    placeholder={`Enter ${effectiveIdentifierLabel}`}
                     required
                     className="w-full p-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   />

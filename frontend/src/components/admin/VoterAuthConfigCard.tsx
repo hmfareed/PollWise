@@ -33,6 +33,7 @@ export const VoterAuthConfigCard: React.FC<VoterAuthConfigCardProps> = ({
   const [allowResume, setAllowResume] = useState<boolean>(true);
   const [showLockConfirm, setShowLockConfirm] = useState<boolean>(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (config) {
@@ -55,21 +56,34 @@ export const VoterAuthConfigCard: React.FC<VoterAuthConfigCardProps> = ({
       allow_session_resume: boolean;
     }) => apiClient.updateVoterAuthConfig(electionId, payload),
     onSuccess: (updated) => {
+      setActionError(null);
       queryClient.setQueryData(["voter-auth-config", electionId], updated);
+      queryClient.invalidateQueries({ queryKey: ["voter-auth-config", electionId] });
       setActionSuccess("Voter authentication configuration saved successfully.");
       if (onConfigSaved) onConfigSaved(updated);
       setTimeout(() => setActionSuccess(null), 4000);
+    },
+    onError: (err: unknown) => {
+      setActionSuccess(null);
+      const msg = err instanceof Error ? err.message : "Failed to save configuration.";
+      setActionError(msg);
     },
   });
 
   const lockMutation = useMutation({
     mutationFn: () => apiClient.lockVoterAuthConfig(electionId),
     onSuccess: (locked) => {
+      setActionError(null);
       queryClient.setQueryData(["voter-auth-config", electionId], locked);
+      queryClient.invalidateQueries({ queryKey: ["voter-auth-config", electionId] });
       setShowLockConfirm(false);
       setActionSuccess("Configuration permanently locked.");
       if (onConfigSaved) onConfigSaved(locked);
       setTimeout(() => setActionSuccess(null), 4000);
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Failed to lock configuration.";
+      setActionError(msg);
     },
   });
 
@@ -84,6 +98,8 @@ export const VoterAuthConfigCard: React.FC<VoterAuthConfigCardProps> = ({
   const isLocked = !!config?.configuration_locked_at || isReadOnly;
 
   const handleSave = () => {
+    setActionError(null);
+    setActionSuccess(null);
     updateMutation.mutate({
       identifier_type: identifierType,
       identifier_label: identifierLabel,
@@ -125,6 +141,22 @@ export const VoterAuthConfigCard: React.FC<VoterAuthConfigCardProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-6 pt-5">
+        {actionError && (
+          <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-800 rounded-lg flex items-center justify-between text-xs text-red-800 dark:text-red-300">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-600 dark:text-red-400" />
+              <span>{actionError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-red-600 hover:text-red-800 dark:hover:text-red-200 text-xs font-semibold ml-2 cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {actionSuccess && (
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 rounded-lg flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -307,8 +339,11 @@ export const VoterAuthConfigCard: React.FC<VoterAuthConfigCardProps> = ({
               type="button"
               variant="destructive"
               size="sm"
-              onClick={() => setShowLockConfirm(true)}
-              className="gap-1.5 text-xs"
+              onClick={() => {
+                setActionError(null);
+                setShowLockConfirm(true);
+              }}
+              className="gap-1.5 text-xs font-semibold cursor-pointer"
             >
               <Lock className="w-3.5 h-3.5" />
               Lock Configuration
@@ -319,44 +354,79 @@ export const VoterAuthConfigCard: React.FC<VoterAuthConfigCardProps> = ({
               size="sm"
               onClick={handleSave}
               disabled={updateMutation.isPending}
-              className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+              className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold min-w-[150px] cursor-pointer"
             >
-              <Save className="w-3.5 h-3.5" />
-              Save Configuration
+              {updateMutation.isPending ? (
+                <>
+                  <Clock className="w-3.5 h-3.5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  Save Configuration
+                </>
+              )}
             </Button>
           </div>
         )}
 
-        {/* Lock Confirmation Modal */}
+        {/* Lock Confirmation Modal Overlay */}
         {showLockConfirm && (
-          <div className="p-4 rounded-xl border border-destructive/40 bg-destructive/10 space-y-3">
-            <div className="flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-              <div className="text-xs">
-                <p className="font-bold text-foreground">Lock Authentication Configuration?</p>
-                <p className="text-muted-foreground mt-0.5">
-                  Once locked, authentication identifier rules, labels, and skip policies cannot be modified. This ensures voter integrity before opening the voting window.
-                </p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-sm text-foreground">Lock Authentication Configuration?</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Once locked, authentication identifier rules, labels, and skip policies cannot be modified. This ensures voter integrity before opening the voting window.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowLockConfirm(false)}
-                className="text-xs h-7 px-3"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => lockMutation.mutate()}
-                disabled={lockMutation.isPending}
-                className="text-xs h-7 px-3 font-semibold"
-              >
-                Confirm Lock
-              </Button>
+
+              {actionError && (
+                <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-800 rounded-lg text-xs text-red-800 dark:text-red-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{actionError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setShowLockConfirm(false);
+                    setActionError(null);
+                  }}
+                  disabled={lockMutation.isPending}
+                  className="text-xs h-8 px-4 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => lockMutation.mutate()}
+                  disabled={lockMutation.isPending}
+                  className="text-xs h-8 px-4 font-semibold gap-1.5 cursor-pointer"
+                >
+                  {lockMutation.isPending ? (
+                    <>
+                      <Clock className="w-3.5 h-3.5 animate-spin" />
+                      Locking...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      Confirm Lock
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         )}

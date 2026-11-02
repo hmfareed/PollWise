@@ -20,7 +20,20 @@ from app.db.session import ballot_engine, election_engine, identity_engine
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for graceful startup and shutdown."""
-    # Startup: ensure logging and configuration validation
+    if settings.is_development:
+        from app.db.base import BallotBase, ElectionBase, IdentityBase
+        import app.models.identity  # noqa: F401
+        import app.models.election  # noqa: F401
+        import app.models.ballot  # noqa: F401
+        import app.models.voter_auth  # noqa: F401
+
+        async with identity_engine.begin() as conn:
+            await conn.run_sync(IdentityBase.metadata.create_all)
+        async with election_engine.begin() as conn:
+            await conn.run_sync(ElectionBase.metadata.create_all)
+        async with ballot_engine.begin() as conn:
+            await conn.run_sync(BallotBase.metadata.create_all)
+
     yield
     # Shutdown: cleanly dispose all connection pools
     await identity_engine.dispose()
@@ -45,7 +58,14 @@ def create_app() -> FastAPI:
         allow_origins=settings.allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "Idempotency-Key",
+            "X-Voting-Session",
+            "X-Terminal-Token",
+        ],
     )
 
     # Security headers and anti-caching middleware

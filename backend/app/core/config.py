@@ -77,6 +77,10 @@ class Settings(BaseSettings):
         return self.APP_ENV.lower() == "production"
 
     @property
+    def is_development(self) -> bool:
+        return self.APP_ENV.lower() == "development"
+
+    @property
     def is_testing(self) -> bool:
         return self.APP_ENV.lower() == "testing"
 

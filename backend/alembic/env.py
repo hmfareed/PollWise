@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 import app.models.ballot
 import app.models.election
 import app.models.identity  # noqa: F401
+import app.models.voter_auth  # noqa: F401
 from alembic import context
 from app.core.config import settings
 from app.db.base import BallotBase, ElectionBase, IdentityBase
