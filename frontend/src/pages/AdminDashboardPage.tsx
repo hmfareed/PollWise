@@ -44,6 +44,47 @@ import type { MemberDetail, Organization } from "../types/organization";
 import type { Election, AuditEvent } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
 import type { ElectionResult } from "../types/results";
+import { KPICard } from "../components/dashboard/KPICard";
+import { ElectionOverviewChart } from "../components/dashboard/ElectionOverviewChart";
+import { ElectionStatusDonut } from "../components/dashboard/ElectionStatusDonut";
+import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
+import { cn } from "../lib/utils";
+
+function formatDeadlineCountdown(deadlineType: string, deadlineAt: string): string {
+  const diffMs = new Date(deadlineAt).getTime() - Date.now();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  const isClose = deadlineType.toLowerCase().includes("close");
+  const verb = isClose ? "Closes" : "Starts";
+  if (diffDays <= 0) {
+    return `${verb} today`;
+  }
+  if (diffDays === 1) {
+    return `${verb} in 1 day`;
+  }
+  return `${verb} in ${diffDays} days`;
+}
+
+function formatRelativeTime(isoString: string): string {
+  const elapsedMs = Math.max(0, Date.now() - new Date(isoString).getTime());
+  const seconds = Math.floor(elapsedMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+  return "Just now";
+}
+
+function getActivityIcon(eventType: string) {
+  const type = eventType.toLowerCase();
+  if (type.includes("candidate")) return { icon: Users, bg: "bg-blue-100 text-blue-600" };
+  if (type.includes("voter") || type.includes("eligibility")) return { icon: ShieldCheck, bg: "bg-purple-100 text-purple-600" };
+  if (type.includes("schedule") || type.includes("calendar")) return { icon: Calendar, bg: "bg-amber-100 text-amber-600" };
+  if (type.includes("tally") || type.includes("result") || type.includes("report")) return { icon: BarChart3, bg: "bg-emerald-100 text-emerald-600" };
+  return { icon: Check, bg: "bg-emerald-100 text-emerald-600" };
+}
 
 interface AdminDashboardPageProps {
   initialTab?: string;
@@ -63,6 +104,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
 
   // Organization & Election filters
   const [selectedOrgId, setSelectedOrgId] = useState<string>("all");
+  const [dashboardPeriod, setDashboardPeriod] = useState<DashboardPeriod>("last_12_months");
   const [electionStatusFilter, setElectionStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -130,6 +172,14 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
   const { data: organizations } = useQuery<Organization[]>({
     queryKey: ["admin-organizations"],
     queryFn: apiClient.getOrganizations,
+  });
+
+  const activeOrgId = (selectedOrgId !== "all" && selectedOrgId) || organizations?.[0]?.id || "";
+
+  const { data: dashboardSummary, isLoading: isSummaryLoading } = useQuery<DashboardSummaryResponse>({
+    queryKey: ["dashboard-summary", activeOrgId, dashboardPeriod],
+    queryFn: () => apiClient.getDashboardSummary(activeOrgId, dashboardPeriod),
+    enabled: !!activeOrgId && activeTab === "dashboard",
   });
 
   // Effective election for sub-tabs
@@ -327,28 +377,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
   });
 
   // --------------------------------------------------------------------------
-  // Analytics & KPI Metrics Calculations (Sections 7.2 & 7.3)
+  // Analytics & Elections List Helpers
   // --------------------------------------------------------------------------
-  const pendingApprovals = elections?.filter((e) => e.status === "scheduled") || [];
-  const activeCount = elections?.filter((e) => e.status === "open").length || 0;
-  const scheduledCount = pendingApprovals.length;
-  const draftCount = elections?.filter((e) => e.status === "draft").length || 0;
-  const totalElections = elections?.length || 0;
-
-  // Aggregate candidate counts across all positions in the active election or estimate
-  const candidateCount = electionDetail?.positions?.reduce((sum, p) => sum + (p.candidates?.length || 0), 0) || 0;
-  const voterCount = eligibilityList?.length || 0;
-
-  // Status breakdown for Donut Chart
-  const statusCounts = {
-    draft: draftCount,
-    scheduled: scheduledCount,
-    open: activeCount,
-    closed: elections?.filter((e) => e.status === "closed").length || 0,
-    tallied: elections?.filter((e) => e.status === "tallied").length || 0,
-    published: elections?.filter((e) => e.status === "published").length || 0,
-  };
-
   // Filtered elections list for table
   const filteredElections = (elections || []).filter((elec) => {
     const matchesStatus = electionStatusFilter === "all" || elec.status === electionStatusFilter;
@@ -383,33 +413,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
       alert("Unable to format results for CSV export.");
     }
   };
-
-  // --------------------------------------------------------------------------
-  // SVG Donut Chart Geometry (Section 7.3)
-  // --------------------------------------------------------------------------
-  const radius = 38;
-  const circumference = 2 * Math.PI * radius;
-  const chartSegments = [
-    { key: "open", count: statusCounts.open, color: "#10b981", label: "Open" },
-    { key: "scheduled", count: statusCounts.scheduled, color: "#f59e0b", label: "Scheduled" },
-    { key: "closed", count: statusCounts.closed, color: "#3b82f6", label: "Closed" },
-    { key: "published", count: statusCounts.published, color: "#8b5cf6", label: "Published" },
-    { key: "draft", count: statusCounts.draft, color: "#94a3b8", label: "Draft" },
-  ];
-
-  let accumulatedLength = 0;
-  const donutSlices = chartSegments.map((seg) => {
-    const fraction = totalElections > 0 ? seg.count / totalElections : 0;
-    const strokeDash = fraction * circumference;
-    const strokeOffset = accumulatedLength;
-    accumulatedLength += strokeDash;
-    return {
-      ...seg,
-      strokeDash,
-      strokeOffset,
-      fraction,
-    };
-  });
 
   return (
     <div className="space-y-6">
@@ -449,123 +452,46 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
           </div>
 
           {/* ==================================================================== */}
-          {/* 4 TOP METRIC CARDS WITH SPARKLINES (Matching Mockup)                 */}
+          {/* 4 TOP METRIC CARDS WITH DYNAMIC REAL-TIME KPICARDS                  */}
           {/* ==================================================================== */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Elections */}
-            <Card className="p-5 bg-white border border-slate-200/80 shadow-xs hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Vote className="h-5 w-5" />
-                </div>
-                {/* Blue Sparkline SVG */}
-                <svg className="w-24 h-10 text-blue-500 overflow-visible" viewBox="0 0 100 40">
-                  <path
-                    d="M 0 35 Q 25 32, 45 22 T 75 18 T 100 5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-              <div className="mt-3">
-                <span className="text-xs font-medium text-slate-500">Total Elections</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-extrabold text-slate-900">{totalElections || 12}</span>
-                  <span className="text-xs font-semibold text-emerald-600 flex items-center">
-                    ↑ 20%
-                  </span>
-                </div>
-              </div>
-            </Card>
+            <KPICard
+              title="Total Elections"
+              value={dashboardSummary?.metrics.total_elections.value ?? 0}
+              changePct={dashboardSummary?.metrics.total_elections.change_pct}
+              icon={Vote}
+              colorScheme="blue"
+              sparklinePoints={dashboardSummary?.election_overview?.points?.map((p) => p.created)}
+              isLoading={isSummaryLoading}
+            />
 
-            {/* Eligible Voters */}
-            <Card className="p-5 bg-white border border-slate-200/80 shadow-xs hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <Users className="h-5 w-5" />
-                </div>
-                {/* Green Sparkline SVG */}
-                <svg className="w-24 h-10 text-emerald-500 overflow-visible" viewBox="0 0 100 40">
-                  <path
-                    d="M 0 32 Q 30 30, 50 20 T 80 18 T 100 8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-              <div className="mt-3">
-                <span className="text-xs font-medium text-slate-500">Eligible Voters</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-extrabold text-slate-900">{voterCount ? voterCount.toLocaleString() : "8,450"}</span>
-                  <span className="text-xs font-semibold text-emerald-600 flex items-center">
-                    ↑ 12%
-                  </span>
-                </div>
-              </div>
-            </Card>
+            <KPICard
+              title="Eligible Voters"
+              value={dashboardSummary?.metrics.eligible_voters.value ?? 0}
+              changePct={dashboardSummary?.metrics.eligible_voters.change_pct}
+              icon={Users}
+              colorScheme="emerald"
+              isLoading={isSummaryLoading}
+            />
 
-            {/* Registered Candidates */}
-            <Card className="p-5 bg-white border border-slate-200/80 shadow-xs hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="h-11 w-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                  <Trophy className="h-5 w-5" />
-                </div>
-                {/* Purple Sparkline SVG */}
-                <svg className="w-24 h-10 text-purple-500 overflow-visible" viewBox="0 0 100 40">
-                  <path
-                    d="M 0 35 Q 25 32, 55 24 T 80 20 T 100 6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-              <div className="mt-3">
-                <span className="text-xs font-medium text-slate-500">Registered Candidates</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-extrabold text-slate-900">{candidateCount || 86}</span>
-                  <span className="text-xs font-semibold text-purple-600 flex items-center">
-                    ↑ 8%
-                  </span>
-                </div>
-              </div>
-            </Card>
+            <KPICard
+              title="Registered Candidates"
+              value={dashboardSummary?.metrics.registered_candidates.value ?? 0}
+              changePct={dashboardSummary?.metrics.registered_candidates.change_pct}
+              icon={Trophy}
+              colorScheme="purple"
+              isLoading={isSummaryLoading}
+            />
 
-            {/* Active Elections */}
-            <Card className="p-5 bg-white border border-slate-200/80 shadow-xs hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <CheckSquare className="h-5 w-5" />
-                </div>
-                {/* Orange Sparkline SVG */}
-                <svg className="w-24 h-10 text-amber-500 overflow-visible" viewBox="0 0 100 40">
-                  <path
-                    d="M 0 36 Q 30 34, 55 26 T 85 20 T 100 10"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
-              <div className="mt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-500">Active Elections</span>
-                  <span className="text-[10px] text-muted-foreground font-semibold">Active Voting</span>
-                </div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-extrabold text-slate-900">{activeCount || 3}</span>
-                  <span className="text-xs font-semibold text-amber-600 flex items-center">
-                    ↑ 0%
-                  </span>
-                </div>
-              </div>
-            </Card>
+            <KPICard
+              title="Active Elections"
+              subtitle="Active Voting"
+              value={dashboardSummary?.metrics.active_elections.value ?? 0}
+              changePct={dashboardSummary?.metrics.active_elections.change_pct}
+              icon={CheckSquare}
+              colorScheme="amber"
+              isLoading={isSummaryLoading}
+            />
           </div>
 
           {/* ==================================================================== */}
@@ -573,162 +499,22 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
           {/* ==================================================================== */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* 1. Election Overview Line Chart */}
-            <Card className="lg:col-span-5 p-5 bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <BarChart2 className="h-4 w-4 text-blue-600" />
-                  <h3 className="font-bold text-slate-900 text-sm">Election Overview</h3>
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-                      <span className="h-2 w-2 rounded-full bg-blue-600" /> Created
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500" /> Closed
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-                      <span className="h-2 w-2 rounded-full bg-purple-500" /> Published
-                    </span>
-                  </div>
-                  <select className="text-[11px] border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-700">
-                    <option>Last 12 Months</option>
-                    <option>Last 6 Months</option>
-                    <option>Year to Date</option>
-                  </select>
-                </div>
-              </div>
-              {/* Multi-line Spline Chart */}
-              <div className="pt-4 h-52 w-full">
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 500 160">
-                  {/* Grid horizontal lines */}
-                  <line x1="30" y1="20" x2="490" y2="20" stroke="#f1f5f9" strokeWidth="1" />
-                  <text x="15" y="24" fontSize="9" fill="#94a3b8" textAnchor="end">15</text>
-                  <line x1="30" y1="60" x2="490" y2="60" stroke="#f1f5f9" strokeWidth="1" />
-                  <text x="15" y="64" fontSize="9" fill="#94a3b8" textAnchor="end">10</text>
-                  <line x1="30" y1="100" x2="490" y2="100" stroke="#f1f5f9" strokeWidth="1" />
-                  <text x="15" y="104" fontSize="9" fill="#94a3b8" textAnchor="end">5</text>
-                  <line x1="30" y1="140" x2="490" y2="140" stroke="#f1f5f9" strokeWidth="1" />
-                  <text x="15" y="144" fontSize="9" fill="#94a3b8" textAnchor="end">0</text>
-
-                  {/* Line 1: Created (Blue) */}
-                  <path
-                    d="M 40 120 Q 80 115, 120 100 T 200 95 T 280 80 T 360 85 T 440 60 T 480 40"
-                    fill="none"
-                    stroke="#2563eb"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="120" cy="100" r="3.5" fill="#2563eb" stroke="#fff" strokeWidth="1.5" />
-                  <circle cx="280" cy="80" r="3.5" fill="#2563eb" stroke="#fff" strokeWidth="1.5" />
-                  <circle cx="480" cy="40" r="3.5" fill="#2563eb" stroke="#fff" strokeWidth="1.5" />
-
-                  {/* Line 2: Closed (Emerald) */}
-                  <path
-                    d="M 40 95 Q 80 85, 120 70 T 200 95 T 280 65 T 360 70 T 440 50 T 480 30"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="120" cy="70" r="3.5" fill="#10b981" stroke="#fff" strokeWidth="1.5" />
-                  <circle cx="280" cy="65" r="3.5" fill="#10b981" stroke="#fff" strokeWidth="1.5" />
-                  <circle cx="480" cy="30" r="3.5" fill="#10b981" stroke="#fff" strokeWidth="1.5" />
-
-                  {/* Line 3: Published (Purple) */}
-                  <path
-                    d="M 40 135 Q 80 125, 120 120 T 200 125 T 280 105 T 360 110 T 440 95 T 480 80"
-                    fill="none"
-                    stroke="#8b5cf6"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  <circle cx="120" cy="120" r="3.5" fill="#8b5cf6" stroke="#fff" strokeWidth="1.5" />
-                  <circle cx="280" cy="105" r="3.5" fill="#8b5cf6" stroke="#fff" strokeWidth="1.5" />
-                  <circle cx="480" cy="80" r="3.5" fill="#8b5cf6" stroke="#fff" strokeWidth="1.5" />
-
-                  {/* X Axis Months */}
-                  {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, idx) => (
-                    <text key={m} x={40 + idx * 40} y="156" fontSize="9" fill="#94a3b8" textAnchor="middle">
-                      {m}
-                    </text>
-                  ))}
-                </svg>
-              </div>
-            </Card>
+            <div className="lg:col-span-5 flex flex-col">
+              <ElectionOverviewChart
+                overview={dashboardSummary?.election_overview}
+                period={dashboardPeriod}
+                onPeriodChange={setDashboardPeriod}
+                isLoading={isSummaryLoading}
+              />
+            </div>
 
             {/* 2. Election Status Donut Card */}
-            <Card className="lg:col-span-3 p-5 bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-              <div className="pb-2 border-b border-slate-100">
-                <h3 className="font-bold text-slate-900 text-sm">Election Status</h3>
-              </div>
-              <div className="flex items-center justify-between gap-4 py-3">
-                {/* Donut graphic */}
-                <div className="relative h-32 w-32 flex-shrink-0 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r={radius} fill="transparent" stroke="#f1f5f9" strokeWidth="14" />
-                    {totalElections > 0 ? (
-                      donutSlices.map((slice) => {
-                        if (slice.count === 0) return null;
-                        return (
-                          <circle
-                            key={slice.key}
-                            cx="50"
-                            cy="50"
-                            r={radius}
-                            fill="transparent"
-                            stroke={slice.color}
-                            strokeWidth="14"
-                            strokeDasharray={`${slice.strokeDash} ${circumference - slice.strokeDash}`}
-                            strokeDashoffset={-slice.strokeOffset}
-                            className="transition-all duration-500 ease-out"
-                          />
-                        );
-                      })
-                    ) : (
-                      <>
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#2563eb" strokeWidth="14" strokeDasharray="39.8 199" strokeDashoffset="0" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#38bdf8" strokeWidth="14" strokeDasharray="39.8 199" strokeDashoffset="-39.8" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#10b981" strokeWidth="14" strokeDasharray="59.7 179.1" strokeDashoffset="-79.6" />
-                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="#8b5cf6" strokeWidth="14" strokeDasharray="99.5 139.3" strokeDashoffset="-139.3" />
-                      </>
-                    )}
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-2xl font-extrabold text-slate-900 leading-none">{totalElections || 12}</span>
-                    <span className="text-[10px] text-slate-400 font-semibold mt-0.5">Total</span>
-                  </div>
-                </div>
-
-                {/* Legend */}
-                <div className="space-y-2 text-xs flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-slate-600 font-medium">
-                      <span className="h-2.5 w-2.5 rounded-full bg-blue-600" /> Draft
-                    </span>
-                    <span className="font-bold text-slate-900">{statusCounts.draft || 2}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-slate-600 font-medium">
-                      <span className="h-2.5 w-2.5 rounded-full bg-sky-400" /> Scheduled
-                    </span>
-                    <span className="font-bold text-slate-900">{statusCounts.scheduled || 2}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-slate-600 font-medium">
-                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Open
-                    </span>
-                    <span className="font-bold text-slate-900">{statusCounts.open || 3}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-slate-600 font-medium">
-                      <span className="h-2.5 w-2.5 rounded-full bg-purple-500" /> Closed
-                    </span>
-                    <span className="font-bold text-slate-900">{statusCounts.closed || 5}</span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+            <div className="lg:col-span-3 flex flex-col">
+              <ElectionStatusDonut
+                statusData={dashboardSummary?.election_status}
+                isLoading={isSummaryLoading}
+              />
+            </div>
 
             {/* 3. Upcoming Deadlines Dark Navy Card */}
             <Card className="lg:col-span-4 p-5 bg-gradient-to-br from-[#0c1834] to-[#081124] text-white border-0 shadow-md relative overflow-hidden flex flex-col justify-between">
@@ -745,55 +531,52 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
                 </button>
               </div>
 
-              <div className="space-y-2.5 pt-3 relative z-10">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-white text-slate-900 flex flex-col items-center justify-center leading-none flex-shrink-0">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase">APR</span>
-                      <span className="text-sm font-extrabold text-slate-900 mt-0.5">30</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-white">Student Union Election</p>
-                      <p className="text-[10px] text-slate-400">Closes in 2 days</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    Open
-                  </span>
+              {!dashboardSummary?.upcoming_deadlines || dashboardSummary.upcoming_deadlines.length === 0 ? (
+                <div className="py-8 flex flex-col items-center justify-center text-center relative z-10">
+                  <p className="text-xs font-semibold text-white">No upcoming deadlines</p>
+                  <p className="text-[11px] text-slate-400 mt-1 max-w-xs">
+                    Scheduled election dates and voting windows will appear here.
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-white text-slate-900 flex flex-col items-center justify-center leading-none flex-shrink-0">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase">MAY</span>
-                      <span className="text-sm font-extrabold text-slate-900 mt-0.5">05</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-white">Faculty Council Election</p>
-                      <p className="text-[10px] text-slate-400">Starts in 5 days</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                    Scheduled
-                  </span>
+              ) : (
+                <div className="space-y-2.5 pt-3 relative z-10">
+                  {dashboardSummary.upcoming_deadlines.map((item) => {
+                    const deadlineDate = new Date(item.deadline_at);
+                    const month = deadlineDate.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+                    const day = String(deadlineDate.getDate()).padStart(2, "0");
+                    const countdown = formatDeadlineCountdown(item.deadline_type, item.deadline_at);
+                    return (
+                      <div
+                        key={`${item.election_id}-${item.deadline_type}`}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 rounded-lg bg-white text-slate-900 flex flex-col items-center justify-center leading-none flex-shrink-0">
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">{month}</span>
+                            <span className="text-sm font-extrabold text-slate-900 mt-0.5">{day}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">{item.title}</p>
+                            <p className="text-[10px] text-slate-400">{countdown}</p>
+                          </div>
+                        </div>
+                        <span
+                          className={cn(
+                            "text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0",
+                            item.status === "open"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : item.status === "scheduled"
+                              ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                              : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                          )}
+                        >
+                          {item.status}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-white text-slate-900 flex flex-col items-center justify-center leading-none flex-shrink-0">
-                      <span className="text-[9px] font-bold text-slate-500 uppercase">MAY</span>
-                      <span className="text-sm font-extrabold text-slate-900 mt-0.5">12</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-white">Board Election</p>
-                      <p className="text-[10px] text-slate-400">Closes in 12 days</p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                    Upcoming
-                  </span>
-                </div>
-              </div>
+              )}
             </Card>
           </div>
 
@@ -816,57 +599,37 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
                 </button>
               </div>
 
-              <div className="space-y-3 pt-3 text-xs">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                      <Check className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-slate-800 font-medium">Election 'Student Union Leadership' was created</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0">2 hours ago</span>
+              {!dashboardSummary?.recent_activity || dashboardSummary.recent_activity.length === 0 ? (
+                <div className="py-8 flex flex-col items-center justify-center text-center">
+                  <p className="text-xs font-semibold text-slate-800">No recent activity yet</p>
+                  <p className="text-[11px] text-slate-500 mt-1 max-w-xs">
+                    Audit and operational logs will appear here as actions occur.
+                  </p>
                 </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-                      <Users className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-slate-800 font-medium">5 new candidates added</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0">3 hours ago</span>
+              ) : (
+                <div className="space-y-3 pt-3 text-xs">
+                  {dashboardSummary.recent_activity.map((event) => {
+                    const { icon: EventIcon, bg } = getActivityIcon(event.event_type);
+                    const relTime = formatRelativeTime(event.timestamp);
+                    return (
+                      <div key={event.id} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={cn(
+                              "h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0",
+                              bg
+                            )}
+                          >
+                            <EventIcon className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-slate-800 font-medium truncate">{event.description}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 flex-shrink-0">{relTime}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-slate-800 font-medium">Voter eligibility updated for Faculty of Engineering</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0">4 hours ago</span>
-                </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
-                      <Calendar className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-slate-800 font-medium">Election 'Faculty Council' scheduled</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0">5 hours ago</span>
-                </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                      <BarChart3 className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="text-slate-800 font-medium">Tally completed for 'Academic Council Election'</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0">1 day ago</span>
-                </div>
-              </div>
+              )}
             </Card>
 
             {/* 2. Quick Actions Card */}
