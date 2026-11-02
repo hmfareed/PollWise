@@ -41,6 +41,7 @@ import type {
   VotingCredentialResponse,
 } from "../types/ballot";
 import type { ElectionResult } from "../types/results";
+import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 const BALLOT_BOX_URL = import.meta.env.VITE_BALLOT_BOX_URL || "http://localhost:8000/ballot-box/v1";
@@ -270,6 +271,10 @@ export const apiClient = {
       method: "PATCH",
       body: JSON.stringify(payload),
     }),
+  getDashboardSummary: (organizationId: string, period?: DashboardPeriod | string) =>
+    fetchApi<DashboardSummaryResponse>(
+      `/organizations/${organizationId}/dashboard/summary?period=${period || "last_12_months"}`
+    ),
 
   // Elections & Lifecycle
   getElections: (orgId?: string, status?: string) => {
