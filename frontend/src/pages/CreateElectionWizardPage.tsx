@@ -27,6 +27,7 @@ import {
   CardDescription,
   CardContent,
 } from "../components/ui/card";
+import type { IdentifierType } from "../types/voter-participation";
 
 // ---------------------------------------------------------------------------
 // Local types
@@ -180,11 +181,14 @@ export const CreateElectionWizardPage: React.FC = () => {
   const [newPosDesc, setNewPosDesc] = useState("");
   const [newPosMaxSel, setNewPosMaxSel] = useState(1);
 
-  // ---------- Step 3: Voting Rules ----------
+  // ---------- Step 3: Voting Rules & Voter Authentication ----------
   const [allowAbstention, setAllowAbstention] = useState(false);
   const [tieBreaking, setTieBreaking] = useState<TieBreakingPolicy>("manual_review");
   const [minSelections, setMinSelections] = useState(1);
   const [showResultsBeforeClose, setShowResultsBeforeClose] = useState(false);
+  const [voterIdentifierType, setVoterIdentifierType] = useState<IdentifierType>("institutional_email");
+  const [voterIdentifierLabel, setVoterIdentifierLabel] = useState<string>("Institutional Email");
+  const [allowPositionSkip, setAllowPositionSkip] = useState<boolean>(true);
 
   // ---------- Step 4: Schedule ----------
   const [opensAt, setOpensAt] = useState(defaultOpensAt);
@@ -384,6 +388,16 @@ export const CreateElectionWizardPage: React.FC = () => {
           max_selections: pos.max_selections,
           display_order: pIdx,
         });
+      }
+
+      try {
+        await apiClient.updateVoterAuthConfig(createdElection.id, {
+          identifier_type: voterIdentifierType,
+          identifier_label: voterIdentifierLabel,
+          allow_position_skip: allowPositionSkip,
+        });
+      } catch {
+        // Fall back gracefully if default config already active
       }
 
       navigate("/admin");
@@ -792,6 +806,92 @@ export const CreateElectionWizardPage: React.FC = () => {
               onToggle={setShowResultsBeforeClose}
               label="Show live results before closing"
             />
+
+            {/* Voter Authentication Configuration */}
+            <div className="pt-4 border-t border-border space-y-4">
+              <div>
+                <h4 className="text-xs font-bold text-foreground">Voter Authentication & Identifiers</h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Choose how voters identify themselves to access the candidate ballot and receive their on-screen verification code.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label
+                  className={`flex items-start gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                    voterIdentifierType === "institutional_email"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="wizard_identifier_type"
+                    value="institutional_email"
+                    checked={voterIdentifierType === "institutional_email"}
+                    onChange={() => {
+                      setVoterIdentifierType("institutional_email");
+                      if (voterIdentifierLabel === "Student ID" || voterIdentifierLabel === "Staff ID") {
+                        setVoterIdentifierLabel("Institutional Email");
+                      }
+                    }}
+                    className="mt-0.5 text-primary"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-foreground block">Institutional Email</span>
+                    <span className="text-muted-foreground text-[11px] mt-0.5 block">
+                      Voters enter their university/organization email.
+                    </span>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                    voterIdentifierType === "institutional_id"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-border/80"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="wizard_identifier_type"
+                    value="institutional_id"
+                    checked={voterIdentifierType === "institutional_id"}
+                    onChange={() => {
+                      setVoterIdentifierType("institutional_id");
+                      if (voterIdentifierLabel === "Institutional Email") {
+                        setVoterIdentifierLabel("Student ID");
+                      }
+                    }}
+                    className="mt-0.5 text-primary"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-foreground block">Institutional ID</span>
+                    <span className="text-muted-foreground text-[11px] mt-0.5 block">
+                      Voters enter an institutional number (Student/Staff ID).
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div>
+                <label className={labelCls}>Voter Input Field Label</label>
+                <input
+                  type="text"
+                  value={voterIdentifierLabel}
+                  onChange={(e) => setVoterIdentifierLabel(e.target.value)}
+                  placeholder="e.g. Student ID, Staff ID, University Email"
+                  className={inputCls}
+                />
+              </div>
+
+              <Toggle
+                id="allow-position-skip"
+                checked={allowPositionSkip}
+                onToggle={setAllowPositionSkip}
+                label="Allow voters to skip optional ballot positions"
+              />
+            </div>
 
             <NavButtons nextLabel="Next: Schedule" />
           </CardContent>

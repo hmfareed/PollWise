@@ -48,6 +48,9 @@ import { ElectionOverviewChart } from "../components/dashboard/ElectionOverviewC
 import { ElectionStatusDonut } from "../components/dashboard/ElectionStatusDonut";
 import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
 import { cn } from "../lib/utils";
+import { VoterAuthConfigCard } from "../components/admin/VoterAuthConfigCard";
+import { VoterCSVImportModal } from "../components/admin/VoterCSVImportModal";
+import { VoterRosterTable } from "../components/admin/VoterRosterTable";
 
 function formatDeadlineCountdown(deadlineType: string, deadlineAt: string): string {
   const diffMs = new Date(deadlineAt).getTime() - Date.now();
@@ -146,6 +149,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
   const [voterError, setVoterError] = useState<string | null>(null);
 
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showVoterCSVModal, setShowVoterCSVModal] = useState(false);
   const [bulkEmailsRaw, setBulkEmailsRaw] = useState("");
   const [bulkImportResult, setBulkImportResult] = useState<{
     total_processed: number;
@@ -1100,20 +1104,21 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
       {/* WORKSPACE TAB 5: VOTERS & ELIGIBILITY (Doc 27 Section 12)             */}
       {/* ==================================================================== */}
       {activeTab === "voters" && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-bold text-foreground">Voters & Eligibility Registry</h3>
+              <h3 className="text-base font-bold text-foreground">Voters & Authentication Registry</h3>
               <p className="text-xs text-muted-foreground">
-                Authorize voters, issue single-use entitlement credentials, and verify identity isolation.
+                Configure election authentication identifiers, manage independent voter rolls, and audit eligibility.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-muted-foreground font-medium">Select Election:</span>
               <select
                 value={effectiveElectionId}
                 onChange={(e) => setActiveElectionId(e.target.value)}
-                className="text-xs rounded-lg border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                className="text-xs rounded-lg border border-border bg-surface px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary min-w-[220px]"
               >
                 {elections?.map((elec) => (
                   <option key={elec.id} value={elec.id}>
@@ -1121,88 +1126,40 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
                   </option>
                 ))}
               </select>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowBulkImportModal(true)}
-                className="gap-1.5 text-xs"
-              >
-                <UploadCloud className="h-3.5 w-3.5" />
-                Bulk CSV Import
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={() => setShowAddVoterModal(true)}
-                className="gap-1.5 text-xs"
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                Add Eligible Voter
-              </Button>
             </div>
           </div>
 
-          {/* Voter Roll Table */}
-          <Card>
-            <CardContent className="p-0">
-              {isEligibilityLoading ? (
-                <div className="text-center py-12 text-xs text-muted-foreground">Loading authorized voters...</div>
-              ) : !eligibilityList || eligibilityList.length === 0 ? (
-                <div className="text-center py-12 space-y-3">
-                  <Users className="h-8 w-8 text-slate-300 mx-auto" />
-                  <p className="text-sm font-semibold text-foreground">No authorized voters on this roll</p>
-                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                    Add individual voter email addresses or bulk import a CSV list to authorize participants.
-                  </p>
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    <Button size="sm" variant="outline" onClick={() => setShowBulkImportModal(true)} className="text-xs gap-1">
-                      <UploadCloud className="h-3.5 w-3.5" />
-                      Bulk Import
-                    </Button>
-                    <Button size="sm" onClick={() => setShowAddVoterModal(true)} className="text-xs gap-1">
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Add Individual
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {eligibilityList.map((voter) => (
-                    <div key={voter.id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50">
-                      <div className="space-y-0.5">
-                        <p className="font-semibold text-xs text-foreground">{voter.user_email || "Anonymous Member"}</p>
-                        {voter.user_name && <p className="text-[11px] text-muted-foreground">{voter.user_name}</p>}
-                        <p className="text-[10px] text-slate-400 font-mono">
-                          Enrolled: {new Date(voter.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
+          {!effectiveElectionId ? (
+            <Card className="p-12 text-center space-y-3">
+              <Users className="h-9 w-9 text-muted-foreground/40 mx-auto" />
+              <p className="text-sm font-semibold text-foreground">No Election Selected</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Create an election or select one from the dropdown to configure its voter roll and authentication rules.
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Voter Authentication Configuration */}
+              <VoterAuthConfigCard electionId={effectiveElectionId} />
 
-                      <div className="flex items-center gap-3">
-                        <Badge variant={voter.eligibility_status === "eligible" ? "success" : "secondary"} className="text-[10px]">
-                          {voter.eligibility_status}
-                        </Badge>
-                        <Badge variant={voter.entitlement_status === "redeemed" ? "default" : "outline"} className="text-[10px]">
-                          {voter.entitlement_status === "redeemed" ? "Ballot Redeemed" : "Unredeemed"}
-                        </Badge>
-                        {voter.entitlement_status !== "redeemed" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => revokeVoterMutation.mutate(voter.id)}
-                            className="text-xs text-danger hover:text-red-700 h-7 px-2"
-                            title="Revoke eligibility"
-                          >
-                            Revoke
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              {/* Independent Voter Roll Table */}
+              <VoterRosterTable
+                electionId={effectiveElectionId}
+                identifierLabel="Voter Identifier"
+                onOpenImportModal={() => setShowVoterCSVModal(true)}
+              />
+
+              {/* CSV Import Modal */}
+              <VoterCSVImportModal
+                isOpen={showVoterCSVModal}
+                electionId={effectiveElectionId}
+                onClose={() => setShowVoterCSVModal(false)}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: ["voters", effectiveElectionId] });
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
 
