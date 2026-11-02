@@ -408,4 +408,94 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
 
     expect(await screen.findByTestId("dashboard-screen")).toBeInTheDocument();
   });
+
+  it("manages avatar object URL lifecycle: revokes on replacement, removal, and unmount", async () => {
+    vi.spyOn(apiClient, "getPersonalOnboarding").mockResolvedValueOnce({
+      id: "onb-1",
+      user_id: "user-abc-123",
+      current_step: 2,
+      onboarding_status: "in_progress",
+    });
+
+    const createObjectURLMock = vi.fn();
+    const revokeObjectURLMock = vi.fn();
+    createObjectURLMock
+      .mockReturnValueOnce("blob:http://localhost/mock-avatar-1")
+      .mockReturnValueOnce("blob:http://localhost/mock-avatar-2");
+
+    window.URL.createObjectURL = createObjectURLMock;
+    window.URL.revokeObjectURL = revokeObjectURLMock;
+
+    const { unmount } = renderWithProviders();
+
+    expect(await screen.findByRole("heading", { name: /Complete Personal Profile/i })).toBeInTheDocument();
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+
+    // 1. Upload first photo
+    const file1 = new File(["dummy content 1"], "avatar1.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file1] } });
+
+    expect(createObjectURLMock).toHaveBeenCalledWith(file1);
+    expect(revokeObjectURLMock).not.toHaveBeenCalled();
+
+    // 2. Upload second photo -> should revoke first object URL
+    const file2 = new File(["dummy content 2"], "avatar2.png", { type: "image/png" });
+    fireEvent.change(fileInput, { target: { files: [file2] } });
+
+    expect(createObjectURLMock).toHaveBeenCalledWith(file2);
+    expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:http://localhost/mock-avatar-1");
+
+    // 3. Remove photo -> should revoke second object URL
+    const removeBtn = screen.getByRole("button", { name: /Remove photo/i });
+    fireEvent.click(removeBtn);
+
+    expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:http://localhost/mock-avatar-2");
+
+    // 4. Upload photo again and unmount -> should revoke active URL on unmount
+    createObjectURLMock.mockReturnValueOnce("blob:http://localhost/mock-avatar-3");
+    fireEvent.change(fileInput, { target: { files: [file1] } });
+
+    unmount();
+
+    expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:http://localhost/mock-avatar-3");
+  });
+
+  it("auto-uppercases and trims invitation code input in Step 4", async () => {
+    vi.spyOn(apiClient, "getPersonalOnboarding").mockResolvedValueOnce({
+      id: "onb-1",
+      user_id: "user-abc-123",
+      current_step: 4,
+      onboarding_status: "in_progress",
+    });
+
+    const validateSpy = vi.spyOn(apiClient, "validateInvitation").mockResolvedValueOnce({
+      invitation_code: "CAMPUS-2026",
+      institution_id: "inst-101",
+      institution_name: "Metropolitan University",
+      invitation_type: "student",
+    });
+
+    renderWithProviders();
+
+    expect(await screen.findByRole("heading", { name: /Connect to Your Institution/i })).toBeInTheDocument();
+
+    const codeInput = screen.getByPlaceholderText(/Enter invitation code/i) as HTMLInputElement;
+
+    // Type lowercase code with whitespace
+    fireEvent.change(codeInput, { target: { value: "  campus-2026  " } });
+    expect(codeInput.value).toBe("  CAMPUS-2026  ");
+
+    // Blur trims input value
+    fireEvent.blur(codeInput);
+    expect(codeInput.value).toBe("CAMPUS-2026");
+
+    const validateBtn = screen.getByRole("button", { name: /Validate Code/i });
+    fireEvent.click(validateBtn);
+
+    await waitFor(() => {
+      expect(validateSpy).toHaveBeenCalledWith("CAMPUS-2026");
+    });
+  });
 });

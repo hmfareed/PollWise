@@ -50,6 +50,8 @@ export const PersonalOnboardingPage: React.FC = () => {
   const [country, setCountry] = useState("United States");
   const [preferredLanguage, setPreferredLanguage] = useState("English");
   const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const photoPreviewRef = useRef<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ firstName?: string; lastName?: string }>({});
 
   // Step 3 MFA Setup Fields
@@ -94,6 +96,20 @@ export const PersonalOnboardingPage: React.FC = () => {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  // Synchronize photoPreviewRef with current photoPreview
+  useEffect(() => {
+    photoPreviewRef.current = photoPreview;
+  }, [photoPreview]);
+
+  // Revoke object URL on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (photoPreviewRef.current) {
+        URL.revokeObjectURL(photoPreviewRef.current);
+      }
     };
   }, []);
 
@@ -224,9 +240,21 @@ export const PersonalOnboardingPage: React.FC = () => {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (photoPreview) {
+        URL.revokeObjectURL(photoPreview);
+      }
       const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(previewUrl);
       setProfileImageUrl(previewUrl);
     }
+  };
+
+  const handleRemovePhoto = () => {
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+      setPhotoPreview(null);
+    }
+    setProfileImageUrl("");
   };
 
   // =========================================================================
@@ -293,14 +321,16 @@ export const PersonalOnboardingPage: React.FC = () => {
   // Handlers for Step 4: Institution Connection
   // =========================================================================
   const handleValidateInvitation = async () => {
-    if (!invitationCode.trim()) {
+    const normalizedCode = invitationCode.trim().toUpperCase();
+    if (!normalizedCode) {
       setErrorMessage("Please enter an invitation code");
       return;
     }
+    setInvitationCode(normalizedCode);
     setIsValidatingCode(true);
     setErrorMessage(null);
     try {
-      const data = await apiClient.validateInvitation(invitationCode.trim());
+      const data = await apiClient.validateInvitation(normalizedCode);
       setValidatedInstitution(data);
     } catch (err: any) {
       setErrorMessage(err.message || "Invalid or expired invitation code");
@@ -310,11 +340,13 @@ export const PersonalOnboardingPage: React.FC = () => {
   };
 
   const handleAcceptInvitation = async () => {
-    if (!invitationCode.trim()) return;
+    const normalizedCode = invitationCode.trim().toUpperCase();
+    if (!normalizedCode) return;
+    setInvitationCode(normalizedCode);
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const res = await apiClient.acceptInvitation(invitationCode.trim());
+      const res = await apiClient.acceptInvitation(normalizedCode);
       setJoinedInstitutionName(res.institution_name || validatedInstitution?.institution_name || null);
       await apiClient.updatePersonalOnboarding(5, "in_progress");
       if (refresh) await refresh();
@@ -583,7 +615,7 @@ export const PersonalOnboardingPage: React.FC = () => {
                   {profileImageUrl && (
                     <button
                       type="button"
-                      onClick={() => setProfileImageUrl("")}
+                      onClick={handleRemovePhoto}
                       className="text-xs text-red-600 hover:text-red-700 font-medium mt-1 underline"
                     >
                       Remove photo
@@ -952,9 +984,10 @@ export const PersonalOnboardingPage: React.FC = () => {
                 <Input
                   id="invitation-code"
                   value={invitationCode}
-                  onChange={(e) => setInvitationCode(e.target.value)}
+                  onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                  onBlur={() => setInvitationCode((prev) => prev.trim().toUpperCase())}
                   placeholder="Enter invitation code (e.g. CAMPUS-2026)"
-                  className="font-mono"
+                  className="font-mono uppercase"
                 />
                 <Button
                   type="button"

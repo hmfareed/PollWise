@@ -331,3 +331,70 @@ async def test_unauthenticated_endpoints_rejected(test_client: AsyncClient):
         else:
             res = await test_client.get(path)
         assert res.status_code == 401, f"{path} did not reject unauthenticated request"
+
+
+@pytest.mark.asyncio
+async def test_invitation_accept_concurrency_max_uses_exhaustion(
+    test_client: AsyncClient, test_org, test_identity_session
+):
+    # 1. Register and login User A
+    user_a_payload = {
+        "first_name": "VoterA",
+        "last_name": "One",
+        "email": "votera@example.com",
+        "password": "Password123!",
+        "terms_accepted": True,
+    }
+    await test_client.post("/api/v1/auth/register/personal", json=user_a_payload)
+    login_a = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "votera@example.com", "password": "Password123!"},
+    )
+    assert login_a.status_code == 200
+
+    # 2. Create single-use invitation (max_uses = 1)
+    single_use_inv = InstitutionInvitation(
+        id=uuid.uuid4(),
+        institution_id=test_org.id,
+        invitation_code="SINGLE-USE-VOTE",
+        invitation_type="member",
+        expires_at=datetime.now(UTC) + timedelta(days=2),
+        max_uses=1,
+        used_count=0,
+        status=InvitationStatus.ACTIVE.value,
+    )
+    test_identity_session.add(single_use_inv)
+    await test_identity_session.commit()
+
+    # 3. User A accepts invitation -> succeeds, used_count reaches max_uses (1), status -> exhausted
+    accept_a = await test_client.post(
+        "/api/v1/institutions/invitations/accept",
+        json={"invitation_code": "single-use-vote"},
+    )
+    assert accept_a.status_code == 200
+    await test_identity_session.refresh(single_use_inv)
+    assert single_use_inv.used_count == 1
+    assert single_use_inv.status == InvitationStatus.EXHAUSTED.value
+
+    # 4. User B registers and logs in
+    user_b_payload = {
+        "first_name": "VoterB",
+        "last_name": "Two",
+        "email": "voterb@example.com",
+        "password": "Password123!",
+        "terms_accepted": True,
+    }
+    await test_client.post("/api/v1/auth/register/personal", json=user_b_payload)
+    login_b = await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "voterb@example.com", "password": "Password123!"},
+    )
+    assert login_b.status_code == 200
+
+    # 5. User B attempts to accept single_use_inv -> rejected (400 validation error)
+    accept_b = await test_client.post(
+        "/api/v1/institutions/invitations/accept",
+        json={"invitation_code": "SINGLE-USE-VOTE"},
+    )
+    assert accept_b.status_code == 400
+    assert "exhausted" in accept_b.json()["error"]["message"].lower() or "fully used" in accept_b.json()["error"]["message"].lower()

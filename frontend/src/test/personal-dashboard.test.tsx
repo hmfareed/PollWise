@@ -301,6 +301,39 @@ describe("PersonalDashboardPage", () => {
     });
   });
 
+  it("auto-uppercases and trims invitation code input in Join Institution modal", async () => {
+    vi.spyOn(apiClient, "getMyElections").mockResolvedValue([]);
+    const validateSpy = vi.spyOn(apiClient, "validateInvitation").mockResolvedValue({
+      invitation_code: "INV-CAMPUS-2026",
+      institution_id: "inst-101",
+      institution_name: "State University",
+      invitation_type: "voter",
+    });
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText("No elections available yet")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Enter Invitation Code" }));
+
+    const codeInput = screen.getByPlaceholderText(/e\.g\. INV- or code/i) as HTMLInputElement;
+
+    // Type lowercase with spaces
+    fireEvent.change(codeInput, { target: { value: "  inv-campus-2026  " } });
+    expect(codeInput.value).toBe("  INV-CAMPUS-2026  ");
+
+    fireEvent.blur(codeInput);
+    expect(codeInput.value).toBe("INV-CAMPUS-2026");
+
+    fireEvent.click(screen.getByRole("button", { name: /Validate|Check Code/i }));
+
+    await waitFor(() => {
+      expect(validateSpy).toHaveBeenCalledWith("INV-CAMPUS-2026");
+    });
+  });
+
   it("renders Recent Activity timeline", async () => {
     const mockElections: UserElectionSummary[] = [
       {

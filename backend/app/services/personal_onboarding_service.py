@@ -215,6 +215,32 @@ class PersonalOnboardingService:
 
     @classmethod
     async def setup_mfa(cls, db: AsyncSession, user: User) -> MfaSetupResponse:
+        """Initialize MFA setup by generating a TOTP secret and backup recovery codes.
+
+        ARCHITECTURAL NOTE / PRE-PRODUCTION ENCRYPTION & PERSISTENCE SPECIFICATION:
+        1. Encrypted At-Rest Storage:
+           In current staging/development, this endpoint generates an ephemeral TOTP
+           secret returned directly to the client for immediate authenticator registration.
+           Prior to production deployment with live voters, database schema migration is
+           required to add an encrypted secret column (e.g., `totp_secret_encrypted: Mapped[bytes]`)
+           on the `User` model (or dedicated `UserMfaCredential` entity). Secrets MUST be encrypted
+           at rest using an authenticated envelope encryption scheme (e.g. AES-256-GCM or
+           KMS/HashiCorp Vault managed keys).
+        2. Two-Phase Registration:
+           During this setup step, store the secret in an encrypted temporary session or short-lived
+           cache (e.g. Redis key `mfa_setup:{user.id}` with a 10-minute TTL) so that `verify_mfa`
+           can cryptographically validate the user's initial 6-digit TOTP code before permanently
+           persisting the encrypted secret and enabling MFA on the account.
+        3. Recovery Code Security:
+           The 8 backup recovery codes presented to the user must be hashed (using argon2id
+           or bcrypt) prior to persistence, allowing single-use redemption during account recovery.
+        4. Post-Onboarding Login Challenges:
+           Post-onboarding authentication (`/auth/login`) for accounts with `mfa_enabled=True`
+           must issue a scoped partial authentication challenge (`mfa_required`), requiring a
+           subsequent call to `/auth/mfa/challenge` where the user's submitted TOTP code is verified
+           against the decrypted TOTP secret via `pyotp.TOTP(decrypted_secret).verify(code, valid_window=1)`
+           prior to granting full access/refresh JWT tokens.
+        """
         secret = base64.b32encode(secrets.token_bytes(20)).decode("utf-8").rstrip("=")
         qr_uri = f"otpauth://totp/PollWise:{user.email_normalized}?secret={secret}&issuer=PollWise"
         recovery_codes = [
@@ -228,6 +254,21 @@ class PersonalOnboardingService:
 
     @classmethod
     async def verify_mfa(cls, db: AsyncSession, user: User, code: str) -> User:
+        """Verify initial TOTP verification code and enable MFA for the user.
+
+        ARCHITECTURAL NOTE / PRE-PRODUCTION ENCRYPTION & PERSISTENCE SPECIFICATION:
+        1. Live TOTP Validation:
+           In production, this method must retrieve the pending secret from the temporary
+           secure cache / session established in `setup_mfa` and verify the incoming code using:
+           `pyotp.TOTP(pending_secret).verify(clean_code, valid_window=1)`.
+        2. Secret Commitment:
+           Upon successful verification, the pending TOTP secret is encrypted using AES-256-GCM
+           with the application data encryption key (DEK) and committed to `user.totp_secret_encrypted`.
+           The backup recovery codes are stored as salted argon2id hashes.
+        3. Login Challenge Enforcement:
+           Once `user.mfa_enabled = True` is committed, all future password-based logins trigger a
+           mandatory MFA step-up challenge before issuing valid voting session tokens.
+        """
         clean_code = code.strip()
         if not (6 <= len(clean_code) <= 8):
             raise AppException(
@@ -324,7 +365,12 @@ class PersonalOnboardingService:
                 status_code=400,
             )
 
-        stmt = select(InstitutionInvitation).where(InstitutionInvitation.invitation_code == clean_code)
+        # Row-level locking to prevent concurrent over-redemption beyond max_uses
+        stmt = (
+            select(InstitutionInvitation)
+            .where(InstitutionInvitation.invitation_code == clean_code)
+            .with_for_update()
+        )
         result = await db.execute(stmt)
         invitation = result.scalar_one_or_none()
 

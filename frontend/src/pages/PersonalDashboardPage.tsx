@@ -75,17 +75,19 @@ export const PersonalDashboardPage: React.FC = () => {
 
   const handleValidateCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!invitationCode.trim()) {
+    const normalizedCode = invitationCode.trim().toUpperCase();
+    if (!normalizedCode) {
       setJoinError("Please enter an invitation code.");
       return;
     }
 
+    setInvitationCode(normalizedCode);
     setJoinError(null);
     setValidationResult(null);
     setIsValidating(true);
 
     try {
-      const res = await apiClient.validateInvitation(invitationCode.trim());
+      const res = await apiClient.validateInvitation(normalizedCode);
       setValidationResult(res);
     } catch (err: any) {
       setJoinError(err?.message || "Invalid or expired invitation code.");
@@ -95,13 +97,15 @@ export const PersonalDashboardPage: React.FC = () => {
   };
 
   const handleAcceptInvitation = async () => {
-    if (!invitationCode.trim()) return;
+    const normalizedCode = invitationCode.trim().toUpperCase();
+    if (!normalizedCode) return;
 
+    setInvitationCode(normalizedCode);
     setJoinError(null);
     setIsJoining(true);
 
     try {
-      const res = await apiClient.acceptInvitation(invitationCode.trim());
+      const res = await apiClient.acceptInvitation(normalizedCode);
       const instName = res.institution_name || validationResult?.institution_name || "the institution";
       setJoinSuccess(`Successfully joined ${instName}!`);
       setValidationResult(null);
@@ -607,10 +611,11 @@ export const PersonalDashboardPage: React.FC = () => {
                       placeholder="e.g. INV- or code"
                       value={invitationCode}
                       onChange={(e) => {
-                        setInvitationCode(e.target.value);
+                        setInvitationCode(e.target.value.toUpperCase());
                         setValidationResult(null);
                         setJoinError(null);
                       }}
+                      onBlur={() => setInvitationCode((prev) => prev.trim().toUpperCase())}
                       className="text-sm font-mono uppercase"
                       autoFocus
                     />
