@@ -12,6 +12,7 @@ from app.api.v1.organizations import router as organizations_router
 from app.api.v1.results import router as results_router
 from app.api.v1.voter_admin import router as voter_admin_router
 from app.api.v1.voter_auth import router as voter_auth_router
+from app.api.v1.voter_ballot import router as voter_ballot_router
 
 api_v1_router = APIRouter(prefix="/api/v1")
 api_v1_router.include_router(health_router)
@@ -26,3 +27,4 @@ api_v1_router.include_router(results_router)
 api_v1_router.include_router(ballot_box_router)
 api_v1_router.include_router(voter_admin_router)
 api_v1_router.include_router(voter_auth_router)
+api_v1_router.include_router(voter_ballot_router)
