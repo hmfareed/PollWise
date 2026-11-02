@@ -22,6 +22,9 @@ import {
   ChevronRight,
   Lock,
   Vote,
+  Copy,
+  Check,
+  Link2,
 } from "lucide-react";
 import { apiClient, fetchApi } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -249,6 +252,29 @@ export const ElectionDetailPage: React.FC = () => {
 
   // Tab 7 – Security
   const [configHash, setConfigHash] = useState<string | null>(null);
+
+  // Voting link copy state
+  const [copiedVotingLink, setCopiedVotingLink] = useState(false);
+  const votingUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/elections/${id}/vote`
+      : `/elections/${id}/vote`;
+
+  const handleCopyVotingLink = async () => {
+    try {
+      await navigator.clipboard.writeText(votingUrl);
+    } catch {
+      const input = document.createElement("input");
+      input.value = votingUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    setCopiedVotingLink(true);
+    notify("Voting booth link copied to clipboard!");
+    setTimeout(() => setCopiedVotingLink(false), 2500);
+  };
 
   // ── Queries ──
   const {
@@ -721,6 +747,25 @@ export const ElectionDetailPage: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCopyVotingLink}
+                  className="gap-1.5 text-xs h-9 cursor-pointer border-border hover:bg-muted"
+                >
+                  {copiedVotingLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Voter Link</span>
+                    </>
+                  )}
+                </Button>
+
                 {election.status === "draft" && (
                   <Button
                     onClick={() => scheduleMutation.mutate()}
