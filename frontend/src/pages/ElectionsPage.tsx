@@ -114,12 +114,30 @@ export const ElectionsPage: React.FC = () => {
                       </Link>
                     </CardTitle>
                   </div>
-                  <Link to={`/elections/${election.id}`}>
-                    <Button size="sm" variant={election.status === "open" ? "default" : "secondary"} className="gap-1.5">
-                      {election.status === "open" ? "Vote / View Ballot" : "View Election"}
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {election.status === "open" ? (
+                      <>
+                        <Link to={`/elections/${election.id}/vote`}>
+                          <Button size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+                            <Vote className="h-3.5 w-3.5" />
+                            Vote Now
+                          </Button>
+                        </Link>
+                        <Link to={`/elections/${election.id}`}>
+                          <Button size="sm" variant="outline" className="gap-1.5">
+                            Details
+                          </Button>
+                        </Link>
+                      </>
+                    ) : (
+                      <Link to={`/elections/${election.id}`}>
+                        <Button size="sm" variant="secondary" className="gap-1.5">
+                          View Election
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
                 {election.description && (
                   <CardDescription className="pt-2 line-clamp-2">

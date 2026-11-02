@@ -21,6 +21,7 @@ import {
   Trash2,
   ChevronRight,
   Lock,
+  Vote,
 } from "lucide-react";
 import { apiClient, fetchApi } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -742,22 +743,30 @@ export const ElectionDetailPage: React.FC = () => {
                 )}
 
                 {election.status === "open" && (
-                  <Button
-                    variant="destructive"
-                    className="gap-2"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          "Close this election? Voters will no longer be able to cast ballots."
-                        )
-                      ) {
-                        closeMutation.mutate();
-                      }
-                    }}
-                    disabled={closeMutation.isPending}
-                  >
-                    {closeMutation.isPending ? "Closing…" : "Close Election"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Link to={`/elections/${id}/vote`}>
+                      <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+                        <Vote className="h-4 w-4" />
+                        Cast Ballot
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="destructive"
+                      className="gap-2"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Close this election? Voters will no longer be able to cast ballots."
+                          )
+                        ) {
+                          closeMutation.mutate();
+                        }
+                      }}
+                      disabled={closeMutation.isPending}
+                    >
+                      {closeMutation.isPending ? "Closing…" : "Close Election"}
+                    </Button>
+                  </div>
                 )}
 
                 {election.status === "closed" && (
