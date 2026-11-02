@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, AlertCircle } from "lucide-react";
 import { useAuth } from "../features/auth/useAuth";
+import { apiClient } from "../lib/api-client";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
 import { Input, PasswordInput } from "../components/ui/input";
 
@@ -23,7 +24,31 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await login({ email: email.trim().toLowerCase(), password });
+      const loginResult = await login({ email: email.trim().toLowerCase(), password });
+      let loggedUser = (loginResult as any)?.user;
+      if (!loggedUser) {
+        try {
+          const me = await apiClient.getMe();
+          loggedUser = me.user;
+        } catch {
+          // ignore
+        }
+      }
+
+      if (loggedUser && loggedUser.account_type !== "institution") {
+        try {
+          const onboarding = await apiClient.getPersonalOnboarding();
+          if (onboarding && onboarding.onboarding_status !== "completed") {
+            navigate("/onboarding/personal");
+            return;
+          }
+        } catch {
+          // If onboarding cannot be fetched, proceed
+        }
+        navigate(redirectPath !== "/" ? redirectPath : "/dashboard");
+        return;
+      }
+
       navigate(redirectPath);
     } catch (err: any) {
       setError(err?.message || "Invalid email or password.");

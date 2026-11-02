@@ -25,7 +25,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 export const AppShell: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, memberships } = useAuth();
   const location = useLocation();
 
   // Full-bleed standalone pages with zero sidebar and zero header chrome
@@ -45,14 +45,28 @@ export const AppShell: React.FC = () => {
 
   const isLandingPage = location.pathname === "/";
 
-  const consoleNavItems = [
-    { name: "Overview", to: "/", icon: LayoutDashboard },
-    { name: "Elections", to: "/elections", icon: Vote },
-    { name: "Organizations", to: "/organizations", icon: Users },
-    { name: "Institutional Admin", to: "/admin", icon: ShieldCheck },
-    { name: "Audit Records", to: "/audit", icon: FileText },
-    { name: "Settings", to: "/settings", icon: SettingsIcon },
-  ];
+  const isPersonalUser = Boolean(
+    isAuthenticated && user && user.account_type !== "institution"
+  );
+  const isOrgAdmin = Boolean(
+    memberships?.some((m) => m.role === "admin" || m.role === "owner")
+  );
+
+  const consoleNavItems = isPersonalUser
+    ? [
+        { name: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+        { name: "Elections", to: "/elections", icon: Vote },
+        ...(isOrgAdmin ? [{ name: "Organizations", to: "/organizations", icon: Users }] : []),
+        { name: "Settings", to: "/settings", icon: SettingsIcon },
+      ]
+    : [
+        { name: "Overview", to: "/", icon: LayoutDashboard },
+        { name: "Elections", to: "/elections", icon: Vote },
+        { name: "Organizations", to: "/organizations", icon: Users },
+        { name: "Institutional Admin", to: "/admin", icon: ShieldCheck },
+        { name: "Audit Records", to: "/audit", icon: FileText },
+        { name: "Settings", to: "/settings", icon: SettingsIcon },
+      ];
 
   return (
     <div className="min-h-screen bg-background flex flex-col selection:bg-blue-100 selection:text-blue-900">
@@ -165,10 +179,12 @@ export const AppShell: React.FC = () => {
                   </div>
                   <div className="hidden sm:flex flex-col text-left leading-tight">
                     <span className="text-xs font-bold text-slate-900">
-                      {user.display_name || "Dr. Sarah Johnson"}
+                      {user.display_name || (user.first_name ? `${user.first_name} ${user.last_name || ""}`.trim() : "Dr. Sarah Johnson")}
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      System Administrator · Institutional Admin
+                      {isPersonalUser
+                        ? "Personal Account · Voter"
+                        : "System Administrator · Institutional Admin"}
                     </span>
                   </div>
                   <ChevronDown className="h-3.5 w-3.5 text-slate-400 hidden sm:block" />
@@ -275,188 +291,281 @@ export const AppShell: React.FC = () => {
 
               <div className="px-2">
                 <span className="text-[10px] font-bold text-sky-400/90 uppercase tracking-widest">
-                  Institutional Admin
+                  {isPersonalUser ? "Personal Account" : "Institutional Admin"}
                 </span>
               </div>
 
-              {/* 10 Navigation Items matching Mockup */}
+              {/* Navigation Items matching user role */}
               <nav className="space-y-1 text-sm font-medium">
-                <NavLink
-                  to="/admin"
-                  end
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span>Dashboard</span>
-                  <span className="sr-only">Overview</span>
-                </NavLink>
+                {isPersonalUser ? (
+                  <>
+                    <NavLink
+                      to="/dashboard"
+                      end
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/elections"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <Vote className="h-4 w-4" />
-                  <span>Elections</span>
-                </NavLink>
+                    <NavLink
+                      to="/elections"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <Vote className="h-4 w-4" />
+                      <span>Elections</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/admin/positions"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <Layers className="h-4 w-4" />
-                  <span>Positions</span>
-                </NavLink>
+                    {isOrgAdmin && (
+                      <NavLink
+                        to="/organizations"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                            isActive
+                              ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                              : "text-slate-400 hover:text-white hover:bg-white/5"
+                          }`
+                        }
+                      >
+                        <Landmark className="h-4 w-4" />
+                        <span>Organizations</span>
+                      </NavLink>
+                    )}
 
-                <NavLink
-                  to="/admin/candidates"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <UserCheck className="h-4 w-4" />
-                  <span>Candidates</span>
-                </NavLink>
+                    <NavLink
+                      to="/settings"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <SettingsIcon className="h-4 w-4" />
+                      <span>Settings</span>
+                    </NavLink>
+                  </>
+                ) : (
+                  <>
+                    <NavLink
+                      to="/admin"
+                      end
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      <span>Dashboard</span>
+                      <span className="sr-only">Overview</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/admin/voters"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Voters & Eligibility</span>
-                </NavLink>
+                    <NavLink
+                      to="/elections"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <Vote className="h-4 w-4" />
+                      <span>Elections</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/organizations"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <Landmark className="h-4 w-4" />
-                  <span>Organizations</span>
-                </NavLink>
+                    <NavLink
+                      to="/admin/positions"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <Layers className="h-4 w-4" />
+                      <span>Positions</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/admin/reports"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>Reports</span>
-                </NavLink>
+                    <NavLink
+                      to="/admin/candidates"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      <span>Candidates</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/admin/audit"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Audit Logs</span>
-                </NavLink>
+                    <NavLink
+                      to="/admin/voters"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      <span>Voters & Eligibility</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/admin/team"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Team & Permissions</span>
-                </NavLink>
+                    <NavLink
+                      to="/organizations"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <Landmark className="h-4 w-4" />
+                      <span>Organizations</span>
+                    </NavLink>
 
-                <NavLink
-                  to="/settings"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                      isActive
-                        ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
-                    }`
-                  }
-                >
-                  <SettingsIcon className="h-4 w-4" />
-                  <span>Settings</span>
-                </NavLink>
+                    <NavLink
+                      to="/admin/reports"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Reports</span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/admin/audit"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Audit Logs</span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/admin/team"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Team & Permissions</span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/settings"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all ${
+                          isActive
+                            ? "bg-[#1D68F2] text-white font-semibold shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        }`
+                      }
+                    >
+                      <SettingsIcon className="h-4 w-4" />
+                      <span>Settings</span>
+                    </NavLink>
+                  </>
+                )}
               </nav>
             </div>
 
-            {/* Bottom Institution Card matching Mockup */}
-            <div className="relative z-10 mt-auto pt-6">
-              <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
-                    <Landmark className="h-4 w-4" />
+            {/* Bottom Institution Card */}
+            {!isPersonalUser ? (
+              <div className="relative z-10 mt-auto pt-6">
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+                      <Landmark className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400">Your institution</p>
+                      <p className="font-bold text-white text-xs truncate max-w-[130px]">
+                        University of Excellence
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-slate-400">Your institution</p>
-                    <p className="font-bold text-white text-xs truncate max-w-[130px]">
-                      University of Excellence
-                    </p>
-                  </div>
+                  <Link
+                    to="/organizations"
+                    className="inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300 font-medium pt-1"
+                  >
+                    View Profile →
+                  </Link>
                 </div>
-                <Link
-                  to="/organizations"
-                  className="inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300 font-medium pt-1"
-                >
-                  View Profile →
-                </Link>
               </div>
-            </div>
+            ) : memberships.length > 0 ? (
+              <div className="relative z-10 mt-auto pt-6">
+                <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+                      <Landmark className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400">Your institution</p>
+                      <p className="font-bold text-white text-xs truncate max-w-[130px]">
+                        {memberships[0].organization_name}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    to="/settings"
+                    className="inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300 font-medium pt-1"
+                  >
+                    Manage Memberships →
+                  </Link>
+                </div>
+              </div>
+            ) : null}
 
             {/* Ambient bottom wave glow graphic */}
             <div className="absolute -bottom-8 -left-8 -right-8 h-32 opacity-25 pointer-events-none bg-gradient-to-t from-blue-600 via-sky-500 to-transparent blur-xl" />

@@ -51,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await apiClient.login(payload);
     setUser(data.user);
     setMemberships(data.memberships);
+    return data;
   };
 
   const register = async (payload: RegisterPayload) => {

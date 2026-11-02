@@ -9,6 +9,7 @@ import { CreateElectionWizardPage } from "../pages/CreateElectionWizardPage";
 import { AdminDashboardPage } from "../pages/AdminDashboardPage";
 import { InstitutionOnboardingPage } from "../pages/InstitutionOnboardingPage";
 import { PersonalOnboardingPage } from "../pages/PersonalOnboardingPage";
+import { PersonalDashboardPage } from "../pages/PersonalDashboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
@@ -148,6 +149,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PersonalOnboardingPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "dashboard",
+        element: (
+          <ProtectedRoute>
+            <PersonalDashboardPage />
           </ProtectedRoute>
         ),
       },
