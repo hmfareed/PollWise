@@ -139,19 +139,31 @@ async def validation_exception_handler(
 
 async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     code = ErrorCode.INTERNAL_ERROR.value
-    if exc.status_code == status.HTTP_404_NOT_FOUND:
-        code = ErrorCode.NOT_FOUND.value
-    elif exc.status_code == status.HTTP_401_UNAUTHORIZED:
-        code = ErrorCode.UNAUTHENTICATED.value
-    elif exc.status_code == status.HTTP_403_FORBIDDEN:
-        code = ErrorCode.FORBIDDEN.value
-    elif exc.status_code == status.HTTP_400_BAD_REQUEST:
-        code = ErrorCode.MALFORMED_REQUEST.value
+    message = "An HTTP error occurred"
+    details = None
+
+    if isinstance(exc.detail, dict):
+        code = exc.detail.get("code", code)
+        message = exc.detail.get("message", message)
+        details = exc.detail.get("details")
+    else:
+        message = str(exc.detail) if exc.detail else message
+        if exc.status_code == status.HTTP_404_NOT_FOUND:
+            code = ErrorCode.NOT_FOUND.value
+        elif exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            code = ErrorCode.UNAUTHENTICATED.value
+        elif exc.status_code == status.HTTP_403_FORBIDDEN:
+            code = ErrorCode.FORBIDDEN.value
+        elif exc.status_code == status.HTTP_400_BAD_REQUEST:
+            code = ErrorCode.MALFORMED_REQUEST.value
+        elif exc.status_code == status.HTTP_409_CONFLICT:
+            code = "CONFLICT"
 
     return create_error_response(
         code=code,
-        message=str(exc.detail) if exc.detail else "An HTTP error occurred",
+        message=message,
         status_code=exc.status_code,
+        details=details,
     )
 
 

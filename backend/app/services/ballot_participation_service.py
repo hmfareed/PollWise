@@ -130,7 +130,7 @@ class BallotParticipationService:
 
         # Idempotency check: if already submitted with this key
         if voting_sess.session_status == "submitted":
-            if voting_sess.confirmation_reference:
+            if voting_sess.idempotency_key and voting_sess.idempotency_key == idempotency_key:
                 return {
                     "confirmation_reference": voting_sess.confirmation_reference,
                     "submitted_at": voting_sess.last_activity_at,
