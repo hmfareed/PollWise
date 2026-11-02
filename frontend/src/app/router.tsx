@@ -62,11 +62,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "elections/:id/vote",
-        element: (
-          <ProtectedRoute>
-            <VotingBoothPage />
-          </ProtectedRoute>
-        ),
+        element: <VotingBoothPage />,
       },
       {
         path: "elections/:id/results",
