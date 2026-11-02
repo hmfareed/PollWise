@@ -18,9 +18,17 @@ import { VerifyEmailPage } from "../pages/VerifyEmailPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { OrganizationsPage } from "../pages/OrganizationsPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { TerminalKioskPage } from "../pages/TerminalKioskPage";
+import { SupervisorVotingCentresPage } from "../pages/SupervisorVotingCentresPage";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 
 export const router = createBrowserRouter([
+  // Full-page standalone Terminal Kiosk route (no AppShell)
+  {
+    path: "/terminals/:terminalId/booth",
+    element: <TerminalKioskPage />,
+  },
+
   // Full-page standalone Authentication routes (no AppShell, no sidebar, no navbar)
   {
     path: "/login",
@@ -97,6 +105,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requireAdmin>
             <AdminDashboardPage initialTab="voters" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/voting-centres",
+        element: (
+          <ProtectedRoute requireAdmin>
+            <SupervisorVotingCentresPage />
           </ProtectedRoute>
         ),
       },
