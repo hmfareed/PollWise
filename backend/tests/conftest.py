@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import (
 import app.models.ballot
 import app.models.election
 import app.models.identity
+import app.models.voter_auth
 from app.core.rate_limit import rate_limit_ballot_box, rate_limit_login
 from app.db.base import BallotBase, ElectionBase, IdentityBase
 from app.db.session import (
