@@ -86,24 +86,13 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
               </div>
               <p className="text-muted-foreground dark:text-amber-300/80 leading-relaxed">
                 {electionStatus === "draft"
-                  ? "This election is currently in draft preparation and has not yet been opened for voting. As an administrator, you can open it in the election controls to begin accepting ballots."
+                  ? "This election is currently in preparation and has not yet opened for voting. Please check back during the official voting window."
                   : electionStatus === "scheduled"
                   ? `This election is scheduled to open on ${opensAt ? new Date(opensAt).toLocaleString() : "the scheduled date"}.`
                   : electionStatus === "closed"
                   ? "The voting window for this election has closed. No further ballots may be submitted."
                   : "Voting is not currently active for this election."}
               </p>
-              {electionId && (
-                <div className="pt-1">
-                  <Link
-                    to={`/elections/${electionId}`}
-                    className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    <span>Open Election Management Controls</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              )}
             </div>
           )}
 

@@ -29,6 +29,12 @@ export const router = createBrowserRouter([
     element: <TerminalKioskPage />,
   },
 
+  // Full-page standalone Voter Voting Booth (no AppShell, no admin sidebar/nav)
+  {
+    path: "/elections/:id/vote",
+    element: <VotingBoothPage />,
+  },
+
   // Full-page standalone Authentication routes (no AppShell, no sidebar, no navbar)
   {
     path: "/login",
@@ -67,10 +73,6 @@ export const router = createBrowserRouter([
       {
         path: "elections/:id",
         element: <ElectionDetailPage />,
-      },
-      {
-        path: "elections/:id/vote",
-        element: <VotingBoothPage />,
       },
       {
         path: "elections/:id/results",

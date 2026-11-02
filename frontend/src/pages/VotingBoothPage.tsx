@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Vote, ShieldCheck } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import { VoterLandingStep } from "../components/voter/VoterLandingStep";
 import { IdentifierEntryStep } from "../components/voter/IdentifierEntryStep";
@@ -253,89 +254,120 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
   const idType = authConfig?.identifier_type || "institutional_email";
 
   return (
-    <div className="min-h-screen bg-background text-foreground py-8 px-4 sm:px-6">
-      {phase === "landing" && (
-        <VoterLandingStep
-          electionTitle={election.title}
-          electionDescription={election.description}
-          opensAt={election.opens_at}
-          closesAt={election.closes_at}
-          isOpen={isOpen}
-          electionStatus={election.status}
-          electionId={id}
-          onStart={() => setPhase("identifier")}
-        />
-      )}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-foreground flex flex-col justify-between">
+      {/* Top Standalone Brand Bar */}
+      <header className="border-b border-border/70 bg-card/90 backdrop-blur-sm px-6 py-4 shadow-2xs">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold text-sm">
+              <Vote className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-extrabold text-base tracking-tight text-foreground block leading-none">
+                PollWise
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
+                Official Voting Booth
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline font-medium">Secret Ballot Protected</span>
+          </div>
+        </div>
+      </header>
 
-      {phase === "identifier" && (
-        <IdentifierEntryStep
-          identifierLabel={label}
-          identifierType={idType}
-          isLoading={isAuthLoading}
-          error={authError}
-          onSubmit={handleRequestChallenge}
-          onBack={() => setPhase("landing")}
-        />
-      )}
+      {/* Main Ballot Content */}
+      <main className="flex-1 py-8 px-4 sm:px-6">
+        {phase === "landing" && (
+          <VoterLandingStep
+            electionTitle={election.title}
+            electionDescription={election.description}
+            opensAt={election.opens_at}
+            closesAt={election.closes_at}
+            isOpen={isOpen}
+            electionStatus={election.status}
+            electionId={id}
+            onStart={() => setPhase("identifier")}
+          />
+        )}
 
-      {phase === "otp" && otpCode && (
-        <OTPVerificationStep
-          otpCode={otpCode}
-          expiresInSeconds={otpExpiresIn}
-          isLoading={isAuthLoading}
-          error={authError}
-          onVerify={handleVerifyChallenge}
-          onRegenerate={handleRegenerateOtp}
-          onChangeIdentifier={() => {
-            setAuthError(null);
-            setPhase("identifier");
-          }}
-        />
-      )}
+        {phase === "identifier" && (
+          <IdentifierEntryStep
+            identifierLabel={label}
+            identifierType={idType}
+            isLoading={isAuthLoading}
+            error={authError}
+            onSubmit={handleRequestChallenge}
+            onBack={() => setPhase("landing")}
+          />
+        )}
 
-      {phase === "instructions" && ballot && (
-        <BallotInstructionsStep
-          electionTitle={ballot.election_title}
-          totalPositions={ballot.positions.length}
-          allowSkip={ballot.allow_position_skip}
-          onBegin={() => setPhase("voting")}
-        />
-      )}
+        {phase === "otp" && otpCode && (
+          <OTPVerificationStep
+            otpCode={otpCode}
+            expiresInSeconds={otpExpiresIn}
+            isLoading={isAuthLoading}
+            error={authError}
+            onVerify={handleVerifyChallenge}
+            onRegenerate={handleRegenerateOtp}
+            onChangeIdentifier={() => {
+              setAuthError(null);
+              setPhase("identifier");
+            }}
+          />
+        )}
 
-      {phase === "voting" && ballot && ballot.positions[currentPositionIdx] && (
-        <PositionVoteStep
-          position={ballot.positions[currentPositionIdx]}
-          currentIndex={currentPositionIdx}
-          totalPositions={ballot.positions.length}
-          selectedCandidateId={selections[ballot.positions[currentPositionIdx].id]?.candidateId}
-          isSkipped={!!selections[ballot.positions[currentPositionIdx].id]?.skipped}
-          onSelectCandidate={handleSelectCandidate}
-          onSkipPosition={handleSkipPosition}
-          onPrevious={handlePreviousPosition}
-          onNext={handleNextPosition}
-        />
-      )}
+        {phase === "instructions" && ballot && (
+          <BallotInstructionsStep
+            electionTitle={ballot.election_title}
+            totalPositions={ballot.positions.length}
+            allowSkip={ballot.allow_position_skip}
+            onBegin={() => setPhase("voting")}
+          />
+        )}
 
-      {phase === "review" && ballot && (
-        <BallotReviewStep
-          electionTitle={ballot.election_title}
-          positions={ballot.positions}
-          selections={selections}
-          isSubmitting={isSubmitting}
-          submitError={submitError}
-          onEditPosition={handleEditPosition}
-          onSubmit={handleSubmitBallot}
-          onBackToBallot={() => setPhase("voting")}
-        />
-      )}
+        {phase === "voting" && ballot && ballot.positions[currentPositionIdx] && (
+          <PositionVoteStep
+            position={ballot.positions[currentPositionIdx]}
+            currentIndex={currentPositionIdx}
+            totalPositions={ballot.positions.length}
+            selectedCandidateId={selections[ballot.positions[currentPositionIdx].id]?.candidateId}
+            isSkipped={!!selections[ballot.positions[currentPositionIdx].id]?.skipped}
+            onSelectCandidate={handleSelectCandidate}
+            onSkipPosition={handleSkipPosition}
+            onPrevious={handlePreviousPosition}
+            onNext={handleNextPosition}
+          />
+        )}
 
-      {phase === "confirmed" && confirmationReference && (
-        <SubmissionConfirmedStep
-          confirmationReference={confirmationReference}
-          isKiosk={isKiosk}
-          onFinish={handleFinish}
-        />
-      )}
+        {phase === "review" && ballot && (
+          <BallotReviewStep
+            electionTitle={ballot.election_title}
+            positions={ballot.positions}
+            selections={selections}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
+            onEditPosition={handleEditPosition}
+            onSubmit={handleSubmitBallot}
+            onBackToBallot={() => setPhase("voting")}
+          />
+        )}
+
+        {phase === "confirmed" && confirmationReference && (
+          <SubmissionConfirmedStep
+            confirmationReference={confirmationReference}
+            isKiosk={isKiosk}
+            onFinish={handleFinish}
+          />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/50 py-4 px-6 text-center text-[11px] text-muted-foreground">
+        PollWise Secure Institutional Voting Platform · Your vote is secret and decoupled from your identity
+      </footer>
     </div>
   );
 };
