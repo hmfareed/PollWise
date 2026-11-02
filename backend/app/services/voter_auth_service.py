@@ -4,7 +4,8 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.election import Election, ElectionStatus
@@ -77,7 +78,7 @@ class VoterAuthService:
                 detail={"code": "VOTER_NOT_ELIGIBLE", "message": "We could not verify your eligibility for this election."},
             )
 
-        # 3. Lookup voter record
+        # 3. Lookup or auto-enroll voter record (open enrollment; no CSV import required beforehand)
         voter_query = select(ElectionVoterRecord).where(
             ElectionVoterRecord.election_id == election_id,
             ElectionVoterRecord.identifier_type == config.identifier_type,
@@ -86,7 +87,46 @@ class VoterAuthService:
         voter_res = await session.execute(voter_query)
         voter = voter_res.scalar_one_or_none()
 
-        if not voter or voter.eligibility_status != "eligible":
+        if not voter:
+            # Check if this election has a pre-registered roll (from CSV or manual entry)
+            # If no pre-registered roll was imported, or self-enrollment is enabled, students self-enroll on-the-fly!
+            roll_query = select(func.count(ElectionVoterRecord.id)).where(
+                ElectionVoterRecord.election_id == election_id,
+                ElectionVoterRecord.source != "self_enrolled",
+            )
+            roll_res = await session.execute(roll_query)
+            pre_registered_count = roll_res.scalar() or 0
+
+            allow_self_enroll = getattr(config, "allow_self_enrollment", False) or (pre_registered_count == 0)
+
+            if allow_self_enroll:
+                # Self-enroll voter identifier on-the-fly
+                voter = ElectionVoterRecord(
+                    id=uuid.uuid4(),
+                    election_id=election_id,
+                    identifier_type=config.identifier_type,
+                    normalized_identifier=normalized,
+                    source="self_enrolled",
+                    eligibility_status="eligible",
+                )
+                session.add(voter)
+                try:
+                    await session.flush()
+                except IntegrityError:
+                    await session.rollback()
+                    voter_res = await session.execute(voter_query)
+                    voter = voter_res.scalar_one_or_none()
+                    if not voter or voter.eligibility_status != "eligible":
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail={"code": "VOTER_NOT_ELIGIBLE", "message": "We could not verify your eligibility for this election."},
+                        )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={"code": "VOTER_NOT_ELIGIBLE", "message": "We could not verify your eligibility for this election."},
+                )
+        elif voter.eligibility_status != "eligible":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={"code": "VOTER_NOT_ELIGIBLE", "message": "We could not verify your eligibility for this election."},

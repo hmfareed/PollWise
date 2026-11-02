@@ -380,7 +380,17 @@ export const ElectionDetailPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ["election", id] });
 
   const scheduleMutation = useMutation({
-    mutationFn: () => apiClient.scheduleElection(id!),
+    mutationFn: async () => {
+      try {
+        await apiClient.approveLaunch(id!, {
+          decision: "approved",
+          reason: "Administrator scheduled election launch",
+        });
+      } catch {
+        // Continue if already approved
+      }
+      return apiClient.scheduleElection(id!);
+    },
     onSuccess: () => {
       invalidateElection();
       notify("Election scheduled successfully.");
@@ -389,7 +399,18 @@ export const ElectionDetailPage: React.FC = () => {
   });
 
   const openMutation = useMutation({
-    mutationFn: () => apiClient.openElection(id!),
+    mutationFn: async () => {
+      if (election?.status === "draft") {
+        try {
+          await apiClient.approveLaunch(id!, {
+            decision: "approved",
+            reason: "Administrator direct open",
+          });
+        } catch {}
+        await apiClient.scheduleElection(id!);
+      }
+      return apiClient.openElection(id!);
+    },
     onSuccess: () => {
       invalidateElection();
       notify("Election is now open for voting.");
@@ -767,14 +788,25 @@ export const ElectionDetailPage: React.FC = () => {
                 </Button>
 
                 {election.status === "draft" && (
-                  <Button
-                    onClick={() => scheduleMutation.mutate()}
-                    disabled={scheduleMutation.isPending}
-                    className="gap-2"
-                  >
-                    <Lock className="h-4 w-4" />
-                    {scheduleMutation.isPending ? "Scheduling…" : "Schedule Election"}
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => openMutation.mutate()}
+                      disabled={openMutation.isPending || scheduleMutation.isPending}
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                    >
+                      <Vote className="h-4 w-4" />
+                      {openMutation.isPending ? "Opening…" : "Open Election Now"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => scheduleMutation.mutate()}
+                      disabled={scheduleMutation.isPending || openMutation.isPending}
+                      className="gap-2"
+                    >
+                      <Lock className="h-4 w-4" />
+                      {scheduleMutation.isPending ? "Scheduling…" : "Schedule Election"}
+                    </Button>
+                  </>
                 )}
 
                 {election.status === "scheduled" && (
