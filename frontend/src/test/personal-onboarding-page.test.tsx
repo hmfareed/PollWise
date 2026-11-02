@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
@@ -6,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthContext } from "../features/auth/authContextDef";
 import { PersonalOnboardingPage } from "../pages/PersonalOnboardingPage";
 import { apiClient } from "../lib/api-client";
-import type { User, PersonalOnboarding } from "../types/auth";
+import type { User } from "../types/auth";
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -33,7 +32,6 @@ const mockDefaultUser: User = {
 };
 
 const renderWithProviders = (
-  initialStep = 1,
   userOverride?: Partial<User>,
   initialEntries = ["/onboarding/personal"]
 ) => {
@@ -58,6 +56,7 @@ const renderWithProviders = (
         <MemoryRouter initialEntries={initialEntries}>
           <Routes>
             <Route path="/onboarding/personal" element={<PersonalOnboardingPage />} />
+            <Route path="/verify-email" element={<div data-testid="verify-email-screen">Verify Email Screen</div>} />
             <Route path="/dashboard" element={<div data-testid="dashboard-screen">Personal Dashboard</div>} />
           </Routes>
         </MemoryRouter>
@@ -69,6 +68,19 @@ const renderWithProviders = (
 describe("PersonalOnboardingPage Multi-Step Wizard", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("redirects unverified user to /verify-email", async () => {
+    vi.spyOn(apiClient, "getPersonalOnboarding").mockResolvedValueOnce({
+      id: "onb-1",
+      user_id: "user-abc-123",
+      current_step: 1,
+      onboarding_status: "not_started",
+    });
+
+    renderWithProviders({ email_verified: false });
+
+    expect(await screen.findByTestId("verify-email-screen")).toBeInTheDocument();
   });
 
   it("renders Welcome step (Step 1) and navigates to Profile setup on Get Started", async () => {
@@ -117,7 +129,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
     expect(screen.getByText(/Step 3 of 5/i)).toBeInTheDocument();
   });
 
-  it("validates required fields and saves profile details in Step 2", async () => {
+  it("validates required fields on blur and submission in Step 2", async () => {
     vi.spyOn(apiClient, "getPersonalOnboarding").mockResolvedValueOnce({
       id: "onb-1",
       user_id: "user-abc-123",
@@ -144,7 +156,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
         onboarding_status: "in_progress",
       });
 
-    renderWithProviders(2);
+    renderWithProviders();
 
     expect(await screen.findByRole("heading", { name: /Complete Personal Profile/i })).toBeInTheDocument();
 
@@ -153,10 +165,14 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
     const displayNameInput = screen.getByLabelText(/Display Name/i) as HTMLInputElement;
     const phoneInput = screen.getByLabelText(/Phone Number/i) as HTMLInputElement;
 
-    // Test validation: clearing first name
-    fireEvent.change(firstNameInput, { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+    // Test onBlur validation on empty fields
+    fireEvent.change(firstNameInput, { target: { value: "   " } });
+    fireEvent.blur(firstNameInput);
     expect(await screen.findByText(/First name is required/i)).toBeInTheDocument();
+
+    fireEvent.change(lastNameInput, { target: { value: "   " } });
+    fireEvent.blur(lastNameInput);
+    expect(await screen.findByText(/Last name is required/i)).toBeInTheDocument();
 
     // Fill valid data
     fireEvent.change(firstNameInput, { target: { value: "Alicia" } });
@@ -217,7 +233,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
         onboarding_status: "in_progress",
       });
 
-    renderWithProviders(3);
+    renderWithProviders();
 
     expect(await screen.findByRole("heading", { name: /Set Up Account Security/i })).toBeInTheDocument();
 
@@ -261,7 +277,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
         onboarding_status: "in_progress",
       });
 
-    renderWithProviders(3);
+    renderWithProviders();
 
     expect(await screen.findByRole("heading", { name: /Set Up Account Security/i })).toBeInTheDocument();
 
@@ -304,7 +320,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
         onboarding_status: status || "in_progress",
       }));
 
-    renderWithProviders(4);
+    renderWithProviders();
 
     expect(await screen.findByRole("heading", { name: /Connect to Your Institution/i })).toBeInTheDocument();
 
@@ -348,7 +364,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
         onboarding_status: status || "in_progress",
       }));
 
-    renderWithProviders(4);
+    renderWithProviders();
 
     expect(await screen.findByRole("heading", { name: /Connect to Your Institution/i })).toBeInTheDocument();
 
@@ -379,7 +395,7 @@ describe("PersonalOnboardingPage Multi-Step Wizard", () => {
         onboarding_status: "completed",
       });
 
-    renderWithProviders(5);
+    renderWithProviders();
 
     expect(await screen.findByRole("heading", { name: /You're all set/i })).toBeInTheDocument();
 

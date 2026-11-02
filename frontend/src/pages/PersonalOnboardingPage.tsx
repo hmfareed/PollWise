@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   ArrowRight,
@@ -14,9 +14,6 @@ import {
   AlertCircle,
   RefreshCw,
   Sparkles,
-  FileCheck2,
-  Globe,
-  Phone,
 } from "lucide-react";
 import { apiClient } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -66,10 +63,16 @@ export const PersonalOnboardingPage: React.FC = () => {
   const [invitationCode, setInvitationCode] = useState("");
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [validatedInstitution, setValidatedInstitution] = useState<InvitationValidationResponse | null>(null);
-  const [isJoinedSuccess, setIsJoinedSuccess] = useState(false);
   const [joinedInstitutionName, setJoinedInstitutionName] = useState<string | null>(null);
 
   const hasMarkedCompletedRef = useRef(false);
+
+  // Redirect unverified users to verify email page
+  useEffect(() => {
+    if (user && !user.email_verified) {
+      navigate("/verify-email", { replace: true });
+    }
+  }, [user, navigate]);
 
   // Load existing onboarding progress on mount
   useEffect(() => {
@@ -165,6 +168,18 @@ export const PersonalOnboardingPage: React.FC = () => {
   // =========================================================================
   // Handlers for Step 2: Profile Setup
   // =========================================================================
+  const handleFirstNameBlur = () => {
+    if (!firstName.trim()) {
+      setFieldErrors((prev) => ({ ...prev, firstName: "First name is required" }));
+    }
+  };
+
+  const handleLastNameBlur = () => {
+    if (!lastName.trim()) {
+      setFieldErrors((prev) => ({ ...prev, lastName: "Last name is required" }));
+    }
+  };
+
   const handleStep2Submit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setErrorMessage(null);
@@ -300,7 +315,6 @@ export const PersonalOnboardingPage: React.FC = () => {
     setErrorMessage(null);
     try {
       const res = await apiClient.acceptInvitation(invitationCode.trim());
-      setIsJoinedSuccess(true);
       setJoinedInstitutionName(res.institution_name || validatedInstitution?.institution_name || null);
       await apiClient.updatePersonalOnboarding(5, "in_progress");
       if (refresh) await refresh();
@@ -338,6 +352,10 @@ export const PersonalOnboardingPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  if (user && !user.email_verified) {
+    return null;
   }
 
   return (
@@ -589,6 +607,7 @@ export const PersonalOnboardingPage: React.FC = () => {
                         setFieldErrors((prev) => ({ ...prev, firstName: undefined }));
                       }
                     }}
+                    onBlur={handleFirstNameBlur}
                     placeholder="Enter first name"
                     error={!!fieldErrors.firstName}
                   />
@@ -611,6 +630,7 @@ export const PersonalOnboardingPage: React.FC = () => {
                         setFieldErrors((prev) => ({ ...prev, lastName: undefined }));
                       }
                     }}
+                    onBlur={handleLastNameBlur}
                     placeholder="Enter last name"
                     error={!!fieldErrors.lastName}
                   />
