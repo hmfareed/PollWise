@@ -49,7 +49,13 @@ export const AppShell: React.FC = () => {
     isAuthenticated && user && user.account_type !== "institution"
   );
   const isOrgAdmin = Boolean(
-    memberships?.some((m) => m.role === "admin" || m.role === "owner")
+    memberships?.some(
+      (m) =>
+        m.role === "admin" ||
+        m.role === "owner" ||
+        m.role === "organization_admin" ||
+        m.role === "election_manager"
+    )
   );
 
   const consoleNavItems = isPersonalUser

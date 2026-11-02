@@ -199,7 +199,10 @@ export const PersonalDashboardPage: React.FC = () => {
             <Building className="h-4 w-4 text-indigo-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-slate-900">
-            {new Set(elections.map((e) => e.institution_name).filter(Boolean)).size || memberships.length}
+            {new Set([
+              ...memberships.map((m) => m.organization_name),
+              ...elections.map((e) => e.institution_name),
+            ].filter(Boolean)).size}
           </div>
           <p className="text-xs text-slate-400 mt-1">Connected organizations</p>
         </div>

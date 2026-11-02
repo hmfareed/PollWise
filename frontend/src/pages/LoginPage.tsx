@@ -35,6 +35,11 @@ export const LoginPage: React.FC = () => {
         }
       }
 
+      if (loggedUser && !loggedUser.email_verified) {
+        navigate("/verify-email");
+        return;
+      }
+
       if (loggedUser && loggedUser.account_type !== "institution") {
         try {
           const onboarding = await apiClient.getPersonalOnboarding();
