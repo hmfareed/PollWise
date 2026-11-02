@@ -1,5 +1,5 @@
 import React from "react";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, ChevronDown } from "lucide-react";
 import { Card } from "../ui/card";
 import type { DashboardPeriod, ElectionOverviewChartData } from "../../types/dashboard";
 
@@ -105,34 +105,43 @@ export const ElectionOverviewChart: React.FC<ElectionOverviewChartProps> = ({
 
   return (
     <Card className="p-5 bg-white border border-slate-200/80 shadow-xs flex flex-col justify-between">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <BarChart2 className="h-4 w-4 text-blue-600" />
-          <h3 className="font-bold text-slate-900 text-sm">Election Overview</h3>
-        </div>
-        <div className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-2.5">
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-              <span className="h-2 w-2 rounded-full bg-blue-600" /> Created
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Closed
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-              <span className="h-2 w-2 rounded-full bg-purple-500" /> Published
-            </span>
+      {/* Header Container Matching Mockup */}
+      <div className="space-y-1.5 pb-2">
+        {/* Row 1: Title & Icon on the left, Dropdown Period Selector on the right */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <BarChart2 className="h-5 w-5 text-slate-900 flex-shrink-0" />
+            <h3 className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight whitespace-nowrap">
+              Election Overview
+            </h3>
           </div>
-          <select
-            value={period}
-            onChange={(e) => onPeriodChange(e.target.value as DashboardPeriod)}
-            className="text-[11px] border border-slate-200 rounded-md px-2 py-1 bg-slate-50 text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            {PERIOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative flex-shrink-0">
+            <select
+              value={period}
+              onChange={(e) => onPeriodChange(e.target.value as DashboardPeriod)}
+              className="text-xs font-medium border border-slate-200/90 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 shadow-xs cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-7 appearance-none"
+            >
+              {PERIOD_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Row 2: Legend Aligned to the Right */}
+        <div className="flex items-center justify-end gap-3.5 sm:gap-4 text-xs pt-0.5">
+          <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+            <span className="h-2 w-2 rounded-full bg-blue-600" /> Created
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" /> Closed
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+            <span className="h-2 w-2 rounded-full bg-purple-500" /> Published
+          </span>
         </div>
       </div>
 

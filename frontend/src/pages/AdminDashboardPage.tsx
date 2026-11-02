@@ -497,8 +497,8 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
           {/* ROW 3: ELECTION OVERVIEW, STATUS DONUT, UPCOMING DEADLINES           */}
           {/* ==================================================================== */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* 1. Election Overview Line Chart */}
-            <div className="lg:col-span-5 flex flex-col">
+            {/* 1. Election Overview Line Chart - stretched across 6 columns */}
+            <div className="lg:col-span-6 flex flex-col">
               <ElectionOverviewChart
                 overview={dashboardSummary?.election_overview}
                 period={dashboardPeriod}
@@ -516,7 +516,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
             </div>
 
             {/* 3. Upcoming Deadlines Dark Navy Card */}
-            <Card className="lg:col-span-4 p-5 bg-gradient-to-br from-[#0c1834] to-[#081124] text-white border-0 shadow-md relative overflow-hidden flex flex-col justify-between">
+            <Card className="lg:col-span-3 p-5 bg-gradient-to-br from-[#0c1834] to-[#081124] text-white border-0 shadow-md relative overflow-hidden flex flex-col justify-between">
               <div className="flex items-center justify-between pb-3 border-b border-white/10 relative z-10">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-sky-400" />
