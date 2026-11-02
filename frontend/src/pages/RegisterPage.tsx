@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -64,10 +64,46 @@ export const RegisterPage: React.FC = () => {
   // Resend state
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
+
+  const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedFirstName) {
+      setError("Enter your first name.");
+      return;
+    }
+
+    if (!trimmedLastName) {
+      setError("Enter your last name.");
+      return;
+    }
+
+    if (!trimmedEmail) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
@@ -75,12 +111,12 @@ export const RegisterPage: React.FC = () => {
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match. Please re-enter.");
+      setError("Passwords do not match.");
       return;
     }
 
     if (!termsAccepted) {
-      setError("You must accept the terms of service and privacy policy to proceed.");
+      setError("You must agree to the Terms of Service and Privacy Policy.");
       return;
     }
 
@@ -90,9 +126,9 @@ export const RegisterPage: React.FC = () => {
       if (accountType === "institution") {
         await apiClient.register({
           account_type: "institution",
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: email.trim().toLowerCase(),
+          first_name: trimmedFirstName,
+          last_name: trimmedLastName,
+          email: trimmedEmail,
           password,
           institution_name: institutionName.trim(),
           institution_type: institutionType,
@@ -100,17 +136,16 @@ export const RegisterPage: React.FC = () => {
           terms_accepted: true,
         });
       } else {
-        await apiClient.register({
-          account_type: "personal",
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          email: email.trim().toLowerCase(),
+        await apiClient.registerPersonal({
+          first_name: trimmedFirstName,
+          last_name: trimmedLastName,
+          email: trimmedEmail,
           password,
           terms_accepted: true,
         });
       }
 
-      setRegisteredEmail(email.trim().toLowerCase());
+      setRegisteredEmail(trimmedEmail);
       setIsRegistered(true);
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please check your information.");
@@ -126,10 +161,11 @@ export const RegisterPage: React.FC = () => {
       const res = await apiClient.resendVerification(registeredEmail);
       setResendMessage(res.message || "A fresh verification link has been sent to your email.");
       setResendCooldown(60);
-      const timer = setInterval(() => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
         setResendCooldown((prev) => {
           if (prev <= 1) {
-            clearInterval(timer);
+            clearInterval(timerRef.current);
             return 0;
           }
           return prev - 1;
@@ -141,7 +177,7 @@ export const RegisterPage: React.FC = () => {
   };
 
   // ========================================================================
-  // VIEW: POST-REGISTRATION EMAIL VERIFICATION SCREEN
+  // VIEW: POST-REGISTRATION EMAIL VERIFICATION SCREEN (Section 3.1)
   // ========================================================================
   if (isRegistered) {
     return (
@@ -151,17 +187,19 @@ export const RegisterPage: React.FC = () => {
             <MailCheck className="h-8 w-8" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0B1528] tracking-tight">
-            Verify Your Email
+            Verify your email address
           </h2>
           <p className="text-slate-500 text-sm mt-2">
-            We sent an activation link to your registered email address:
+            We sent a verification link to the email address you entered. Verify your email to activate your Pollwise account.
           </p>
-          <p className="font-mono text-sm font-semibold text-slate-800 my-4 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl inline-block">
-            {registeredEmail}
-          </p>
+          <div className="my-4">
+            <p className="font-mono text-sm font-semibold text-slate-800 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl inline-block">
+              {registeredEmail}
+            </p>
+          </div>
 
           <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto mb-6">
-            Click the link in your email to verify your identity and activate your Pollwise account.
+            Check your inbox and spam folder for an email with your verification link. Click the link to verify your identity and activate your Pollwise account.
           </p>
 
           {resendMessage && (
@@ -173,6 +211,7 @@ export const RegisterPage: React.FC = () => {
 
           <div className="space-y-3 pt-2">
             <button
+              type="button"
               onClick={handleResend}
               disabled={resendCooldown > 0}
               className="w-full py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
@@ -183,6 +222,14 @@ export const RegisterPage: React.FC = () => {
                   ? `Resend available in ${resendCooldown}s`
                   : "Resend Verification Email"}
               </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsRegistered(false)}
+              className="w-full py-3 px-4 rounded-xl border border-transparent bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              Change Email Address
             </button>
 
             <Link
@@ -363,6 +410,9 @@ export const RegisterPage: React.FC = () => {
               onTogglePasswordVisibility={() => setShowPassword(!showPassword)}
               autoComplete="new-password"
             />
+            <p className="mt-1 text-xs text-slate-500">
+              Must be at least 8 characters long.
+            </p>
           </div>
 
           {/* Confirm Password */}
@@ -378,7 +428,14 @@ export const RegisterPage: React.FC = () => {
               isPasswordVisible={showConfirmPassword}
               onTogglePasswordVisibility={() => setShowConfirmPassword(!showConfirmPassword)}
               autoComplete="new-password"
+              error={passwordMismatch}
             />
+            {passwordMismatch && (
+              <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Passwords do not match.</span>
+              </p>
+            )}
           </div>
 
           {/* Terms Checkbox */}
@@ -386,7 +443,6 @@ export const RegisterPage: React.FC = () => {
             <label className="flex items-start gap-2.5 cursor-pointer select-none">
               <input
                 type="checkbox"
-                required
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="h-4 w-4 mt-0.5 rounded border-slate-300 text-[#0055FF] focus:ring-[#0055FF] cursor-pointer"

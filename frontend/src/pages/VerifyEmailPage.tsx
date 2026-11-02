@@ -4,6 +4,7 @@ import { CheckCircle2, AlertCircle, MailCheck, Loader2, ArrowRight } from "lucid
 import { apiClient } from "../lib/api-client";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import type { User } from "../types/auth";
 
 export const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,7 @@ export const VerifyEmailPage: React.FC = () => {
       : "No email verification token found. Please use the link provided in your confirmation email."
   );
   const [success, setSuccess] = useState(false);
+  const [verifiedUser, setVerifiedUser] = useState<User | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -23,8 +25,9 @@ export const VerifyEmailPage: React.FC = () => {
     let isMounted = true;
     apiClient
       .verifyEmail(token)
-      .then(() => {
+      .then((user) => {
         if (isMounted) {
+          setVerifiedUser(user);
           setSuccess(true);
           setError(null);
         }
@@ -54,14 +57,14 @@ export const VerifyEmailPage: React.FC = () => {
           </div>
           <CardTitle className="text-2xl font-bold">Email Verification</CardTitle>
           <CardDescription>
-            Validating institutional voter identity and credentials
+            Validating voter identity and account credentials
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && (
             <div className="text-center py-8 space-y-3">
               <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto" />
-              <p className="text-sm font-medium text-foreground">Verifying your institutional email...</p>
+              <p className="text-sm font-medium text-foreground">Verifying your email address...</p>
               <p className="text-xs text-muted-foreground">Confirming cryptographic token in Identity DB</p>
             </div>
           )}
@@ -74,16 +77,27 @@ export const VerifyEmailPage: React.FC = () => {
                   <span>Email Verified Successfully</span>
                 </div>
                 <p className="text-xs text-emerald-700 leading-relaxed">
-                  Your institutional email has been verified. You now have full voting and administrative access according to your organizational entitlements.
+                  {verifiedUser?.account_type === "personal"
+                    ? "Your personal email has been verified. Welcome to Pollwise! Complete your profile to get started."
+                    : "Your institutional email has been verified. You now have full voting and administrative access according to your organizational entitlements."}
                 </p>
               </div>
 
-              <Link to="/elections">
-                <Button className="w-full gap-2">
-                  View Eligible Elections
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              {verifiedUser?.account_type === "personal" ? (
+                <Link to="/onboarding/personal">
+                  <Button className="w-full gap-2">
+                    Continue to Onboarding
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/elections">
+                  <Button className="w-full gap-2">
+                    View Eligible Elections
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
 
