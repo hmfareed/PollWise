@@ -26,7 +26,6 @@ import {
   ShieldCheck, 
   Trophy, 
   CheckSquare, 
-  BarChart2, 
   Calendar, 
   Zap, 
   Wand2, 

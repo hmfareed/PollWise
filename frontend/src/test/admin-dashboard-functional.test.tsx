@@ -14,9 +14,7 @@ const mockOrgs: Organization[] = [
     name: "University of Excellence",
     slug: "univ-excellence",
     status: "verified",
-    domain: "excellence.edu",
     created_at: "2026-01-01T00:00:00Z",
-    updated_at: "2026-01-01T00:00:00Z",
   },
 ];
 
@@ -124,8 +122,8 @@ describe("AdminDashboardPage Functional & Real Data Wiring", () => {
     vi.restoreAllMocks();
     vi.spyOn(apiClient, "getOrganizations").mockResolvedValue(mockOrgs);
     vi.spyOn(apiClient, "getReadiness").mockResolvedValue({
-      status: "ready",
-      database: "connected",
+      ready: true,
+      databases: {},
     });
     vi.spyOn(apiClient, "getElections").mockResolvedValue([]);
   });
