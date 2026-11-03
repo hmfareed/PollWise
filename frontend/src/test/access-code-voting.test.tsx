@@ -238,5 +238,11 @@ describe("Physical Access Code & Student ID Voting Suite", () => {
     // 7. Confirmed Screen
     expect(await screen.findByText("Ballot Successfully Cast")).toBeInTheDocument();
     expect(screen.getByText("PW-CONF-998877")).toBeInTheDocument();
+
+    // 8. Next Voter in Line -> resets immediately to code entry
+    const nextVoterBtn = screen.getByRole("button", { name: /next voter/i });
+    fireEvent.click(nextVoterBtn);
+
+    expect(await screen.findByText("Enter Voting Access Code")).toBeInTheDocument();
   });
 });

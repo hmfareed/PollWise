@@ -16,7 +16,7 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
   onFinish,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [kioskCountdown, setKioskCountdown] = useState(15);
+  const [countdown, setCountdown] = useState(10);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(confirmationReference);
@@ -25,9 +25,8 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
   };
 
   useEffect(() => {
-    if (!isKiosk) return;
     const interval = setInterval(() => {
-      setKioskCountdown((prev) => {
+      setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
           onFinish();
@@ -37,7 +36,7 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isKiosk, onFinish]);
+  }, [onFinish]);
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
@@ -92,22 +91,18 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
           </div>
 
           {/* Action button */}
-          <div className="pt-2">
+          <div className="pt-2 space-y-2">
             <Button
               size="lg"
-              className="w-full py-6 text-base font-semibold rounded-xl shadow-md"
+              className="w-full py-6 text-base font-semibold rounded-xl shadow-md gap-2"
               onClick={onFinish}
             >
-              {isKiosk ? (
-                <>
-                  <RotateCcw className="w-4 h-4 mr-2" /> Finish & Reset Terminal ({kioskCountdown}s)
-                </>
-              ) : (
-                <>
-                  <Home className="w-4 h-4 mr-2" /> Done
-                </>
-              )}
+              <RotateCcw className="w-5 h-5" />
+              Next Voter in Line ({countdown}s)
             </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              This screen will automatically reset to code entry in {countdown}s for the next voter.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -72,7 +72,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "elections/:id",
-        element: <ElectionDetailPage />,
+        element: (
+          <ProtectedRoute requireAdmin>
+            <ElectionDetailPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "elections/:id/results",

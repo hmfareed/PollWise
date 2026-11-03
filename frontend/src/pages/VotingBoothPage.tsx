@@ -293,14 +293,28 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
     }
   };
 
-  // Finish / Reset Terminal
+  // Finish / Reset Voting Booth for the next voter in line
   const handleFinish = () => {
+    // Clear all voter session and authentication state
+    setSessionToken(null);
+    setVerifiedAccessCode("");
+    setIdentifier("");
+    setChallengeId(null);
+    setOtpCode(null);
+    setBallot(null);
+    setSelections({});
+    setConfirmationReference(null);
+    setCurrentPositionIdx(0);
+    setAuthError(null);
+    setSubmitError(null);
+
+    // Kiosk reset if configured
     if (isKiosk && onKioskReset) {
       onKioskReset();
-      return;
     }
-    // Mobile or personal device: redirect to public election page or home
-    navigate(`/elections/${id}`);
+
+    // Always reset to code entry for the next voter in line
+    setPhase("access_code");
   };
 
   if (isElectionLoading || !election) {
