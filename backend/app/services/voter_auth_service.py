@@ -1,4 +1,5 @@
 import hashlib
+import re
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.election import Election, ElectionStatus
 from app.models.voter_auth import (
+    ElectionAccessCode,
     ElectionParticipation,
     ElectionVoterAuthConfig,
     ElectionVoterRecord,
@@ -273,3 +275,211 @@ class VoterAuthService:
         voting_sess.session_status = "cancelled"
         await session.commit()
         return True
+
+    @staticmethod
+    def _normalize_access_code_string(raw_code: str) -> str:
+        clean = raw_code.strip().upper()
+        # If user entered without hyphens (e.g. PW7K9M2X4L)
+        if len(clean) == 10 and clean.startswith("PW") and "-" not in clean:
+            return f"{clean[:2]}-{clean[2:6]}-{clean[6:]}"
+        # If user entered 8 chars without PW prefix (e.g. 7K9M2X4L)
+        if len(clean) == 8 and "-" not in clean:
+            return f"PW-{clean[:4]}-{clean[4:]}"
+        return clean
+
+    @staticmethod
+    async def verify_access_code(
+        session: AsyncSession, election_id: uuid.UUID, raw_code: str
+    ) -> dict[str, Any]:
+        election = await session.get(Election, election_id)
+        if not election or election.status != ElectionStatus.OPEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "ELECTION_NOT_OPEN", "message": "This election is not currently open for voting."},
+            )
+
+        now = datetime.now(UTC)
+        opens_at = ensure_utc(election.opens_at)
+        closes_at = ensure_utc(election.closes_at)
+        if opens_at and opens_at > now:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "ELECTION_NOT_OPEN", "message": "Election voting window has not started yet."},
+            )
+        if closes_at and closes_at < now:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "ELECTION_NOT_OPEN", "message": "Election voting window has closed."},
+            )
+
+        norm_code = VoterAuthService._normalize_access_code_string(raw_code)
+
+        stmt = select(ElectionAccessCode).where(
+            ElectionAccessCode.election_id == election_id,
+            ElectionAccessCode.code == norm_code,
+        )
+        res = await session.execute(stmt)
+        access_code = res.scalar_one_or_none()
+
+        if not access_code:
+            # Flexible strip hyphens/spaces lookup
+            simplified_input = re.sub(r"[^A-Z0-9]", "", raw_code.upper())
+            flex_stmt = select(ElectionAccessCode).where(
+                ElectionAccessCode.election_id == election_id,
+                func.replace(func.replace(ElectionAccessCode.code, "-", ""), " ", "") == simplified_input,
+            )
+            access_code = (await session.execute(flex_stmt)).scalar_one_or_none()
+
+        if not access_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "INVALID_ACCESS_CODE", "message": "Invalid access code. Please check the code on your physical voter slip."},
+            )
+
+        if access_code.status == "used":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "ACCESS_CODE_ALREADY_USED", "message": "This access code has already been used and is expired."},
+            )
+
+        return {
+            "valid": True,
+            "code": access_code.code,
+            "election_id": election_id,
+            "election_title": election.title,
+        }
+
+    @staticmethod
+    async def claim_access_code_and_start_session(
+        session: AsyncSession,
+        election_id: uuid.UUID,
+        raw_code: str,
+        student_id: str,
+        terminal_token: str | None = None,
+    ) -> dict[str, Any]:
+        # 1. Verify access code validity
+        verify_data = await VoterAuthService.verify_access_code(session, election_id, raw_code)
+        norm_code = verify_data["code"]
+
+        stmt = select(ElectionAccessCode).where(
+            ElectionAccessCode.election_id == election_id,
+            ElectionAccessCode.code == norm_code,
+        )
+        res = await session.execute(stmt)
+        access_code = res.scalar_one_or_none()
+        if not access_code or access_code.status == "used":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "ACCESS_CODE_ALREADY_USED", "message": "This access code has already been used and is expired."},
+            )
+
+        clean_student_id = student_id.strip().upper()
+        if not clean_student_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "INVALID_STUDENT_ID", "message": "Please enter a valid Student ID."},
+            )
+
+        # 2. Check if student has already voted in this election
+        part_stmt = (
+            select(ElectionParticipation)
+            .join(ElectionVoterRecord, ElectionParticipation.voter_record_id == ElectionVoterRecord.id)
+            .where(
+                ElectionParticipation.election_id == election_id,
+                func.upper(ElectionVoterRecord.normalized_identifier) == clean_student_id,
+            )
+        )
+        part_res = await session.execute(part_stmt)
+        if part_res.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "code": "STUDENT_ALREADY_VOTED",
+                    "message": f"Student ID '{clean_student_id}' has already voted in this election and cannot vote again.",
+                },
+            )
+
+        # 3. Check pre-registered roster whitelist if configured by admin (CSV import or manual entry)
+        roster_count = (
+            await session.scalar(
+                select(func.count(ElectionVoterRecord.id)).where(
+                    ElectionVoterRecord.election_id == election_id,
+                    ElectionVoterRecord.source.in_(["csv_import", "manual_entry"]),
+                )
+            )
+        ) or 0
+
+        voter_stmt = select(ElectionVoterRecord).where(
+            ElectionVoterRecord.election_id == election_id,
+            func.upper(ElectionVoterRecord.normalized_identifier) == clean_student_id,
+        )
+        voter_res = await session.execute(voter_stmt)
+        voter = voter_res.scalar_one_or_none()
+
+        if roster_count > 0:
+            if not voter or voter.eligibility_status != "eligible":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "code": "STUDENT_NOT_ON_ROSTER",
+                        "message": f"Student ID '{clean_student_id}' was not found on the approved voter roll for this election.",
+                    },
+                )
+        else:
+            if not voter:
+                voter = ElectionVoterRecord(
+                    election_id=election_id,
+                    identifier_type="student_id",
+                    normalized_identifier=clean_student_id,
+                    eligibility_status="eligible",
+                    source="access_code",
+                )
+                session.add(voter)
+                await session.flush()
+
+        # 4. Invalidate existing active sessions for this voter
+        old_sessions_query = select(VotingSession).where(
+            VotingSession.election_id == election_id,
+            VotingSession.voter_record_id == voter.id,
+            VotingSession.session_status == "active",
+        )
+        old_sessions_res = await session.execute(old_sessions_query)
+        for old_s in old_sessions_res.scalars().all():
+            old_s.session_status = "invalidated"
+
+        # 5. Resolve terminal if provided
+        terminal_id = None
+        if terminal_token:
+            term_hash = VoterAuthService.hash_token(terminal_token)
+            t_res = await session.execute(
+                select(VotingTerminal.id).where(VotingTerminal.auth_token_hash == term_hash)
+            )
+            terminal_id = t_res.scalar_one_or_none()
+
+        # 6. Create voting session
+        now = datetime.now(UTC)
+        config = await VoterAdminService.get_or_create_auth_config(session, election_id)
+        raw_session_token = secrets.token_hex(32)
+        session_token_hash = VoterAuthService.hash_token(raw_session_token)
+        sess_expires_at = now + timedelta(seconds=config.session_max_duration_seconds)
+
+        new_session = VotingSession(
+            election_id=election_id,
+            voter_record_id=voter.id,
+            access_code_id=access_code.id,
+            terminal_id=terminal_id,
+            session_token_hash=session_token_hash,
+            session_status="active",
+            expires_at=sess_expires_at,
+            last_activity_at=now,
+        )
+        session.add(new_session)
+        await session.commit()
+
+        return {
+            "session_token": raw_session_token,
+            "status": "active",
+            "expires_at": sess_expires_at,
+            "allow_position_skip": config.allow_position_skip,
+        }
+

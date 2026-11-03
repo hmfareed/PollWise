@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.ballot import Ballot
 from app.models.election import Candidate, Election, ElectionStatus, Position
 from app.models.voter_auth import (
+    ElectionAccessCode,
     ElectionParticipation,
     ElectionVoterAuthConfig,
     ElectionVoterRecord,
@@ -253,6 +254,14 @@ class BallotParticipationService:
             confirmation_reference=conf_ref,
         )
         election_session.add(participation)
+
+        # Mark access code as used (expires code permanently)
+        if voting_sess.access_code_id:
+            access_code = await election_session.get(ElectionAccessCode, voting_sess.access_code_id)
+            if access_code:
+                access_code.status = "used"
+                access_code.used_by_student_id = voter.normalized_identifier
+                access_code.used_at = now
 
         # Update session
         voting_sess.session_status = "submitted"

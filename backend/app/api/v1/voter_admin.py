@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user
@@ -9,6 +9,9 @@ from app.db.session import get_election_session
 from app.models.identity import User
 from app.schemas.common import ApiResponse
 from app.schemas.voter_auth import (
+    AccessCodeItem,
+    AccessCodeListResponse,
+    GenerateAccessCodesRequest,
     VoterAuthConfigResponse,
     VoterAuthConfigUpdate,
     VoterCSVPreviewReport,
@@ -160,3 +163,68 @@ async def delete_voter(
         status="success",
         data={"deleted": True},
     )
+
+
+@router.post(
+    "/elections/{election_id}/access-codes/generate",
+    response_model=ApiResponse[AccessCodeListResponse],
+)
+async def generate_access_codes(
+    election_id: uuid.UUID,
+    payload: GenerateAccessCodesRequest,
+    session: AsyncSession = Depends(get_election_session),
+    current_user: User = Depends(get_current_user),
+):
+    result = await VoterAdminService.generate_access_codes(
+        session, election_id, count=payload.count
+    )
+    return ApiResponse(
+        status="success",
+        data=AccessCodeListResponse(
+            items=[AccessCodeItem.model_validate(it) for it in result["items"]],
+            total_count=result["total_count"],
+            unused_count=result["unused_count"],
+            used_count=result["used_count"],
+        ),
+    )
+
+
+@router.get(
+    "/elections/{election_id}/access-codes",
+    response_model=ApiResponse[AccessCodeListResponse],
+)
+async def list_access_codes(
+    election_id: uuid.UUID,
+    status_filter: str | None = Query(default=None, alias="status"),
+    session: AsyncSession = Depends(get_election_session),
+    current_user: User = Depends(get_current_user),
+):
+    result = await VoterAdminService.list_access_codes(
+        session, election_id, status_filter=status_filter
+    )
+    return ApiResponse(
+        status="success",
+        data=AccessCodeListResponse(
+            items=[AccessCodeItem.model_validate(it) for it in result["items"]],
+            total_count=result["total_count"],
+            unused_count=result["unused_count"],
+            used_count=result["used_count"],
+        ),
+    )
+
+
+@router.get(
+    "/elections/{election_id}/access-codes/export",
+)
+async def export_access_codes(
+    election_id: uuid.UUID,
+    session: AsyncSession = Depends(get_election_session),
+    current_user: User = Depends(get_current_user),
+):
+    csv_content = await VoterAdminService.export_access_codes_csv(session, election_id)
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="election-{election_id}-access-codes.csv"'},
+    )
+

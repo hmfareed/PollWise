@@ -135,3 +135,35 @@ export interface TerminalHeartbeatResponse {
   command: "none" | "reset" | string;
   server_time: string;
 }
+
+export interface AccessCodeItem {
+  id: string;
+  election_id: string;
+  code: string;
+  status: "unused" | "used";
+  used_by_student_id?: string | null;
+  used_at?: string | null;
+  created_at: string;
+}
+
+export interface AccessCodeListResponse {
+  items: AccessCodeItem[];
+  total_count: number;
+  unused_count: number;
+  used_count: number;
+}
+
+export interface VerifyAccessCodeResponse {
+  valid: boolean;
+  code: string;
+  election_id: string;
+  election_title: string;
+}
+
+export interface ClaimAccessCodeResponse {
+  session_token: string;
+  status: string;
+  expires_at: string;
+  allow_position_skip: boolean;
+}
+

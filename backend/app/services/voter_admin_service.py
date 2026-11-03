@@ -1,6 +1,7 @@
 import csv
 import io
 import re
+import secrets
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -10,7 +11,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.election import Election
-from app.models.voter_auth import ElectionVoterAuthConfig, ElectionVoterRecord
+from app.models.voter_auth import (
+    ElectionAccessCode,
+    ElectionVoterAuthConfig,
+    ElectionVoterRecord,
+)
 from app.schemas.voter_auth import (
     VoterAuthConfigCreate,
     VoterAuthConfigUpdate,
@@ -264,3 +269,92 @@ class VoterAdminService:
         await session.delete(voter)
         await session.commit()
         return True
+
+    @staticmethod
+    async def generate_access_codes(
+        session: AsyncSession, election_id: uuid.UUID, count: int = 50
+    ) -> dict[str, Any]:
+        CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+        # Fetch existing codes for election to ensure uniqueness
+        existing_res = await session.execute(
+            select(ElectionAccessCode.code).where(ElectionAccessCode.election_id == election_id)
+        )
+        existing_codes = set(existing_res.scalars().all())
+
+        new_codes: list[ElectionAccessCode] = []
+        while len(new_codes) < count:
+            part1 = "".join(secrets.choice(CODE_ALPHABET) for _ in range(4))
+            part2 = "".join(secrets.choice(CODE_ALPHABET) for _ in range(4))
+            code = f"PW-{part1}-{part2}"
+            if code not in existing_codes:
+                existing_codes.add(code)
+                code_obj = ElectionAccessCode(
+                    election_id=election_id,
+                    code=code,
+                    status="unused",
+                )
+                session.add(code_obj)
+                new_codes.append(code_obj)
+
+        await session.commit()
+        return await VoterAdminService.list_access_codes(session, election_id)
+
+    @staticmethod
+    async def list_access_codes(
+        session: AsyncSession, election_id: uuid.UUID, status_filter: str | None = None
+    ) -> dict[str, Any]:
+        stmt = select(ElectionAccessCode).where(ElectionAccessCode.election_id == election_id)
+        if status_filter:
+            stmt = stmt.where(ElectionAccessCode.status == status_filter)
+        stmt = stmt.order_by(ElectionAccessCode.created_at.desc(), ElectionAccessCode.code.asc())
+        res = await session.execute(stmt)
+        items = list(res.scalars().all())
+
+        total_count = (
+            await session.scalar(
+                select(func.count(ElectionAccessCode.id)).where(ElectionAccessCode.election_id == election_id)
+            )
+        ) or 0
+
+        unused_count = (
+            await session.scalar(
+                select(func.count(ElectionAccessCode.id)).where(
+                    ElectionAccessCode.election_id == election_id,
+                    ElectionAccessCode.status == "unused",
+                )
+            )
+        ) or 0
+
+        used_count = (
+            await session.scalar(
+                select(func.count(ElectionAccessCode.id)).where(
+                    ElectionAccessCode.election_id == election_id,
+                    ElectionAccessCode.status == "used",
+                )
+            )
+        ) or 0
+
+        return {
+            "items": items,
+            "total_count": total_count,
+            "unused_count": unused_count,
+            "used_count": used_count,
+        }
+
+    @staticmethod
+    async def export_access_codes_csv(session: AsyncSession, election_id: uuid.UUID) -> str:
+        data = await VoterAdminService.list_access_codes(session, election_id)
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Access Code", "Status", "Used By Student ID", "Used At", "Created At"])
+        for item in data["items"]:
+            writer.writerow([
+                item.code,
+                item.status,
+                item.used_by_student_id or "",
+                item.used_at.isoformat() if item.used_at else "",
+                item.created_at.isoformat() if item.created_at else "",
+            ])
+        return output.getvalue()
+

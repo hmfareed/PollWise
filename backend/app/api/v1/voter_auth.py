@@ -7,6 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_election_session
 from app.schemas.common import ApiResponse
 from app.schemas.voter_auth import (
+    ClaimAccessCodeRequest,
+    ClaimAccessCodeResponse,
+    VerifyAccessCodeRequest,
+    VerifyAccessCodeResponse,
     VoterChallengeRequest,
     VoterChallengeResponse,
     VoterSessionResponse,
@@ -85,3 +89,50 @@ async def end_voter_session(
         status="success",
         data={"ended": True},
     )
+
+
+@router.post(
+    "/elections/{election_id}/access-codes/verify",
+    response_model=ApiResponse[VerifyAccessCodeResponse],
+)
+async def verify_access_code(
+    election_id: uuid.UUID,
+    req: VerifyAccessCodeRequest,
+    session: AsyncSession = Depends(get_election_session),
+):
+    result = await VoterAuthService.verify_access_code(session, election_id, req.code)
+    return ApiResponse(
+        status="success",
+        data=VerifyAccessCodeResponse(
+            valid=result["valid"],
+            code=result["code"],
+            election_id=result["election_id"],
+            election_title=result["election_title"],
+        ),
+    )
+
+
+@router.post(
+    "/elections/{election_id}/access-codes/claim",
+    response_model=ApiResponse[ClaimAccessCodeResponse],
+)
+async def claim_access_code(
+    election_id: uuid.UUID,
+    req: ClaimAccessCodeRequest,
+    x_terminal_token: str | None = Header(default=None),
+    session: AsyncSession = Depends(get_election_session),
+):
+    terminal_token = req.terminal_token or x_terminal_token
+    result = await VoterAuthService.claim_access_code_and_start_session(
+        session, election_id, req.code, req.student_id, terminal_token
+    )
+    return ApiResponse(
+        status="success",
+        data=ClaimAccessCodeResponse(
+            session_token=result["session_token"],
+            status=result["status"],
+            expires_at=result["expires_at"],
+            allow_position_skip=result["allow_position_skip"],
+        ),
+    )
+

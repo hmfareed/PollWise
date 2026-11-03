@@ -43,9 +43,13 @@ import type {
 import type { ElectionResult } from "../types/results";
 import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
 import type {
+  AccessCodeItem,
+  AccessCodeListResponse,
   BallotPosition,
   BallotSubmissionReceipt,
+  ClaimAccessCodeResponse,
   TerminalHeartbeatResponse,
+  VerifyAccessCodeResponse,
   VoterAuthConfig,
   VoterAuthConfigUpdate,
   VoterBallotStructure,
@@ -470,6 +474,35 @@ export const apiClient = {
     fetchApi<{ deleted: boolean }>(`/elections/${electionId}/voters/${voterId}`, {
       method: "DELETE",
     }),
+
+  // Voter Access Codes (Physical Voter Slips)
+  generateAccessCodes: (electionId: string, count: number = 50) =>
+    fetchApi<AccessCodeListResponse>(`/elections/${electionId}/access-codes/generate`, {
+      method: "POST",
+      body: JSON.stringify({ count }),
+    }),
+  getAccessCodes: (electionId: string, status?: string) =>
+    fetchApi<AccessCodeListResponse>(
+      `/elections/${electionId}/access-codes${status ? `?status=${status}` : ""}`
+    ),
+  verifyAccessCode: (electionId: string, code: string) =>
+    fetchApi<VerifyAccessCodeResponse>(`/elections/${electionId}/access-codes/verify`, {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+  claimAccessCode: (
+    electionId: string,
+    code: string,
+    studentId: string,
+    terminalToken?: string
+  ) =>
+    fetchApi<ClaimAccessCodeResponse>(`/elections/${electionId}/access-codes/claim`, {
+      method: "POST",
+      headers: terminalToken ? { "X-Terminal-Token": terminalToken } : undefined,
+      body: JSON.stringify({ code, student_id: studentId, terminal_token: terminalToken }),
+    }),
+  exportAccessCodesUrl: (electionId: string) =>
+    `${API_BASE_URL}/elections/${electionId}/access-codes/export`,
 
   // Voter Auth (On-screen Challenge)
   requestVoterChallenge: (

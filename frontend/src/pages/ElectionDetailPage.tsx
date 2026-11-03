@@ -38,6 +38,7 @@ import {
 } from "../components/ui/card";
 import { StatusBadge } from "../components/ui/status-badge";
 import { Badge } from "../components/ui/badge";
+import { AccessCodeManager } from "../components/admin/AccessCodeManager";
 import type { ElectionDetail, AuditEvent } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
 import type { ElectionResult } from "../types/results";
@@ -1234,92 +1235,13 @@ export const ElectionDetailPage: React.FC = () => {
         </TabsContent>
 
         {/* ═══════════════════════════════════════════
-            TAB 4 – Voters
+            TAB 4 – Voters (Physical Access Codes)
         ═══════════════════════════════════════════ */}
         <TabsContent value="voters" className="mt-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold">
-              Eligible Voters ({totalEligible})
-            </h2>
-          </div>
-
-          {/* Add voter */}
-          {isAuthenticated && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Add Eligible Voter</CardTitle>
-                <CardDescription className="text-xs">
-                  Register a voter by their institutional email address.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    placeholder="voter@institution.edu"
-                    value={voterEmail}
-                    onChange={(e) => setVoterEmail(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => addVoterMutation.mutate()}
-                    disabled={!voterEmail.trim() || addVoterMutation.isPending}
-                  >
-                    {addVoterMutation.isPending ? "Adding…" : "Add Voter"}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  💡 <strong>Bulk Import:</strong> Use CSV import in the main Voters tab for bulk operations.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Voter list */}
-          <Card>
-            <CardContent className="p-0">
-              {(!eligibilityList || eligibilityList.length === 0) ? (
-                <div className="p-10 text-center text-sm text-muted-foreground">
-                  No voters registered on this eligibility roll yet.
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {eligibilityList.map((elig) => {
-                    const voted = elig.entitlement_status === "redeemed";
-                    return (
-                      <div
-                        key={elig.id}
-                        className="flex items-center gap-3 px-5 py-3 text-sm"
-                      >
-                        {voted ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                        ) : (
-                          <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {elig.user_email ?? elig.user_id}
-                          </p>
-                          {elig.user_name && (
-                            <p className="text-xs text-muted-foreground">{elig.user_name}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <Badge
-                            variant={voted ? "success" : "secondary"}
-                            className="text-xs"
-                          >
-                            {voted ? "Voted" : "Not voted"}
-                          </Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AccessCodeManager
+            electionId={id!}
+            electionTitle={election?.title}
+          />
         </TabsContent>
 
         {/* ═══════════════════════════════════════════

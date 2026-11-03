@@ -6,6 +6,8 @@ import { apiClient } from "../lib/api-client";
 import { VoterLandingStep } from "../components/voter/VoterLandingStep";
 import { IdentifierEntryStep } from "../components/voter/IdentifierEntryStep";
 import { OTPVerificationStep } from "../components/voter/OTPVerificationStep";
+import { AccessCodeEntryStep } from "../components/voter/AccessCodeEntryStep";
+import { StudentIDEntryStep } from "../components/voter/StudentIDEntryStep";
 import { BallotInstructionsStep } from "../components/voter/BallotInstructionsStep";
 import { PositionVoteStep } from "../components/voter/PositionVoteStep";
 import { BallotReviewStep } from "../components/voter/BallotReviewStep";
@@ -14,6 +16,8 @@ import type { VoterBallotStructure, BallotPosition } from "../types/voter-partic
 
 type FlowPhase =
   | "landing"
+  | "access_code"
+  | "student_id"
   | "identifier"
   | "otp"
   | "instructions"
@@ -40,6 +44,7 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
 
   // Authentication State
   const [identifier, setIdentifier] = useState("");
+  const [verifiedAccessCode, setVerifiedAccessCode] = useState<string>("");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState<string | null>(null);
   const [otpExpiresIn, setOtpExpiresIn] = useState(300);
@@ -73,6 +78,65 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
     queryFn: () => apiClient.getVoterAuthConfig(id!),
     enabled: !!id,
   });
+
+  // 3. Fetch Access Codes Summary to detect if physical slips are active
+  const { data: accessCodesData } = useQuery({
+    queryKey: ["access-codes", id],
+    queryFn: () => apiClient.getAccessCodes(id!),
+    enabled: !!id,
+    retry: false,
+  });
+
+  const hasAccessCodes = (accessCodesData?.total_count || 0) > 0;
+
+  // Handle Access Code Verification (Physical Voter Slip)
+  const handleVerifyAccessCode = async (inputCode: string) => {
+    if (!id) return;
+    setIsAuthLoading(true);
+    setAuthError(null);
+    try {
+      const resp = await apiClient.verifyAccessCode(id, inputCode);
+      setVerifiedAccessCode(resp.code);
+      setPhase("student_id");
+    } catch (err: any) {
+      setAuthError(err?.message || "Invalid access code. Please check your physical voter slip.");
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Handle Access Code Claim with Student ID
+  const handleClaimAccessCode = async (inputStudentId: string) => {
+    if (!id || !verifiedAccessCode) return;
+    setIsAuthLoading(true);
+    setAuthError(null);
+    try {
+      const resp = await apiClient.claimAccessCode(id, verifiedAccessCode, inputStudentId, terminalToken);
+      setSessionToken(resp.session_token);
+
+      // Fetch ballot with authenticated session token
+      const ballotData = await apiClient.getVoterBallot(id, resp.session_token);
+      setBallot(ballotData);
+
+      // Hydrate draft if present
+      if (ballotData.draft?.selections) {
+        const initialSelections: Record<string, { candidateId?: string | null; skipped: boolean }> = {};
+        for (const s of ballotData.draft.selections) {
+          initialSelections[s.position_id] = {
+            candidateId: s.candidate_id,
+            skipped: s.skipped,
+          };
+        }
+        setSelections(initialSelections);
+      }
+
+      setPhase("instructions");
+    } catch (err: any) {
+      setAuthError(err?.message || "Could not verify Student ID or start session.");
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
 
   // Handle Challenge Request (Identifier Submission)
   const handleRequestChallenge = async (inputIdentifier: string) => {
@@ -289,7 +353,39 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
             isOpen={isOpen}
             electionStatus={election.status}
             electionId={id}
-            onStart={() => setPhase("identifier")}
+            onStart={() => {
+              setAuthError(null);
+              setPhase(hasAccessCodes ? "access_code" : "identifier");
+            }}
+          />
+        )}
+
+        {phase === "access_code" && (
+          <AccessCodeEntryStep
+            onVerify={handleVerifyAccessCode}
+            isLoading={isAuthLoading}
+            error={authError}
+            onClearError={() => setAuthError(null)}
+            onBack={() => setPhase("landing")}
+            onSwitchToIdentifier={() => {
+              setAuthError(null);
+              setPhase("identifier");
+            }}
+            identifierLabel={label}
+          />
+        )}
+
+        {phase === "student_id" && (
+          <StudentIDEntryStep
+            verifiedCode={verifiedAccessCode}
+            onClaim={handleClaimAccessCode}
+            isLoading={isAuthLoading}
+            error={authError}
+            onClearError={() => setAuthError(null)}
+            onChangeCode={() => {
+              setAuthError(null);
+              setPhase("access_code");
+            }}
           />
         )}
 

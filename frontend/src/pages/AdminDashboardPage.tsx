@@ -51,6 +51,7 @@ import { cn } from "../lib/utils";
 import { VoterAuthConfigCard } from "../components/admin/VoterAuthConfigCard";
 import { VoterCSVImportModal } from "../components/admin/VoterCSVImportModal";
 import { VoterRosterTable } from "../components/admin/VoterRosterTable";
+import { AccessCodeManager } from "../components/admin/AccessCodeManager";
 
 function formatDeadlineCountdown(deadlineType: string, deadlineAt: string): string {
   const diffMs = new Date(deadlineAt).getTime() - Date.now();
@@ -1139,6 +1140,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
             </Card>
           ) : (
             <div className="space-y-6">
+              {/* Physical Voter Slips & Access Codes */}
+              <AccessCodeManager electionId={effectiveElectionId} />
+
               {/* Voter Authentication Configuration */}
               <VoterAuthConfigCard electionId={effectiveElectionId} />
 

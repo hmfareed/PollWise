@@ -128,6 +128,32 @@ class VoterOTPChallenge(ElectionBase):
         super().__init__(**kwargs)
 
 
+class ElectionAccessCode(ElectionBase):
+    __tablename__ = "election_access_codes"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    election_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("elections.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    code: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="unused", nullable=False, index=True)
+    used_by_student_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("id", uuid.uuid4())
+        kwargs.setdefault("status", "unused")
+        kwargs.setdefault("created_at", datetime.now(UTC))
+        super().__init__(**kwargs)
+
+    __table_args__ = (
+        UniqueConstraint("election_id", "code", name="uq_election_access_code"),
+    )
+
+
 class VotingSession(ElectionBase):
     __tablename__ = "voting_sessions"
 
@@ -138,6 +164,7 @@ class VotingSession(ElectionBase):
     voter_record_id: Mapped[uuid.UUID] = mapped_column(
         GUID(), ForeignKey("election_voter_records.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    access_code_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True, index=True)
     terminal_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), nullable=True, index=True)
     session_token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     session_status: Mapped[str] = mapped_column(

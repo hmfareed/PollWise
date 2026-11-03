@@ -153,3 +153,51 @@ class TerminalHeartbeatRequest(BaseModel):
 class TerminalHeartbeatResponse(BaseModel):
     command: str = "none"
     server_time: datetime
+
+
+class GenerateAccessCodesRequest(BaseModel):
+    count: int = Field(default=50, ge=1, le=5000)
+
+
+class AccessCodeItem(BaseModel):
+    id: uuid.UUID
+    election_id: uuid.UUID
+    code: str
+    status: str
+    used_by_student_id: str | None = None
+    used_at: datetime | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AccessCodeListResponse(BaseModel):
+    items: list[AccessCodeItem]
+    total_count: int
+    unused_count: int
+    used_count: int
+
+
+class VerifyAccessCodeRequest(BaseModel):
+    code: str
+
+
+class VerifyAccessCodeResponse(BaseModel):
+    valid: bool
+    code: str
+    election_id: uuid.UUID
+    election_title: str
+
+
+class ClaimAccessCodeRequest(BaseModel):
+    code: str
+    student_id: str
+    terminal_token: str | None = None
+
+
+class ClaimAccessCodeResponse(BaseModel):
+    session_token: str
+    status: str
+    expires_at: datetime
+    allow_position_skip: bool
+
