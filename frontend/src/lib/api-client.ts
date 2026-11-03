@@ -61,6 +61,11 @@ import type {
   VotingCentre,
   VotingTerminal,
 } from "../types/voter-participation";
+import type {
+  GenerateReportRequest,
+  GenerateReportResponse,
+  ReportExportListResponse,
+} from "../types/reports";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 const BALLOT_BOX_URL = import.meta.env.VITE_BALLOT_BOX_URL || "http://localhost:8000/ballot-box/v1";
@@ -583,4 +588,17 @@ export const apiClient = {
     fetchApi<{ reset_triggered: boolean }>(`/voting-terminals/${terminalId}/reset`, {
       method: "POST",
     }),
+
+  // Reports & Exports
+  generateReport: (electionId: string, payload: GenerateReportRequest) =>
+    fetchApi<GenerateReportResponse>(`/elections/${electionId}/reports/generate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getReportExports: (electionId: string) =>
+    fetchApi<ReportExportListResponse>(`/elections/${electionId}/reports`),
+  getReportExportUrl: (electionId: string, reportType: string, format = "csv") =>
+    `${API_BASE_URL}/elections/${electionId}/reports/export?report_type=${reportType}&format=${format}`,
+  getResultsExportUrl: (electionId: string, format = "csv") =>
+    `${API_BASE_URL}/elections/${electionId}/results/export?format=${format}`,
 };
