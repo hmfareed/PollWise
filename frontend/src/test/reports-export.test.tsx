@@ -110,4 +110,71 @@ describe("Certified Reports & Export Modals", () => {
       expect(screen.getByText("certified_results_20261103.csv")).toBeInTheDocument();
     });
   });
+
+  it("ElectionReportsModal triggers report generation and invokes onOpenCertificate", async () => {
+    const windowOpenSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    const generateSpy = vi.spyOn(apiClient, "generateReport").mockResolvedValueOnce({
+      report: {
+        id: "rep-2",
+        election_id: "elec-123",
+        report_type: "turnout",
+        file_format: "csv",
+        file_name: "turnout.csv",
+        generated_by: "user-1",
+        created_at: "2026-11-03T20:00:00Z",
+      },
+      download_url: "http://localhost:8000/api/v1/elections/elec-123/reports/export?report_type=turnout&format=csv",
+    });
+
+    const onOpenCertificateSpy = vi.fn();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ElectionReportsModal
+          isOpen={true}
+          onClose={() => {}}
+          electionId="elec-123"
+          electionTitle="Student Senate General Election 2026"
+          isPublished={true}
+          onOpenCertificate={onOpenCertificateSpy}
+        />
+      </QueryClientProvider>
+    );
+
+    // Click Certificate button on Certified Results card
+    const certBtn = screen.getByRole("button", { name: /Certificate/i });
+    fireEvent.click(certBtn);
+    expect(onOpenCertificateSpy).toHaveBeenCalled();
+
+    // Click CSV button on Voter Participation & Turnout card
+    const csvButtons = screen.getAllByRole("button", { name: /CSV/i });
+    fireEvent.click(csvButtons[1]); // second card is turnout
+    await waitFor(() => {
+      expect(generateSpy).toHaveBeenCalledWith("elec-123", {
+        report_type: "turnout",
+        file_format: "csv",
+      });
+      expect(windowOpenSpy).toHaveBeenCalled();
+    });
+  });
+
+  it("CertifiedCertificateModal triggers CSV export download on button click", () => {
+    const windowOpenSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+
+    render(
+      <CertifiedCertificateModal
+        isOpen={true}
+        onClose={() => {}}
+        election={mockElection}
+        results={mockResults}
+      />
+    );
+
+    const downloadBtn = screen.getByRole("button", { name: /Download CSV/i });
+    fireEvent.click(downloadBtn);
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/elections/elec-123/results/export?format=csv"),
+      "_blank"
+    );
+  });
 });
