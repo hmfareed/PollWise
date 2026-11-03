@@ -342,7 +342,7 @@ export const ElectionResultsPage: React.FC = () => {
         isOpen={showCertificateModal}
         onClose={() => setShowCertificateModal(false)}
         election={election}
-        results={results}
+        results={results ?? null}
       />
     </div>
   );

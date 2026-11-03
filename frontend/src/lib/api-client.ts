@@ -43,9 +43,7 @@ import type {
 import type { ElectionResult } from "../types/results";
 import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
 import type {
-  AccessCodeItem,
   AccessCodeListResponse,
-  BallotPosition,
   BallotSubmissionReceipt,
   ClaimAccessCodeResponse,
   TerminalHeartbeatResponse,

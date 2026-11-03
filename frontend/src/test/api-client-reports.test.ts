@@ -25,7 +25,7 @@ describe("apiClient Reports & Export Methods", () => {
       error: null,
     };
 
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     } as any);
@@ -65,7 +65,7 @@ describe("apiClient Reports & Export Methods", () => {
       error: null,
     };
 
-    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValueOnce({
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     } as any);

@@ -9,14 +9,13 @@ import {
   Clock,
   Settings2,
   CheckCircle2,
-  AlertCircle,
   FileSpreadsheet,
   FileCode,
   Printer,
   History,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
+import { Card, CardHeader, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { apiClient } from "../../lib/api-client";
 import type { ReportType, ReportFormat } from "../../types/reports";

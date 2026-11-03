@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
-  Circle,
   Clock,
   Shield,
   ShieldCheck,
@@ -24,10 +23,8 @@ import {
   Vote,
   Copy,
   Check,
-  Link2,
   Printer,
   Download,
-  FileSpreadsheet,
 } from "lucide-react";
 import { apiClient, fetchApi } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -1794,7 +1791,7 @@ export const ElectionDetailPage: React.FC = () => {
         isOpen={showCertificateModal}
         onClose={() => setShowCertificateModal(false)}
         election={election}
-        results={results}
+        results={results ?? null}
       />
       <ElectionReportsModal
         isOpen={showReportsModal}
