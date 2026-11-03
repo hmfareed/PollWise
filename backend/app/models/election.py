@@ -73,6 +73,12 @@ class Election(ElectionBase, TimestampMixin):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    reports: Mapped[list["ReportExport"]] = relationship(
+        "ReportExport",
+        back_populates="election",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def compute_configuration_hash(self) -> str:
         """Compute SHA-256 canonical hash of the frozen ballot definition (Doc 05 & 08)."""
@@ -199,3 +205,23 @@ class AuditEvent(ElectionBase):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
     )
+
+
+class ReportExport(ElectionBase):
+    __tablename__ = "report_exports"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    election_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("elections.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    report_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    file_format: Mapped[str] = mapped_column(String(10), nullable=False)
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    generated_by: Mapped[uuid.UUID] = mapped_column(GUID(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+
+    election: Mapped["Election"] = relationship("Election", back_populates="reports")
+
