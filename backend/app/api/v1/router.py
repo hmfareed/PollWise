@@ -9,6 +9,7 @@ from app.api.v1.eligibility import router as eligibility_router
 from app.api.v1.health import router as health_router
 from app.api.v1.invitations import router as invitations_router
 from app.api.v1.organizations import router as organizations_router
+from app.api.v1.reports import router as reports_router
 from app.api.v1.results import router as results_router
 from app.api.v1.voter_admin import router as voter_admin_router
 from app.api.v1.voter_auth import router as voter_auth_router
@@ -25,6 +26,7 @@ api_v1_router.include_router(dashboard_router)
 api_v1_router.include_router(elections_router)
 api_v1_router.include_router(eligibility_router)
 api_v1_router.include_router(results_router)
+api_v1_router.include_router(reports_router)
 api_v1_router.include_router(ballot_box_router)
 api_v1_router.include_router(voter_admin_router)
 api_v1_router.include_router(voter_auth_router)
