@@ -25,6 +25,9 @@ import {
   Copy,
   Check,
   Link2,
+  Printer,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import { apiClient, fetchApi } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -39,6 +42,8 @@ import {
 import { StatusBadge } from "../components/ui/status-badge";
 import { Badge } from "../components/ui/badge";
 import { AccessCodeManager } from "../components/admin/AccessCodeManager";
+import { CertifiedCertificateModal } from "../components/reports/CertifiedCertificateModal";
+import { ElectionReportsModal } from "../components/reports/ElectionReportsModal";
 import type { ElectionDetail, AuditEvent } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
 import type { ElectionResult } from "../types/results";
@@ -256,6 +261,8 @@ export const ElectionDetailPage: React.FC = () => {
 
   // Voting link copy state
   const [copiedVotingLink, setCopiedVotingLink] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
   const votingUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/elections/${id}/vote`
@@ -788,6 +795,16 @@ export const ElectionDetailPage: React.FC = () => {
                   )}
                 </Button>
 
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowReportsModal(true)}
+                  className="gap-1.5 text-xs h-9 cursor-pointer border-border hover:bg-muted"
+                >
+                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  <span>Reports & Exports</span>
+                </Button>
+
                 {election.status === "draft" && (
                   <>
                     <Button
@@ -1250,15 +1267,26 @@ export const ElectionDetailPage: React.FC = () => {
         <TabsContent value="participation" className="mt-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold">Participation Monitor</h2>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleManualRefresh}
-              className="gap-1.5"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(apiClient.getReportExportUrl(id!, "turnout", "csv"), "_blank")}
+                className="gap-1.5 text-xs"
+              >
+                <Download className="h-4 w-4" />
+                Export Turnout CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleManualRefresh}
+                className="gap-1.5 text-xs"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
           </div>
 
           {/* Privacy notice */}
@@ -1541,7 +1569,18 @@ export const ElectionDetailPage: React.FC = () => {
             TAB 8 – Activity (Audit Log)
         ═══════════════════════════════════════════ */}
         <TabsContent value="activity" className="mt-6 space-y-4">
-          <h2 className="text-lg font-bold">Audit Log</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold">Audit Log</h2>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.open(apiClient.getReportExportUrl(id!, "audit_trail", "csv"), "_blank")}
+              className="gap-1.5 text-xs"
+            >
+              <Download className="h-4 w-4" />
+              Export Audit Trail (CSV)
+            </Button>
+          </div>
 
           {!isAuthenticated ? (
             <Card>
@@ -1717,21 +1756,54 @@ export const ElectionDetailPage: React.FC = () => {
                 </Card>
               )}
 
-              {/* View public results link */}
-              {election.status === "published" && (
-                <div className="flex">
+              {/* View public results link and export controls */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(apiClient.getResultsExportUrl(id!, "csv"), "_blank")}
+                  className="gap-1.5 text-xs"
+                >
+                  <Download className="h-4 w-4" />
+                  Export Results CSV
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowCertificateModal(true)}
+                  className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Printer className="h-4 w-4" />
+                  Official Certificate
+                </Button>
+                {election.status === "published" && (
                   <Link to={`/elections/${election.id}/results`}>
                     <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                       <Trophy className="h-4 w-4" />
                       View Public Results Page
                     </Button>
                   </Link>
-                </div>
-              )}
+                )}
+              </div>
             </>
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Reports and Certificate Modals */}
+      <CertifiedCertificateModal
+        isOpen={showCertificateModal}
+        onClose={() => setShowCertificateModal(false)}
+        election={election}
+        results={results}
+      />
+      <ElectionReportsModal
+        isOpen={showReportsModal}
+        onClose={() => setShowReportsModal(false)}
+        electionId={id!}
+        electionTitle={election.title}
+        isPublished={election.status === "published"}
+        onOpenCertificate={() => setShowCertificateModal(true)}
+      />
     </div>
   );
 };

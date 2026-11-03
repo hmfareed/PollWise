@@ -8,8 +8,11 @@ import {
   Lock, 
   Globe, 
   ShieldCheck, 
-  AlertCircle 
+  AlertCircle,
+  Printer,
+  Download
 } from "lucide-react";
+import { CertifiedCertificateModal } from "../components/reports/CertifiedCertificateModal";
 import { apiClient } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
 import { Button } from "../components/ui/button";
@@ -23,6 +26,7 @@ export const ElectionResultsPage: React.FC = () => {
 
   const [approveReason, setApproveReason] = useState("");
   const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: election, isLoading: isElectionLoading } = useQuery({
@@ -117,43 +121,67 @@ export const ElectionResultsPage: React.FC = () => {
             </h1>
           </div>
 
-          {/* Manager Action Controls */}
-          {isAuthenticated && (
-            <div className="flex flex-wrap items-center gap-2">
-              {election.status === "closed" && !results && (
-                <Button
-                  onClick={() => tallyMutation.mutate()}
-                  disabled={tallyMutation.isPending}
-                  className="gap-2"
-                >
-                  <Calculator className="h-4 w-4" />
-                  {tallyMutation.isPending ? "Tallying..." : "Run Official Tally"}
-                </Button>
-              )}
-
-              {election.status === "tallied" && results?.approval_status === "pending" && (
+          {/* Action & Export Controls */}
+          <div className="flex flex-wrap items-center gap-2">
+            {results && (
+              <>
                 <Button
                   variant="outline"
-                  onClick={() => setShowApproveModal(true)}
-                  className="gap-2 border-primary text-primary"
+                  size="sm"
+                  onClick={() => window.open(apiClient.getResultsExportUrl(id!, "csv"), "_blank")}
+                  className="gap-1.5 text-xs"
                 >
-                  <ShieldCheck className="h-4 w-4" />
-                  Approve Tally
+                  <Download className="h-3.5 w-3.5" />
+                  Export CSV
                 </Button>
-              )}
-
-              {election.status === "tallied" && results?.approval_status === "approved" && (
                 <Button
-                  onClick={() => publishMutation.mutate()}
-                  disabled={publishMutation.isPending}
-                  className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  size="sm"
+                  onClick={() => setShowCertificateModal(true)}
+                  className="gap-1.5 text-xs bg-amber-600 hover:bg-amber-700 text-white"
                 >
-                  <Globe className="h-4 w-4" />
-                  {publishMutation.isPending ? "Publishing..." : "Publish Results"}
+                  <Printer className="h-3.5 w-3.5" />
+                  Official Certificate
                 </Button>
-              )}
-            </div>
-          )}
+              </>
+            )}
+
+            {isAuthenticated && (
+              <>
+                {election.status === "closed" && !results && (
+                  <Button
+                    onClick={() => tallyMutation.mutate()}
+                    disabled={tallyMutation.isPending}
+                    className="gap-2"
+                  >
+                    <Calculator className="h-4 w-4" />
+                    {tallyMutation.isPending ? "Tallying..." : "Run Official Tally"}
+                  </Button>
+                )}
+
+                {election.status === "tallied" && results?.approval_status === "pending" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowApproveModal(true)}
+                    className="gap-2 border-primary text-primary"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Approve Tally
+                  </Button>
+                )}
+
+                {election.status === "tallied" && results?.approval_status === "approved" && (
+                  <Button
+                    onClick={() => publishMutation.mutate()}
+                    disabled={publishMutation.isPending}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Globe className="h-4 w-4" />
+                    {publishMutation.isPending ? "Publishing..." : "Publish Results"}
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {errorMessage && (
@@ -309,6 +337,13 @@ export const ElectionResultsPage: React.FC = () => {
           </Card>
         </div>
       )}
+      {/* Certified Certificate Modal */}
+      <CertifiedCertificateModal
+        isOpen={showCertificateModal}
+        onClose={() => setShowCertificateModal(false)}
+        election={election}
+        results={results}
+      />
     </div>
   );
 };
