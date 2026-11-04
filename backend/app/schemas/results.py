@@ -2,10 +2,11 @@
 Pollwise Election Tally and Results Schemas
 """
 
+from typing import Any
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class CandidateResult(BaseModel):
@@ -40,3 +41,12 @@ class ElectionResultResponse(BaseModel):
 class ApproveResultsRequest(BaseModel):
     decision: str = Field(default="approved", pattern="^(approved|rejected)$")
     reason: str | None = None
+    approved: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_decision_from_approved(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "approved" in data and "decision" not in data:
+                data["decision"] = "approved" if data["approved"] else "rejected"
+        return data

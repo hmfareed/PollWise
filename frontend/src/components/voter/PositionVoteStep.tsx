@@ -3,6 +3,7 @@ import { Check, ArrowLeft, ArrowRight, FastForward, User, AlertCircle } from "lu
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { getAssetUrl } from "../../lib/api-client";
 import type { BallotPosition } from "../../types/voter-participation";
 
 interface PositionVoteStepProps {
@@ -101,9 +102,12 @@ export const PositionVoteStep: React.FC<PositionVoteStepProps> = ({
                     {/* Candidate Photo or Avatar */}
                     {cand.photo_url ? (
                       <img
-                        src={cand.photo_url}
+                        src={getAssetUrl(cand.photo_url)}
                         alt={cand.name}
                         className="w-12 h-12 rounded-full object-cover border border-border shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0 border border-border">

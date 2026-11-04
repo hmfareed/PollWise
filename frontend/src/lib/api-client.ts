@@ -68,6 +68,30 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
 const BALLOT_BOX_URL = import.meta.env.VITE_BALLOT_BOX_URL || "http://localhost:8000/ballot-box/v1";
 
+/**
+ * Resolves static asset paths (e.g. /static/uploads/...) to full URLs
+ * using the configured backend API host when necessary.
+ */
+export function getAssetUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("blob:") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+  try {
+    const origin = API_BASE_URL.startsWith("http")
+      ? new URL(API_BASE_URL).origin
+      : (typeof window !== "undefined" ? window.location.origin : "http://localhost:8000");
+    return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
+  } catch {
+    return url;
+  }
+}
+
 export class ApiError extends Error {
   code: string;
   status: number;
@@ -325,6 +349,25 @@ export const apiClient = {
     fetchApi<Candidate>(`/candidates/${candidateId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteCandidate: (candidateId: string) =>
     fetchApi<{ message: string }>(`/candidates/${candidateId}`, { method: "DELETE" }),
+  uploadCandidatePhoto: async (file: File): Promise<{ photo_url: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE_URL}/uploads/candidate-photo`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new ApiError(
+        err?.error?.code || "UPLOAD_FAILED",
+        err?.error?.message || "Failed to upload candidate photo",
+        res.status
+      );
+    }
+    const json = await res.json();
+    return json.data;
+  },
   
   // Lifecycle Transitions
   approveLaunch: (electionId: string, payload: LaunchApprovalPayload) =>
@@ -345,6 +388,17 @@ export const apiClient = {
     }),
   getElectionAudit: (electionId: string) =>
     fetchApi<AuditEvent[]>(`/elections/${electionId}/audit`),
+  getParticipationSummary: (electionId: string) =>
+    fetchApi<{
+      election_id: string;
+      total_eligible: number;
+      ballots_cast: number;
+      turnout_percentage: number;
+      access_codes_total?: number;
+      access_codes_used?: number;
+      roster_voters_count?: number;
+      participations_count?: number;
+    }>(`/elections/${electionId}/participation-summary`),
 
   // Voter Eligibility & Entitlements
   getEligibility: (electionId: string) =>
@@ -392,16 +446,20 @@ export const apiClient = {
     fetchApi<ElectionResult>(`/elections/${electionId}/results`),
   approveTally: (
     electionId: string,
-    resultId: string,
-    payload: { decision: "approved" | "rejected"; reason?: string }
-  ) =>
-    fetchApi<{ approval_id: string; decision: string; status: string }>(
-      `/elections/${electionId}/results/${resultId}/approve`,
+    resultId?: string,
+    payload?: { decision?: "approved" | "rejected"; reason?: string; approved?: boolean }
+  ) => {
+    const url = resultId
+      ? `/elections/${electionId}/results/${resultId}/approve`
+      : `/elections/${electionId}/results/approve`;
+    return fetchApi<{ approval_id: string; decision: string; status: string }>(
+      url,
       {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload || { decision: "approved" }),
       }
-    ),
+    );
+  },
   publishResults: (electionId: string) =>
     fetchApi<{ election_id: string; status: string; published: boolean }>(
       `/elections/${electionId}/publish`,

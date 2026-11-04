@@ -247,4 +247,76 @@ describe("AdminDashboardPage Functional & Real Data Wiring", () => {
       await screen.findByRole("heading", { name: /Candidate Profiles & Management/i })
     ).toBeInTheDocument();
   });
+
+  it("renders candidate photo on candidate cards and includes photo upload in add candidate modal", async () => {
+    const mockDetailWithPhoto = {
+      id: "elec-photo-1",
+      organization_id: "org-123",
+      title: "Student Council Election",
+      description: "Annual representative board",
+      status: "draft" as const,
+      opens_at: "2026-11-10T09:00:00Z",
+      closes_at: "2026-11-12T17:00:00Z",
+      timezone: "UTC",
+      voting_method: "plurality",
+      configuration_version: 1,
+      created_by: "user-1",
+      created_at: "2026-11-01T10:00:00Z",
+      updated_at: "2026-11-01T10:00:00Z",
+      positions: [
+        {
+          id: "pos-1",
+          election_id: "elec-photo-1",
+          title: "President",
+          description: "Executive Leader",
+          min_selections: 1,
+          max_selections: 1,
+          display_order: 0,
+          candidates: [
+            {
+              id: "cand-1",
+              position_id: "pos-1",
+              name: "Jordan Lee",
+              biography: "Dedicated student advocate",
+              photo_url: "/static/uploads/candidates/jordan.png",
+              display_order: 0,
+              status: "active",
+              created_at: "2026-11-01T10:00:00Z",
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(apiClient, "getDashboardSummary").mockResolvedValue(populatedSummary);
+    vi.spyOn(apiClient, "getElections").mockResolvedValue([mockDetailWithPhoto]);
+    vi.spyOn(apiClient, "getElection").mockResolvedValue(mockDetailWithPhoto);
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter>
+            <AdminDashboardPage />
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    // Navigate to candidates workspace tab
+    const addCandidatesBtn = await screen.findByRole("button", { name: /Add Candidates/i });
+    fireEvent.click(addCandidatesBtn);
+
+    // Verify candidate with photo displays image with src
+    const candidateImg = await screen.findByRole("img", { name: "Jordan Lee" });
+    expect(candidateImg).toHaveAttribute("src", "http://localhost:8000/static/uploads/candidates/jordan.png");
+
+    // Open Add Candidate modal
+    const addCandidateBtn = screen.getByRole("button", { name: /^Add Candidate$/i });
+    fireEvent.click(addCandidateBtn);
+
+    // Verify Candidate Profile Picture upload component is present in modal
+    expect(screen.getByText("Candidate Profile Picture")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Upload Candidate Photo/i })).toBeInTheDocument();
+  });
 });

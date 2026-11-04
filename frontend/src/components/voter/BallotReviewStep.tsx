@@ -3,6 +3,7 @@ import { CheckCircle2, AlertTriangle, ArrowLeft, Send, Edit2, ShieldAlert, Loade
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { getAssetUrl } from "../../lib/api-client";
 import type { BallotPosition } from "../../types/voter-participation";
 
 interface BallotReviewStepProps {
@@ -51,13 +52,14 @@ export const BallotReviewStep: React.FC<BallotReviewStepProps> = ({
               const sel = selections[pos.id];
               let choiceText = "Unanswered";
               let isSkipped = false;
+              let chosenCandidate: BallotPosition["candidates"][number] | undefined;
 
               if (sel?.skipped) {
                 choiceText = "Skipped";
                 isSkipped = true;
               } else if (sel?.candidateId) {
-                const found = pos.candidates.find((c) => c.id === sel.candidateId);
-                choiceText = found ? found.name : "Selected Candidate";
+                chosenCandidate = pos.candidates.find((c) => c.id === sel.candidateId);
+                choiceText = chosenCandidate ? chosenCandidate.name : "Selected Candidate";
               }
 
               return (
@@ -76,6 +78,16 @@ export const BallotReviewStep: React.FC<BallotReviewStepProps> = ({
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">Choice:</span>
+                      {chosenCandidate?.photo_url && (
+                        <img
+                          src={getAssetUrl(chosenCandidate.photo_url)}
+                          alt={chosenCandidate.name}
+                          className="w-5 h-5 rounded-full object-cover border border-border shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
                       <span
                         className={`text-sm font-medium ${
                           isSkipped

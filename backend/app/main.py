@@ -1,8 +1,10 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_v1_router
@@ -21,11 +23,11 @@ from app.db.session import ballot_engine, election_engine, identity_engine
 async def lifespan(app: FastAPI):
     """Application lifespan manager for graceful startup and shutdown."""
     if settings.is_development:
-        from app.db.base import BallotBase, ElectionBase, IdentityBase
-        import app.models.identity  # noqa: F401
-        import app.models.election  # noqa: F401
-        import app.models.ballot  # noqa: F401
+        import app.models.ballot
+        import app.models.election
+        import app.models.identity
         import app.models.voter_auth  # noqa: F401
+        from app.db.base import BallotBase, ElectionBase, IdentityBase
 
         async with identity_engine.begin() as conn:
             await conn.run_sync(IdentityBase.metadata.create_all)
@@ -109,6 +111,11 @@ def create_app() -> FastAPI:
     from app.api.ballot_box import router as ballot_box_router
 
     app.include_router(ballot_box_router, prefix="/ballot-box/v1")
+
+    # Static files mounting for uploads
+    static_dir = Path(__file__).resolve().parents[1] / "static"
+    static_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     @app.get("/")
     async def root():

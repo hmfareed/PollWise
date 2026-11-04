@@ -70,3 +70,7 @@ pgdata/
 # Scratch & temporary development scripts
 scratch/
 
+# Uploaded files
+backend/static/uploads/*
+!backend/static/uploads/.gitkeep
+

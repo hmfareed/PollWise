@@ -5,6 +5,7 @@ Pollwise Election Tally and Results API Endpoints
 import uuid
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import (
@@ -12,11 +13,13 @@ from app.core.dependencies import (
     get_current_user_optional,
     verify_user_organization_role,
 )
+from app.core.errors import AppException, ErrorCode
 from app.db.session import (
     get_ballot_session,
     get_election_session,
     get_identity_session,
 )
+from app.models.election import ElectionResult
 from app.models.identity import User
 from app.schemas.results import ApproveResultsRequest, ElectionResultResponse
 from app.services.election_service import ElectionService
@@ -89,14 +92,24 @@ async def get_election_results(
 
 
 @router.post(
+    "/elections/{id}/results/approve",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+)
+@router.post(
     "/elections/{id}/results/{result_id}/approve",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+)
+@router.post(
+    "/results/elections/{id}/approve",
     response_model=dict,
     status_code=status.HTTP_200_OK,
 )
 async def approve_tally(
     id: uuid.UUID,
-    result_id: uuid.UUID,
     payload: ApproveResultsRequest,
+    result_id: uuid.UUID | None = None,
     election_session: AsyncSession = Depends(get_election_session),
     identity_session: AsyncSession = Depends(get_identity_session),
     current_user: User = Depends(get_current_user),
@@ -106,6 +119,13 @@ async def approve_tally(
     await verify_user_organization_role(
         identity_session, current_user, election.organization_id, ["organization_admin", "election_manager"]
     )
+
+    if not result_id:
+        res_stmt = select(ElectionResult).where(ElectionResult.election_id == id)
+        result = (await election_session.execute(res_stmt)).scalar_one_or_none()
+        if not result:
+            raise AppException(ErrorCode.NOT_FOUND, "Election result record not found", status_code=404)
+        result_id = result.id
 
     approval = await TallyService.approve_tally(
         election_session=election_session,

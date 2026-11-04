@@ -1,12 +1,15 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user
-from app.db.session import get_election_session
-from app.models.election import Candidate, Election, Position
-from app.models.identity import User
+from app.db.session import get_ballot_session, get_election_session, get_identity_session
+from app.models.ballot import Ballot
+from app.models.election import Candidate, Election, ElectionResult, Position
+from app.models.identity import ElectionEligibility, User
+from app.models.voter_auth import ElectionAccessCode, ElectionParticipation, ElectionVoterRecord
 from app.schemas.common import ApiResponse
 from app.schemas.election import (
     AuditEventResponse,
@@ -342,5 +345,105 @@ async def get_audit_trail(
             )
             for ev in events
         ],
+        error=None,
+    )
+
+
+@router.get(
+    "/elections/{election_id}/participation-summary",
+    response_model=ApiResponse[dict],
+)
+async def get_election_participation_summary(
+    election_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    election_session: AsyncSession = Depends(get_election_session),
+    identity_session: AsyncSession = Depends(get_identity_session),
+    ballot_session: AsyncSession = Depends(get_ballot_session),
+) -> ApiResponse[dict]:
+    """Retrieve comprehensive real-time voter turnout and participation metrics across all voter auth channels."""
+    # 1. Access code counts
+    total_codes = (
+        await election_session.scalar(
+            select(func.count(ElectionAccessCode.id)).where(ElectionAccessCode.election_id == election_id)
+        )
+    ) or 0
+    used_codes = (
+        await election_session.scalar(
+            select(func.count(ElectionAccessCode.id)).where(
+                ElectionAccessCode.election_id == election_id,
+                ElectionAccessCode.status == "used",
+            )
+        )
+    ) or 0
+
+    # 2. Registered voter roll counts
+    total_roster_voters = (
+        await election_session.scalar(
+            select(func.count(ElectionVoterRecord.id)).where(
+                ElectionVoterRecord.election_id == election_id,
+                ElectionVoterRecord.eligibility_status == "eligible",
+            )
+        )
+    ) or 0
+
+    # 3. Direct participation records
+    total_participations = (
+        await election_session.scalar(
+            select(func.count(ElectionParticipation.id)).where(
+                ElectionParticipation.election_id == election_id,
+                ElectionParticipation.participation_status == "submitted",
+            )
+        )
+    ) or 0
+
+    # 4. Legacy identity eligibility
+    total_legacy_eligible = (
+        await identity_session.scalar(
+            select(func.count(ElectionEligibility.id)).where(
+                ElectionEligibility.election_id == election_id,
+                ElectionEligibility.eligibility_status == "eligible",
+            )
+        )
+    ) or 0
+    total_legacy_redeemed = (
+        await identity_session.scalar(
+            select(func.count(ElectionEligibility.id)).where(
+                ElectionEligibility.election_id == election_id,
+                ElectionEligibility.entitlement_status == "redeemed",
+            )
+        )
+    ) or 0
+
+    # 5. Anonymous ballots in ballot database
+    ballots_in_db = (
+        await ballot_session.scalar(
+            select(func.count(Ballot.id)).where(Ballot.election_id == election_id)
+        )
+    ) or 0
+
+    # 6. Result record if already computed
+    res_stmt = select(ElectionResult).where(ElectionResult.election_id == election_id)
+    result_obj = (await election_session.execute(res_stmt)).scalar_one_or_none()
+    result_ballots = result_obj.ballot_count if result_obj else 0
+
+    # Synthesize accurate aggregate counts
+    total_eligible = max(total_codes, total_roster_voters, total_legacy_eligible)
+    ballots_cast = max(total_participations, used_codes, ballots_in_db, total_legacy_redeemed, result_ballots)
+    if ballots_cast > total_eligible:
+        total_eligible = ballots_cast
+
+    turnout_percentage = round((ballots_cast / total_eligible * 100.0), 2) if total_eligible > 0 else 0.0
+
+    return ApiResponse(
+        data={
+            "election_id": str(election_id),
+            "total_eligible": total_eligible,
+            "ballots_cast": ballots_cast,
+            "turnout_percentage": turnout_percentage,
+            "access_codes_total": total_codes,
+            "access_codes_used": used_codes,
+            "roster_voters_count": total_roster_voters,
+            "participations_count": total_participations,
+        },
         error=None,
     )

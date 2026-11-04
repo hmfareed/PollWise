@@ -188,3 +188,156 @@ async def test_closed_election_tally_and_publication_pipeline(
     assert pub_data["ballot_count"] == 3
     assert pub_data["published_at"] is not None
     assert pub_data["positions"][0]["candidates"][0]["name"] == "Dr. Sarah Connor"
+
+
+@pytest.mark.asyncio
+async def test_voter_booth_ballot_tally_and_approval_endpoints(
+    test_client: AsyncClient,
+    test_identity_session: AsyncSession,
+    test_election_session: AsyncSession,
+    test_ballot_session: AsyncSession,
+):
+    # 1. Register admin & create election
+    reg_res = await test_client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "tally_voter_admin@pollwise.edu",
+            "password": "Password123!",
+            "display_name": "Tally Voter Admin",
+        },
+    )
+    admin_id = uuid.UUID(reg_res.json()["data"]["id"])
+    await test_client.post(
+        "/api/v1/auth/login",
+        json={"email": "tally_voter_admin@pollwise.edu", "password": "Password123!"},
+    )
+
+    org_id = uuid.uuid4()
+    org = Organization(
+        id=org_id,
+        name="Student Union",
+        slug="student-union",
+        status="active",
+    )
+    membership = OrganizationMembership(
+        organization_id=org_id,
+        user_id=admin_id,
+        role="organization_admin",
+        status="active",
+    )
+    test_identity_session.add_all([org, membership])
+    await test_identity_session.flush()
+    now = datetime.now(UTC)
+
+    create_res = await test_client.post(
+        "/api/v1/elections",
+        json={
+            "organization_id": str(org_id),
+            "title": "Voter Booth Tally Election",
+            "opens_at": (now - timedelta(hours=1)).isoformat(),
+            "closes_at": (now + timedelta(days=2)).isoformat(),
+            "timezone": "UTC",
+        },
+    )
+    election_id = create_res.json()["data"]["id"]
+
+    # Configure voter auth
+    await test_client.put(
+        f"/api/v1/elections/{election_id}/voter-auth-config",
+        json={"identifier_type": "institutional_id", "identifier_label": "Student ID"},
+    )
+
+    # Position: President
+    p1_res = await test_client.post(
+        f"/api/v1/elections/{election_id}/positions",
+        json={"title": "President", "min_selections": 1, "max_selections": 1, "display_order": 1},
+    )
+    p1_id = p1_res.json()["data"]["id"]
+    c1_res = await test_client.post(
+        f"/api/v1/positions/{p1_id}/candidates",
+        json={"name": "Alice Winner", "display_order": 1},
+    )
+    c1_id = c1_res.json()["data"]["id"]
+    c2_res = await test_client.post(
+        f"/api/v1/positions/{p1_id}/candidates",
+        json={"name": "Bob Runner", "display_order": 2},
+    )
+    c2_id = c2_res.json()["data"]["id"]
+
+    # Approve, Schedule, and Open election
+    await test_client.post(
+        f"/api/v1/elections/{election_id}/approve-launch",
+        json={"decision": "approved", "reason": "Ready"},
+    )
+    await test_client.post(f"/api/v1/elections/{election_id}/schedule")
+    await test_client.post(f"/api/v1/elections/{election_id}/open")
+
+    # Add voter & authenticate
+    await test_client.post(
+        f"/api/v1/elections/{election_id}/voters",
+        json={"identifier": "STU-9999", "voter_group": "Sciences"},
+    )
+    chal_res = await test_client.post(
+        f"/api/v1/elections/{election_id}/voter-auth/request-challenge",
+        json={"identifier": "STU-9999"},
+    )
+    chal_data = chal_res.json()["data"]
+    verify_res = await test_client.post(
+        f"/api/v1/elections/{election_id}/voter-auth/verify-challenge",
+        json={"challenge_id": chal_data["challenge_id"], "entered_otp": chal_data["otp_code"]},
+    )
+    session_token = verify_res.json()["data"]["session_token"]
+
+    # Submit ballot through voting booth endpoint
+    submit_res = await test_client.post(
+        f"/api/v1/elections/{election_id}/ballot/submit",
+        headers={"X-Voting-Session": session_token},
+        json={
+            "selections": [{"position_id": p1_id, "candidate_id": c1_id, "skipped": False}],
+            "idempotency_key": "idemp-test-999",
+        },
+    )
+    assert submit_res.status_code == 200
+
+    # Verify participation summary reflects the vote
+    part_summary_res = await test_client.get(f"/api/v1/elections/{election_id}/participation-summary")
+    assert part_summary_res.status_code == 200
+    part_summary = part_summary_res.json()["data"]
+    assert part_summary["ballots_cast"] == 1
+    assert part_summary["total_eligible"] == 1
+    assert part_summary["turnout_percentage"] == 100.0
+
+    # Close election and compute tally
+    close_res = await test_client.post(f"/api/v1/elections/{election_id}/close")
+    assert close_res.status_code == 200
+
+    tally_res = await test_client.post(f"/api/v1/elections/{election_id}/tally")
+    assert tally_res.status_code == 200
+    tally_data = tally_res.json()["data"]
+    assert tally_data["ballot_count"] == 1
+
+    # Verify candidate vote reflects the voter booth choice!
+    alice_votes = next(c["votes"] for c in tally_data["positions"][0]["candidates"] if c["name"] == "Alice Winner")
+    assert alice_votes == 1
+
+    # Test approve tally without result_id in URL and with { approved: true }
+    approve_res1 = await test_client.post(
+        f"/api/v1/elections/{election_id}/results/approve",
+        json={"approved": True},
+    )
+    assert approve_res1.status_code == 200
+    assert approve_res1.json()["data"]["decision"] == "approved"
+
+    # Test legacy alias route /results/elections/{id}/approve
+    approve_alias = await test_client.post(
+        f"/api/v1/results/elections/{election_id}/approve",
+        json={"approved": True},
+    )
+    assert approve_alias.status_code == 200
+    assert approve_alias.json()["data"]["decision"] == "approved"
+
+    # Publish results
+    pub_res = await test_client.post(f"/api/v1/elections/{election_id}/publish")
+    assert pub_res.status_code == 200
+    assert pub_res.json()["data"]["published"] is True
+

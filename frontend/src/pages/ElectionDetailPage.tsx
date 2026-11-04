@@ -26,7 +26,7 @@ import {
   Printer,
   Download,
 } from "lucide-react";
-import { apiClient, fetchApi } from "../lib/api-client";
+import { apiClient, getAssetUrl } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
 import { Button } from "../components/ui/button";
 import {
@@ -41,6 +41,7 @@ import { Badge } from "../components/ui/badge";
 import { AccessCodeManager } from "../components/admin/AccessCodeManager";
 import { CertifiedCertificateModal } from "../components/reports/CertifiedCertificateModal";
 import { ElectionReportsModal } from "../components/reports/ElectionReportsModal";
+import { CandidatePhotoUpload } from "../components/admin/CandidatePhotoUpload";
 import type { ElectionDetail, AuditEvent } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
 import type { ElectionResult } from "../types/results";
@@ -164,6 +165,7 @@ interface AddCandidateFormState {
   position_id: string;
   name: string;
   biography: string;
+  photo_url?: string;
 }
 
 // ─── Status helpers ─────────────────────────────────────────────────────────
@@ -241,6 +243,7 @@ export const ElectionDetailPage: React.FC = () => {
     position_id: "",
     name: "",
     biography: "",
+    photo_url: "",
   });
 
   // Tab 4 – Voters
@@ -311,10 +314,24 @@ export const ElectionDetailPage: React.FC = () => {
     retry: false,
   });
 
-  // ── Participation polling (Tab 5) ──
+  // ── Participation polling (Tab 5 & Overview metrics) ──
   const { data: eligibilityData, refetch: refetchEligibility } = useQuery<EligibilityRecord[]>({
     queryKey: ["election-eligibility-poll", id],
     queryFn: () => apiClient.getEligibility(id!),
+    enabled: !!id && isAuthenticated,
+    refetchInterval: 30000,
+  });
+
+  const { data: accessCodesData, refetch: refetchAccessCodes } = useQuery({
+    queryKey: ["access-codes", id],
+    queryFn: () => apiClient.getAccessCodes(id!),
+    enabled: !!id && isAuthenticated,
+    refetchInterval: 30000,
+  });
+
+  const { data: partSummary, refetch: refetchPartSummary } = useQuery({
+    queryKey: ["election-participation-summary", id],
+    queryFn: () => apiClient.getParticipationSummary(id!),
     enabled: !!id && isAuthenticated,
     refetchInterval: 30000,
   });
@@ -328,9 +345,14 @@ export const ElectionDetailPage: React.FC = () => {
 
   const handleManualRefresh = useCallback(() => {
     refetchEligibility();
+    refetchAccessCodes();
+    refetchPartSummary();
+    if (election?.status === "tallied" || election?.status === "published") {
+      refetchResults();
+    }
     setLastRefreshed(new Date());
     setSecondsAgo(0);
-  }, [refetchEligibility]);
+  }, [refetchEligibility, refetchAccessCodes, refetchPartSummary, refetchResults, election?.status]);
 
   // ── Compute SHA-256 config fingerprint ──
   useEffect(() => {
@@ -443,18 +465,27 @@ export const ElectionDetailPage: React.FC = () => {
   });
 
   const approveResultsMutation = useMutation({
-    mutationFn: ({ approved }: { approved: boolean }) =>
-      fetchApi<{ approval_id: string; decision: string; status: string }>(
-        `/results/elections/${id}/approve`,
-        {
-          method: "POST",
-          body: JSON.stringify({ approved }),
-        }
-      ),
+    mutationFn: ({ approved, reason }: { approved: boolean; reason?: string }) =>
+      apiClient.approveTally(id!, results?.id, {
+        decision: approved ? "approved" : "rejected",
+        approved,
+        reason:
+          reason ||
+          (approved
+            ? "Tally verified and approved by election authority"
+            : "Tally rejected by election authority"),
+      }),
     onSuccess: (_, vars) => {
       invalidateElection();
       queryClient.invalidateQueries({ queryKey: ["election-results", id] });
-      notify(vars.approved ? "Results approved." : "Results rejected.");
+      queryClient.invalidateQueries({ queryKey: ["election-participation-summary", id] });
+      refetchResults();
+      refetchPartSummary();
+      notify(
+        vars.approved
+          ? "Results approved successfully. You can now publish them."
+          : "Results rejected."
+      );
     },
     onError: (err) => handleError(err, "Failed to process results approval"),
   });
@@ -489,10 +520,11 @@ export const ElectionDetailPage: React.FC = () => {
       apiClient.addCandidate(candidateForm.position_id, {
         name: candidateForm.name,
         biography: candidateForm.biography || undefined,
+        photo_url: candidateForm.photo_url?.trim() || undefined,
       }),
     onSuccess: () => {
       invalidateElection();
-      setCandidateForm({ position_id: "", name: "", biography: "" });
+      setCandidateForm({ position_id: "", name: "", biography: "", photo_url: "" });
       setShowAddCandidate(false);
       notify("Candidate added.");
     },
@@ -508,17 +540,6 @@ export const ElectionDetailPage: React.FC = () => {
     onError: (err) => handleError(err, "Failed to remove candidate"),
   });
 
-  const addVoterMutation = useMutation({
-    mutationFn: () =>
-      apiClient.addEligibleVoter(id!, { email: voterEmail.trim() }),
-    onSuccess: () => {
-      setVoterEmail("");
-      queryClient.invalidateQueries({ queryKey: ["election-eligibility", id] });
-      queryClient.invalidateQueries({ queryKey: ["election-eligibility-poll", id] });
-      notify("Voter added to eligibility roll.");
-    },
-    onError: (err) => handleError(err, "Failed to add voter"),
-  });
 
   const updateScheduleMutation = useMutation({
     mutationFn: () =>
@@ -575,11 +596,22 @@ export const ElectionDetailPage: React.FC = () => {
   const totalPositions = election.positions?.length ?? 0;
   const totalCandidates =
     election.positions?.reduce((acc, p) => acc + (p.candidates?.length ?? 0), 0) ?? 0;
-  const totalEligible = eligibilityData?.length ?? eligibilityList?.length ?? 0;
-  const totalVoted =
+
+  const summaryEligible = partSummary?.total_eligible ?? 0;
+  const codesEligible = accessCodesData?.total_count ?? 0;
+  const listEligible = eligibilityData?.length ?? eligibilityList?.length ?? 0;
+  const rawEligible = Math.max(summaryEligible, codesEligible, listEligible);
+
+  const summaryVoted = partSummary?.ballots_cast ?? 0;
+  const resultsVoted = results?.ballot_count ?? 0;
+  const codesVoted = accessCodesData?.used_count ?? 0;
+  const listVoted =
     eligibilityData?.filter((r) => r.entitlement_status === "redeemed").length ??
     eligibilityList?.filter((r) => r.entitlement_status === "redeemed").length ??
     0;
+  const totalVoted = Math.max(summaryVoted, resultsVoted, codesVoted, listVoted);
+  const totalEligible = Math.max(rawEligible, totalVoted);
+
   const participationRate = totalEligible > 0 ? (totalVoted / totalEligible) * 100 : 0;
 
   const canEditSchedule =
@@ -873,15 +905,42 @@ export const ElectionDetailPage: React.FC = () => {
                 )}
 
                 {election.status === "tallied" && (
-                  <div className="flex gap-2">
-                    <Button
-                      className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-                      onClick={() => approveResultsMutation.mutate({ approved: true })}
-                      disabled={approveResultsMutation.isPending}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Approve Results
-                    </Button>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {results?.approval_status === "approved" ? (
+                      <Button
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Publish these approved results? They will become publicly visible to all voters."
+                            )
+                          ) {
+                            publishMutation.mutate();
+                          }
+                        }}
+                        disabled={publishMutation.isPending}
+                      >
+                        <Trophy className="h-4 w-4" />
+                        {publishMutation.isPending ? "Publishing…" : "Publish Results"}
+                      </Button>
+                    ) : (
+                      <Button
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Approve and certify these results? Once approved, they can be published to voters."
+                            )
+                          ) {
+                            approveResultsMutation.mutate({ approved: true });
+                          }
+                        }}
+                        disabled={approveResultsMutation.isPending}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        {approveResultsMutation.isPending ? "Approving…" : "Approve Results"}
+                      </Button>
+                    )}
                     <Button
                       variant="destructive"
                       className="gap-2"
@@ -890,7 +949,7 @@ export const ElectionDetailPage: React.FC = () => {
                           approveResultsMutation.mutate({ approved: false });
                         }
                       }}
-                      disabled={approveResultsMutation.isPending}
+                      disabled={approveResultsMutation.isPending || publishMutation.isPending}
                     >
                       Reject Results
                     </Button>
@@ -1162,6 +1221,12 @@ export const ElectionDetailPage: React.FC = () => {
                     }
                   />
                 </div>
+                <CandidatePhotoUpload
+                  value={candidateForm.photo_url}
+                  onChange={(url) =>
+                    setCandidateForm((f) => ({ ...f, photo_url: url }))
+                  }
+                />
                 <div className="flex gap-2 pt-1">
                   <Button
                     size="sm"
@@ -1177,7 +1242,10 @@ export const ElectionDetailPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setShowAddCandidate(false)}
+                    onClick={() => {
+                      setCandidateForm({ position_id: "", name: "", biography: "", photo_url: "" });
+                      setShowAddCandidate(false);
+                    }}
                   >
                     Cancel
                   </Button>
@@ -1203,9 +1271,20 @@ export const ElectionDetailPage: React.FC = () => {
                 <div className="grid gap-3">
                   {pos.candidates?.map((cand) => (
                     <Card key={cand.id} className="flex flex-row items-center gap-4 p-4">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm shrink-0">
-                        {cand.name.charAt(0).toUpperCase()}
-                      </div>
+                      {cand.photo_url ? (
+                        <img
+                          src={getAssetUrl(cand.photo_url)}
+                          alt={cand.name}
+                          className="h-10 w-10 rounded-full object-cover border border-border shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm shrink-0">
+                          {cand.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm">{cand.name}</p>
                         {cand.biography && (
@@ -1733,19 +1812,48 @@ export const ElectionDetailPage: React.FC = () => {
               {election.status === "tallied" && isAuthenticated && (
                 <Card>
                   <CardContent className="p-5 flex flex-wrap gap-3 items-center">
-                    <Button
-                      className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-                      onClick={() => {
-                        approveResultsMutation.mutate({ approved: true });
-                        setTimeout(() => publishMutation.mutate(), 800);
-                      }}
-                      disabled={approveResultsMutation.isPending || publishMutation.isPending}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      {approveResultsMutation.isPending || publishMutation.isPending
-                        ? "Publishing…"
-                        : "Approve & Publish Results"}
-                    </Button>
+                    {results?.approval_status === "approved" ? (
+                      <Button
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Publish these approved results? They will become publicly visible to all voters."
+                            )
+                          ) {
+                            publishMutation.mutate();
+                          }
+                        }}
+                        disabled={publishMutation.isPending}
+                      >
+                        <Trophy className="h-4 w-4" />
+                        {publishMutation.isPending ? "Publishing…" : "Publish Results"}
+                      </Button>
+                    ) : (
+                      <Button
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        onClick={async () => {
+                          if (
+                            window.confirm(
+                              "Approve and publish these results? Once published, they will become publicly accessible to all voters."
+                            )
+                          ) {
+                            try {
+                              await approveResultsMutation.mutateAsync({ approved: true });
+                              publishMutation.mutate();
+                            } catch {
+                              // Error handled by approveResultsMutation
+                            }
+                          }
+                        }}
+                        disabled={approveResultsMutation.isPending || publishMutation.isPending}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        {approveResultsMutation.isPending || publishMutation.isPending
+                          ? "Publishing…"
+                          : "Approve & Publish Results"}
+                      </Button>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       Publishing makes results publicly accessible.
                     </span>

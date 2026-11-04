@@ -240,7 +240,17 @@ class BallotParticipationService:
         anonymous_ballot = Ballot(
             election_id=election_id,
             configuration_hash=election.configuration_hash or "unlocked_draft_hash",
-            ballot_payload={"choices": ballot_payload_items},
+            ballot_payload={
+                "choices": ballot_payload_items,
+                "selections": [
+                    {
+                        "position_id": str(item["position_id"]),
+                        "candidate_ids": [str(item["candidate_id"])] if item.get("candidate_id") else [],
+                        "is_abstain": bool(item.get("skipped", False)),
+                    }
+                    for item in ballot_payload_items
+                ],
+            },
             accepted_at=now,
         )
         ballot_session.add(anonymous_ballot)

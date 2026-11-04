@@ -21,7 +21,6 @@ import {
   Trash2, 
   Lock, 
   Download, 
-  UploadCloud, 
   CheckCircle, 
   ShieldCheck, 
   Trophy, 
@@ -37,8 +36,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../co
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { StatusBadge } from "../components/ui/status-badge";
-import { apiClient } from "../lib/api-client";
+import { apiClient, getAssetUrl } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
+import { CandidatePhotoUpload } from "../components/admin/CandidatePhotoUpload";
 import type { MemberDetail, Organization } from "../types/organization";
 import type { Election, AuditEvent } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
@@ -197,7 +197,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
   });
 
   // Voters / Eligibility for effective election
-  const { data: eligibilityList, isLoading: isEligibilityLoading } = useQuery<EligibilityRecord[]>({
+  useQuery<EligibilityRecord[]>({
     queryKey: ["election-eligibility", effectiveElectionId],
     queryFn: () => apiClient.getEligibility(effectiveElectionId),
     enabled: !!effectiveElectionId && (activeTab === "voters" || activeTab === "dashboard"),
@@ -341,12 +341,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
     },
   });
 
-  const revokeVoterMutation = useMutation({
-    mutationFn: (recordId: string) => apiClient.revokeEligibility(effectiveElectionId, recordId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["election-eligibility", effectiveElectionId] });
-    },
-  });
 
   const addMemberMutation = useMutation({
     mutationFn: ({ orgId, email, role }: { orgId: string; email: string; role: any }) =>
@@ -1063,9 +1057,20 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
                       {pos.candidates.map((cand) => (
                         <div key={cand.id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/50">
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                              {cand.name.substring(0, 2).toUpperCase()}
-                            </div>
+                            {cand.photo_url ? (
+                              <img
+                                src={getAssetUrl(cand.photo_url)}
+                                alt={cand.name}
+                                className="h-8 w-8 rounded-full object-cover border border-border flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                {cand.name.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
                             <div>
                               <p className="font-semibold text-xs text-foreground">{cand.name}</p>
                               {cand.biography && (
@@ -1849,6 +1854,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
                 />
               </div>
 
+              <CandidatePhotoUpload
+                value={candPhotoUrl}
+                onChange={setCandPhotoUrl}
+              />
+
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-foreground">Display Order</label>
                 <input
@@ -1861,7 +1871,16 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ initialT
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="secondary" size="sm" onClick={() => setShowAddCandidateModal(false)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setShowAddCandidateModal(false);
+                    setCandName("");
+                    setCandBiography("");
+                    setCandPhotoUrl("");
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button

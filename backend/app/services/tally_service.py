@@ -53,10 +53,10 @@ class TallyService:
         if not election:
             raise AppException(ErrorCode.NOT_FOUND, "Election not found", status_code=404)
 
-        if election.status != ElectionStatus.CLOSED:
+        if election.status not in (ElectionStatus.CLOSED, ElectionStatus.TALLIED):
             raise AppException(
                 ErrorCode.INVALID_STATE_TRANSITION,
-                f"Tally calculation requires election to be in status 'closed' (current: '{election.status}')",
+                f"Tally calculation requires election to be in status 'closed' or 'tallied' (current: '{election.status}')",
                 status_code=409,
             )
 
@@ -74,22 +74,29 @@ class TallyService:
             abstain_count = 0
 
             for b in ballots:
-                # Find selection for this position in the ballot payload
-                selections = b.ballot_payload.get("selections", [])
-                pos_sel = next((s for s in selections if s.get("position_id") == str(pos.id)), None)
+                # Find selection for this position in the ballot payload (supports both 'selections' and 'choices')
+                payload = b.ballot_payload or {}
+                items = payload.get("selections") or payload.get("choices") or []
+                pos_sel = next((s for s in items if str(s.get("position_id")) == str(pos.id)), None)
                 if not pos_sel:
                     continue
 
-                if pos_sel.get("is_abstain", False):
+                is_abstain = pos_sel.get("is_abstain", False) or pos_sel.get("skipped", False)
+                if is_abstain:
                     abstain_count += 1
                 else:
-                    for cid_str in pos_sel.get("candidate_ids", []):
-                        try:
-                            cid = uuid.UUID(cid_str)
-                            if cid in vote_counts:
-                                vote_counts[cid] += 1
-                        except ValueError:
-                            continue
+                    cand_ids_raw = pos_sel.get("candidate_ids")
+                    if cand_ids_raw is None and pos_sel.get("candidate_id") is not None:
+                        cand_ids_raw = [pos_sel.get("candidate_id")]
+
+                    if isinstance(cand_ids_raw, list):
+                        for cid_str in cand_ids_raw:
+                            try:
+                                cid = uuid.UUID(str(cid_str))
+                                if cid in vote_counts:
+                                    vote_counts[cid] += 1
+                            except (ValueError, TypeError):
+                                continue
 
             total_pos_votes = sum(vote_counts.values())
             candidate_results = []
