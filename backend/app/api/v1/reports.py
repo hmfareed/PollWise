@@ -24,6 +24,7 @@ from app.schemas.reports import (
     ReportExportListResponse,
 )
 from app.services.election_service import ElectionService
+from app.services.notification_service import NotificationService
 from app.services.report_service import ReportService
 
 router = APIRouter(tags=["Reports & Exports"])
@@ -66,6 +67,15 @@ async def generate_report(
         report_type=payload.report_type,
         file_format=payload.file_format,
         actor=current_user,
+    )
+
+    await NotificationService.create_notification(
+        session=identity_session,
+        user_id=current_user.id,
+        title=f"Report Generated: {payload.report_type.replace('_', ' ').title()}",
+        message=f"Official {payload.file_format.upper()} report generated for '{election.title}'.",
+        notification_type="report_certified",
+        action_url=f"/elections/{election_id}",
     )
 
     download_url = f"/api/v1/elections/{election_id}/reports/export?report_type={payload.report_type}&format={payload.file_format}"

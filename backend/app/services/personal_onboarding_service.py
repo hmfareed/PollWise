@@ -17,6 +17,7 @@ from app.models.identity import (
     InstitutionInvitation,
     InvitationStatus,
     MembershipStatus,
+    Notification,
     OnboardingStatus,
     Organization,
     OrganizationMembership,
@@ -100,6 +101,20 @@ class PersonalOnboardingService:
             used_at=None,
         )
         db.add(verification_token)
+
+        # Emit welcome notification
+        welcome_notification = Notification(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            title="Welcome to PollWise!",
+            message="Your personal voter portal is ready. Complete your profile to participate in upcoming elections.",
+            notification_type="system",
+            action_url="/onboarding/personal",
+            is_read=False,
+            created_at=now,
+        )
+        db.add(welcome_notification)
+
         await db.commit()
         await db.refresh(user)
 
