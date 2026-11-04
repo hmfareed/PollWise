@@ -3,12 +3,14 @@ Pollwise Admin Account Creation Command
 Creates or updates a platform administrator account with full privileges across tenant institutions.
 
 Usage:
-    python -m app.commands.create_admin --email pwadmin@gmail.com --password pwadmin123 --name "PollWise Admin"
+    python -m app.commands.create_admin --email admin@yourinstitution.edu --password <YourStrongPassword> --name "PollWise Admin"
 """
 
 import argparse
 import asyncio
+import getpass
 import logging
+import os
 import uuid
 from datetime import UTC, datetime
 
@@ -94,12 +96,16 @@ async def create_or_update_admin(email: str, password: str, display_name: str = 
 
 def main():
     parser = argparse.ArgumentParser(description="Create or update Pollwise administrator")
-    parser.add_argument("--email", default="pwadmin@gmail.com", help="Administrator email address")
-    parser.add_argument("--password", default="pwadmin123", help="Administrator password")
+    parser.add_argument("--email", default="admin@yourinstitution.edu", help="Administrator email address")
+    parser.add_argument("--password", default=None, help="Administrator password (prompted if omitted)")
     parser.add_argument("--name", default="PollWise Admin", help="Display name")
     args = parser.parse_args()
 
-    asyncio.run(create_or_update_admin(args.email, args.password, args.name))
+    password = args.password or os.environ.get("ADMIN_PASSWORD")
+    if not password:
+        password = getpass.getpass("Enter administrator password: ")
+
+    asyncio.run(create_or_update_admin(args.email, password, args.name))
 
 
 if __name__ == "__main__":

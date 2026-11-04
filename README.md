@@ -127,7 +127,7 @@ uv pip install -e ".[dev]"
 .\.venv\Scripts\python -m app.commands.init_db
 
 # Create an initial platform administrator account
-.\.venv\Scripts\python -m app.commands.create_admin --email admin@yourinstitution.edu --password SecurePassword123! --name "Platform Administrator"
+.\.venv\Scripts\python -m app.commands.create_admin --email admin@yourinstitution.edu --password <YourStrongPassword> --name "Platform Administrator"
 
 # Start backend server
 .\.venv\Scripts\uvicorn app.main:app --reload --port 8000
