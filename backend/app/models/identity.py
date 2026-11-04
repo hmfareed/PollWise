@@ -149,6 +149,12 @@ class User(IdentityBase, TimestampMixin):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="desc(Notification.created_at)",
+    )
 
 
 class UserSession(IdentityBase, TimestampMixin):
@@ -343,3 +349,22 @@ class InstitutionInvitation(IdentityBase, TimestampMixin):
     institution: Mapped["Organization"] = relationship(
         "Organization", back_populates="invitations", lazy="selectin"
     )
+
+
+class Notification(IdentityBase, TimestampMixin):
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    notification_type: Mapped[str] = mapped_column(String(50), default="system", nullable=False)
+    action_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    meta_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    user: Mapped["User"] = relationship("User", back_populates="notifications")
+
