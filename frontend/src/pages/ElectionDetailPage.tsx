@@ -25,6 +25,7 @@ import {
   Check,
   Printer,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 import { apiClient, getAssetUrl } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -57,14 +58,22 @@ const TabsCtx = React.createContext<TabsContextValue>({
   setActive: () => undefined,
 });
 
-const Tabs: React.FC<{ defaultValue: string; children: React.ReactNode }> = ({
-  defaultValue,
-  children,
-}) => {
-  const [active, setActive] = useState(defaultValue);
+const Tabs: React.FC<{
+  defaultValue?: string;
+  value?: string;
+  onValueChange?: (val: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}> = ({ defaultValue = "overview", value, onValueChange, children, className = "" }) => {
+  const [internalActive, setInternalActive] = useState(defaultValue);
+  const active = value !== undefined ? value : internalActive;
+  const setActive = (val: string) => {
+    if (value === undefined) setInternalActive(val);
+    onValueChange?.(val);
+  };
   return (
     <TabsCtx.Provider value={{ active, setActive }}>
-      <div>{children}</div>
+      <div className={className}>{children}</div>
     </TabsCtx.Provider>
   );
 };
@@ -226,6 +235,7 @@ export const ElectionDetailPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   // ── State ──
+  const [activeTab, setActiveTab] = useState("overview");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -245,9 +255,6 @@ export const ElectionDetailPage: React.FC = () => {
     biography: "",
     photo_url: "",
   });
-
-  // Tab 4 – Voters
-  const [voterEmail, setVoterEmail] = useState("");
 
   // Tab 5 – Participation
   const [lastRefreshed, setLastRefreshed] = useState<Date>(() => new Date());
@@ -392,6 +399,27 @@ export const ElectionDetailPage: React.FC = () => {
     }
   }, [election]);
 
+  // ── Launch Readiness Prerequisite Computations ──
+  const emptyPositions = (election?.positions || []).filter(
+    (p) => !p.candidates || !p.candidates.some((c) => c.status === "active")
+  );
+  const hasNoPositions = !election?.positions || election.positions.length === 0;
+  const hasNoSchedule = !election?.opens_at || !election?.closes_at;
+  const isScheduleInvalid = !!(
+    election?.opens_at &&
+    election?.closes_at &&
+    new Date(election.closes_at) <= new Date(election.opens_at)
+  );
+  const isClosingPassed = !!(
+    election?.closes_at && new Date(election.closes_at) <= new Date()
+  );
+  const isDraftNotReady =
+    hasNoPositions ||
+    emptyPositions.length > 0 ||
+    hasNoSchedule ||
+    isScheduleInvalid ||
+    isClosingPassed;
+
   // ── Mutations ──
   const notify = (msg: string) => {
     setSuccessMessage(msg);
@@ -400,7 +428,11 @@ export const ElectionDetailPage: React.FC = () => {
   };
   const handleError = (err: unknown, fallback: string) => {
     const e = err as { message?: string };
-    setErrorMessage(e?.message || fallback);
+    const msg = e?.message || fallback;
+    setErrorMessage(msg);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const invalidateElection = () =>
@@ -408,6 +440,25 @@ export const ElectionDetailPage: React.FC = () => {
 
   const scheduleMutation = useMutation({
     mutationFn: async () => {
+      if (hasNoPositions) {
+        throw new Error("Election must contain at least one ballot position before scheduling.");
+      }
+      if (emptyPositions.length > 0) {
+        const names = emptyPositions.map((p) => `"${p.title}"`).join(", ");
+        throw new Error(
+          `Cannot schedule election: Position ${names} ${
+            emptyPositions.length > 1 ? "have" : "has"
+          } no active candidates. Please add candidates or remove empty positions first.`
+        );
+      }
+      if (hasNoSchedule) {
+        throw new Error(
+          "Opening and closing timestamps must be specified prior to scheduling. Please configure them in the Schedule tab."
+        );
+      }
+      if (isScheduleInvalid) {
+        throw new Error("Closing time must be strictly after opening time.");
+      }
       try {
         await apiClient.approveLaunch(id!, {
           decision: "approved",
@@ -428,6 +479,28 @@ export const ElectionDetailPage: React.FC = () => {
   const openMutation = useMutation({
     mutationFn: async () => {
       if (election?.status === "draft") {
+        if (hasNoPositions) {
+          throw new Error("Election must contain at least one ballot position before opening.");
+        }
+        if (emptyPositions.length > 0) {
+          const names = emptyPositions.map((p) => `"${p.title}"`).join(", ");
+          throw new Error(
+            `Cannot open election: Position ${names} ${
+              emptyPositions.length > 1 ? "have" : "has"
+            } no active candidates. Please add candidates or remove empty positions first.`
+          );
+        }
+        if (hasNoSchedule) {
+          throw new Error(
+            "Opening and closing timestamps must be configured in the Schedule tab before opening."
+          );
+        }
+        if (isScheduleInvalid) {
+          throw new Error("Closing time must be strictly after opening time.");
+        }
+        if (isClosingPassed) {
+          throw new Error("Closing time has already passed. Please update the schedule before opening.");
+        }
         try {
           await apiClient.approveLaunch(id!, {
             decision: "approved",
@@ -444,6 +517,77 @@ export const ElectionDetailPage: React.FC = () => {
     },
     onError: (err) => handleError(err, "Failed to open election"),
   });
+
+  // ── Prune Empty Positions & Open Modal Action ──
+  const [showEmptyPositionsModal, setShowEmptyPositionsModal] = useState(false);
+  const [isPruningAndOpening, setIsPruningAndOpening] = useState(false);
+  const [modalActionError, setModalActionError] = useState<string | null>(null);
+
+  const handleRemoveEmptyAndOpen = async () => {
+    try {
+      setIsPruningAndOpening(true);
+      setModalActionError(null);
+      for (const pos of emptyPositions) {
+        await apiClient.deletePosition(pos.id);
+      }
+      try {
+        await apiClient.approveLaunch(id!, {
+          decision: "approved",
+          reason: "Administrator direct open",
+        });
+      } catch {}
+      await apiClient.scheduleElection(id!);
+      await apiClient.openElection(id!);
+
+      setShowEmptyPositionsModal(false);
+      invalidateElection();
+      notify("Election is now open for voting.");
+    } catch (err: unknown) {
+      const e = err as { message?: string };
+      setModalActionError(e?.message || "Failed to remove empty positions and open election.");
+    } finally {
+      setIsPruningAndOpening(false);
+    }
+  };
+
+  const handleOpenClick = () => {
+    if (election?.status === "draft") {
+      if (hasNoPositions) {
+        handleError(
+          new Error("Election must contain at least one ballot position before opening."),
+          "Cannot open election"
+        );
+        return;
+      }
+      if (emptyPositions.length > 0) {
+        setModalActionError(null);
+        setShowEmptyPositionsModal(true);
+        return;
+      }
+      if (hasNoSchedule) {
+        handleError(
+          new Error("Opening and closing timestamps must be configured in the Schedule tab before opening."),
+          "Cannot open election"
+        );
+        return;
+      }
+      if (isScheduleInvalid) {
+        handleError(
+          new Error("Closing time must be strictly after opening time."),
+          "Cannot open election"
+        );
+        return;
+      }
+      if (isClosingPassed) {
+        handleError(
+          new Error("Closing time has already passed. Please update the schedule before opening."),
+          "Cannot open election"
+        );
+        return;
+      }
+    }
+    openMutation.mutate();
+  };
 
   const closeMutation = useMutation({
     mutationFn: () => apiClient.closeElection(id!),
@@ -682,7 +826,7 @@ export const ElectionDetailPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full overflow-x-auto">
           <TabsTrigger value="overview">
             <FileText className="h-3.5 w-3.5" /> Overview
@@ -804,57 +948,147 @@ export const ElectionDetailPage: React.FC = () => {
                   Advance or manage this election's status.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCopyVotingLink}
-                  className="gap-1.5 text-xs h-9 cursor-pointer border-border hover:bg-muted"
-                >
-                  {copiedVotingLink ? (
+              <CardContent className="space-y-4">
+                {/* Inline error for immediate visibility */}
+                {errorMessage && (
+                  <div className="flex items-center justify-between gap-2 rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5 text-xs text-danger">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
+                      <span>{errorMessage}</span>
+                    </div>
+                    <button
+                      onClick={() => setErrorMessage(null)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline ml-2 shrink-0 cursor-pointer"
+                    >
+                      dismiss
+                    </button>
+                  </div>
+                )}
+
+                {/* Pre-flight readiness guidance for draft elections */}
+                {election.status === "draft" && isDraftNotReady && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50/80 p-3.5 text-xs text-amber-900 space-y-2">
+                    <div className="flex items-center gap-1.5 font-semibold text-amber-950">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                      <span>Action Required Before Opening</span>
+                    </div>
+                    <ul className="list-disc list-inside space-y-1 text-amber-800">
+                      {hasNoPositions && (
+                        <li>At least one ballot position is required before launching.</li>
+                      )}
+                      {emptyPositions.length > 0 && (
+                        <li>
+                          {emptyPositions.length} position{emptyPositions.length > 1 ? "s have" : " has"} no candidates:{" "}
+                          <span className="font-semibold">{emptyPositions.map((p) => p.title).join(", ")}</span>.
+                          {" "}Every position must have at least one active candidate.
+                        </li>
+                      )}
+                      {hasNoSchedule && (
+                        <li>Voting schedule (opens at & closes at) must be configured in the Schedule tab.</li>
+                      )}
+                      {isScheduleInvalid && (
+                        <li>Voting closing time must be strictly after opening time.</li>
+                      )}
+                      {isClosingPassed && (
+                        <li>Voting closing time has already passed. Please update the schedule.</li>
+                      )}
+                    </ul>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {emptyPositions.length > 0 && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-amber-300 bg-white hover:bg-amber-100/70 text-amber-900 cursor-pointer"
+                            onClick={() => setActiveTab("candidates")}
+                          >
+                            Add Candidates →
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-amber-300 bg-white hover:bg-amber-100/70 text-amber-900 cursor-pointer"
+                            onClick={() => setActiveTab("positions")}
+                          >
+                            Manage Positions →
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium cursor-pointer"
+                            onClick={() => {
+                              setModalActionError(null);
+                              setShowEmptyPositionsModal(true);
+                            }}
+                          >
+                            Resolve & Open Options →
+                          </Button>
+                        </>
+                      )}
+                      {(hasNoSchedule || isScheduleInvalid || isClosingPassed) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs border-amber-300 bg-white hover:bg-amber-100/70 text-amber-900 cursor-pointer"
+                          onClick={() => setActiveTab("schedule")}
+                        >
+                          Configure Schedule →
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCopyVotingLink}
+                    className="gap-1.5 text-xs h-9 cursor-pointer border-border hover:bg-muted"
+                  >
+                    {copiedVotingLink ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Link Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy Voter Link</span>
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowReportsModal(true)}
+                    className="gap-1.5 text-xs h-9 cursor-pointer border-border hover:bg-muted"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-primary" />
+                    <span>Reports & Exports</span>
+                  </Button>
+
+                  {election.status === "draft" && (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Link Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      <span>Copy Voter Link</span>
+                      <Button
+                        onClick={handleOpenClick}
+                        disabled={openMutation.isPending || scheduleMutation.isPending || isPruningAndOpening}
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
+                      >
+                        <Vote className="h-4 w-4" />
+                        {openMutation.isPending || isPruningAndOpening ? "Opening…" : "Open Election Now"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => scheduleMutation.mutate()}
+                        disabled={scheduleMutation.isPending || openMutation.isPending || isPruningAndOpening}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Lock className="h-4 w-4" />
+                        {scheduleMutation.isPending ? "Scheduling…" : "Schedule Election"}
+                      </Button>
                     </>
                   )}
-                </Button>
-
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowReportsModal(true)}
-                  className="gap-1.5 text-xs h-9 cursor-pointer border-border hover:bg-muted"
-                >
-                  <FileText className="w-3.5 h-3.5 text-primary" />
-                  <span>Reports & Exports</span>
-                </Button>
-
-                {election.status === "draft" && (
-                  <>
-                    <Button
-                      onClick={() => openMutation.mutate()}
-                      disabled={openMutation.isPending || scheduleMutation.isPending}
-                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                    >
-                      <Vote className="h-4 w-4" />
-                      {openMutation.isPending ? "Opening…" : "Open Election Now"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => scheduleMutation.mutate()}
-                      disabled={scheduleMutation.isPending || openMutation.isPending}
-                      className="gap-2"
-                    >
-                      <Lock className="h-4 w-4" />
-                      {scheduleMutation.isPending ? "Scheduling…" : "Schedule Election"}
-                    </Button>
-                  </>
-                )}
 
                 {election.status === "scheduled" && (
                   <Button
@@ -970,6 +1204,7 @@ export const ElectionDetailPage: React.FC = () => {
                     No actions available for status: <strong>{election.status}</strong>
                   </p>
                 )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -988,9 +1223,18 @@ export const ElectionDetailPage: React.FC = () => {
                   <div key={pos.id} className="p-3.5 rounded-lg border border-border bg-muted/20 space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-sm text-foreground">{pos.title}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {pos.candidates?.length ?? 0} candidate{(pos.candidates?.length ?? 0) !== 1 ? "s" : ""}
-                      </span>
+                      {pos.candidates && pos.candidates.length > 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          {pos.candidates.length} candidate{pos.candidates.length !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setActiveTab("candidates")}
+                          className="text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded transition-colors cursor-pointer"
+                        >
+                          0 candidates — add candidate →
+                        </button>
+                      )}
                     </div>
                     {pos.description && (
                       <p className="text-xs text-muted-foreground leading-relaxed">{pos.description}</p>
@@ -1127,9 +1371,15 @@ export const ElectionDetailPage: React.FC = () => {
                       Max {pos.max_selections} selection
                       {pos.max_selections !== 1 ? "s" : ""}
                     </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {pos.candidates?.length ?? 0} candidates
-                    </Badge>
+                    {pos.candidates && pos.candidates.length > 0 ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {pos.candidates.length} candidate{pos.candidates.length !== 1 ? "s" : ""}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs border-amber-300 text-amber-700 bg-amber-50">
+                        0 candidates (Action required)
+                      </Badge>
+                    )}
                     {isAuthenticated && election.status === "draft" && (
                       <Button
                         size="sm"
@@ -1909,6 +2159,80 @@ export const ElectionDetailPage: React.FC = () => {
         isPublished={election.status === "published"}
         onOpenCertificate={() => setShowCertificateModal(true)}
       />
+
+      {/* Empty Positions Action Modal */}
+      {showEmptyPositionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-card border border-border rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-base text-foreground">Action Required Before Opening</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Every ballot position must have at least one active candidate before an election can open. The following {emptyPositions.length} position{emptyPositions.length > 1 ? "s do" : " does"} not have any candidates:
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2 max-h-48 overflow-y-auto">
+              {emptyPositions.map((pos) => (
+                <div key={pos.id} className="flex items-center justify-between text-xs py-1.5 px-3 rounded bg-card border border-border/60">
+                  <span className="font-semibold text-foreground">{pos.title}</span>
+                  <Badge variant="outline" className="text-2xs text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/30 font-medium">
+                    0 candidates
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              You can remove these unfilled positions and open the election immediately, or add candidates in the Candidates tab.
+            </p>
+
+            {modalActionError && (
+              <div className="p-2.5 bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-800 rounded-lg text-xs text-danger flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{modalActionError}</span>
+              </div>
+            )}
+
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowEmptyPositionsModal(false)}
+                disabled={isPruningAndOpening}
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setShowEmptyPositionsModal(false);
+                  setActiveTab("candidates");
+                }}
+                disabled={isPruningAndOpening}
+                className="cursor-pointer"
+              >
+                Add Candidates →
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleRemoveEmptyAndOpen}
+                disabled={isPruningAndOpening}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
+              >
+                <Vote className="h-4 w-4" />
+                {isPruningAndOpening ? "Opening Election…" : "Remove Empty Positions & Open Now"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

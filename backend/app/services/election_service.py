@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.errors import AppException, ErrorCode
+from app.core.security import ensure_utc
 from app.models.election import (
     ApprovalDecision,
     ApprovalType,
@@ -549,6 +550,9 @@ class ElectionService:
             )
 
         election.status = ElectionStatus.OPEN
+        now = datetime.now(UTC)
+        if not election.opens_at or ensure_utc(election.opens_at) > now:
+            election.opens_at = now
         await db.commit()
         await db.refresh(election)
 

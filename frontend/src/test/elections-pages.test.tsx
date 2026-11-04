@@ -353,4 +353,99 @@ describe("Election Pages & Lifecycle UI", () => {
       );
     });
   });
+
+  it("shows readiness guidance and clear error in Lifecycle Actions when draft election has empty positions", async () => {
+    const mockDraftElection: ElectionDetail = {
+      id: "elec-draft-empty",
+      organization_id: "org-1",
+      title: "SRC Test Election",
+      description: "Testing open button",
+      status: "draft",
+      opens_at: "2026-11-04T06:00:00Z",
+      closes_at: "2026-11-04T17:00:00Z",
+      timezone: "UTC",
+      voting_method: "plurality",
+      configuration_version: 1,
+      configuration_hash: null,
+      created_by: "user-admin",
+      created_at: "2026-11-04T05:00:00Z",
+      updated_at: "2026-11-04T05:00:00Z",
+      positions: [
+        {
+          id: "pos-1",
+          election_id: "elec-draft-empty",
+          title: "President",
+          description: "Executive",
+          min_selections: 1,
+          max_selections: 1,
+          display_order: 0,
+          candidates: [
+            {
+              id: "cand-1",
+              position_id: "pos-1",
+              name: "Alice",
+              biography: "Platform",
+              photo_url: null,
+              display_order: 0,
+              status: "active",
+              created_at: "2026-11-04T05:00:00Z",
+            },
+          ],
+        },
+        {
+          id: "pos-2",
+          election_id: "elec-draft-empty",
+          title: "Vice Pres",
+          description: "VP",
+          min_selections: 1,
+          max_selections: 1,
+          display_order: 1,
+          candidates: [],
+        },
+      ],
+    };
+
+    vi.spyOn(apiClient, "getElection").mockResolvedValue(mockDraftElection);
+    const queryClient = createTestQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter initialEntries={["/elections/elec-draft-empty"]}>
+            <Routes>
+              <Route path="/elections/:id" element={<ElectionDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    // Verify readiness warning is shown
+    expect(await screen.findByText(/Action Required Before Opening/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 position has no candidates:/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Vice Pres").length).toBeGreaterThanOrEqual(2);
+
+    // Verify clicking "Open Election Now" opens the action modal
+    const openBtn = screen.getByRole("button", { name: /Open Election Now/i });
+    expect(openBtn).toBeInTheDocument();
+    fireEvent.click(openBtn);
+
+    const pruneAndOpenBtn = await screen.findByRole("button", {
+      name: /Remove Empty Positions & Open Now/i,
+    });
+    expect(pruneAndOpenBtn).toBeInTheDocument();
+
+    const deletePosSpy = vi.spyOn(apiClient, "deletePosition").mockResolvedValue(undefined as any);
+    const approveSpy = vi.spyOn(apiClient, "approveLaunch").mockResolvedValue({ approval_id: "app-1", decision: "approved" });
+    const schedSpy = vi.spyOn(apiClient, "scheduleElection").mockResolvedValue({ ...mockDraftElection, status: "scheduled" });
+    const openSpy = vi.spyOn(apiClient, "openElection").mockResolvedValue({ ...mockDraftElection, status: "open" });
+
+    fireEvent.click(pruneAndOpenBtn);
+
+    await waitFor(() => {
+      expect(deletePosSpy).toHaveBeenCalledWith("pos-2");
+      expect(schedSpy).toHaveBeenCalledWith("elec-draft-empty");
+      expect(openSpy).toHaveBeenCalledWith("elec-draft-empty");
+    });
+  });
 });
