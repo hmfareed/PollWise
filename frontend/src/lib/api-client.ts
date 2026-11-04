@@ -1,5 +1,11 @@
 import type { ApiResponse, HealthStatus, ReadinessStatus } from "../types/api";
 import type {
+  MarkAllReadResponse,
+  NotificationFilterParams,
+  NotificationItem,
+  NotificationListResponse,
+} from "../types/notification";
+import type {
   AcceptInvitationResponse,
   ChangePasswordPayload,
   InvitationValidationResponse,
@@ -657,4 +663,29 @@ export const apiClient = {
     `${API_BASE_URL}/elections/${electionId}/reports/export?report_type=${reportType}&format=${format}`,
   getResultsExportUrl: (electionId: string, format = "csv") =>
     `${API_BASE_URL}/elections/${electionId}/results/export?format=${format}`,
+
+  // Notifications
+  fetchNotifications: (params?: NotificationFilterParams) => {
+    const query = new URLSearchParams();
+    if (params?.unread_only !== undefined) {
+      query.append("unread_only", String(params.unread_only));
+    }
+    if (params?.limit !== undefined) {
+      query.append("limit", String(params.limit));
+    }
+    if (params?.offset !== undefined) {
+      query.append("offset", String(params.offset));
+    }
+    const queryString = query.toString();
+    const endpoint = queryString ? `/notifications?${queryString}` : "/notifications";
+    return fetchApi<NotificationListResponse>(endpoint);
+  },
+  markNotificationRead: (notificationId: string) =>
+    fetchApi<NotificationItem>(`/notifications/${notificationId}/read`, {
+      method: "PATCH",
+    }),
+  markAllNotificationsRead: () =>
+    fetchApi<MarkAllReadResponse>("/notifications/mark-all-read", {
+      method: "POST",
+    }),
 };
