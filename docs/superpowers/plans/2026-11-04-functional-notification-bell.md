@@ -40,7 +40,7 @@
 - Consumes: `IdentityBase`, `TimestampMixin`, `GUID` from `app.db.base` and `app.models.identity`
 - Produces: `Notification` model class, `NotificationRead`, `NotificationListResponse`, `MarkAllReadResponse`
 
-- [ ] **Step 1: Write failing model tests in `backend/tests/test_notification_models.py`**
+- [x] **Step 1: Write failing model tests in `backend/tests/test_notification_models.py`**
 ```python
 import uuid
 import pytest
@@ -77,11 +77,11 @@ async def test_notification_model_and_schema(test_identity_session):
     assert schema.notification_type == "election_status"
 ```
 
-- [ ] **Step 2: Run pytest to confirm test failure**
+- [x] **Step 2: Run pytest to confirm test failure**
 Run: `pytest backend/tests/test_notification_models.py -v`
 Expected: FAIL with "ImportError: cannot import name 'Notification'"
 
-- [ ] **Step 3: Implement `Notification` model and schemas**
+- [x] **Step 3: Implement `Notification` model and schemas**
 Add `Notification` to `backend/app/models/identity.py`:
 ```python
 class Notification(IdentityBase, TimestampMixin):
@@ -104,11 +104,11 @@ class Notification(IdentityBase, TimestampMixin):
 Add relationship `notifications` on `User` in `backend/app/models/identity.py`.
 Create `backend/app/schemas/notification.py` with `NotificationRead`, `NotificationListResponse`, `MarkAllReadResponse`.
 
-- [ ] **Step 4: Run pytest to verify model tests pass**
+- [x] **Step 4: Run pytest to verify model tests pass**
 Run: `pytest backend/tests/test_notification_models.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
 ```bash
 git add backend/app/models/identity.py backend/app/schemas/notification.py backend/tests/test_notification_models.py
 git commit -m "feat(notifications): add Notification model and Pydantic schemas"
@@ -128,7 +128,7 @@ git commit -m "feat(notifications): add Notification model and Pydantic schemas"
 - Consumes: `Notification` model, `get_identity_session`, `get_current_user`
 - Produces: `NotificationService`, `api_v1_router.include_router(notifications_router)`
 
-- [ ] **Step 1: Write failing API tests in `backend/tests/test_notifications_api.py`**
+- [x] **Step 1: Write failing API tests in `backend/tests/test_notifications_api.py`**
 Test:
 1. `GET /api/v1/notifications` returns 401 for unauthenticated request.
 2. Authenticated user receives their notifications, `total_count`, and `unread_count`.
@@ -137,11 +137,11 @@ Test:
 5. `POST /api/v1/notifications/mark-all-read` marks all unread items read for current user.
 6. Cross-user access check: User A cannot read or mark User B's notification.
 
-- [ ] **Step 2: Run pytest to verify test failure**
+- [x] **Step 2: Run pytest to verify test failure**
 Run: `pytest backend/tests/test_notifications_api.py -v`
 Expected: FAIL with 404 Not Found (route not registered).
 
-- [ ] **Step 3: Implement `NotificationService` and FastAPI router**
+- [x] **Step 3: Implement `NotificationService` and FastAPI router**
 In `backend/app/services/notification_service.py`:
 - `list_notifications(session, user_id, unread_only, limit, offset)`
 - `mark_as_read(session, user_id, notification_id)`
@@ -154,11 +154,11 @@ In `backend/app/api/v1/notifications.py`:
 - `POST /api/v1/notifications/mark-all-read`
 - Include router in `backend/app/api/v1/router.py`.
 
-- [ ] **Step 4: Run pytest to verify API tests pass**
+- [x] **Step 4: Run pytest to verify API tests pass**
 Run: `pytest backend/tests/test_notifications_api.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
 ```bash
 git add backend/app/services/notification_service.py backend/app/api/v1/notifications.py backend/app/api/v1/router.py backend/tests/test_notifications_api.py
 git commit -m "feat(notifications): add notification service and REST endpoints"
@@ -177,24 +177,24 @@ git commit -m "feat(notifications): add notification service and REST endpoints"
 - Consumes: `create_notification` from `notification_service`
 - Produces: Automatic notifications emitted during user onboarding and certified report creation
 
-- [ ] **Step 1: Write failing lifecycle tests in `backend/tests/test_notification_lifecycle.py`**
+- [x] **Step 1: Write failing lifecycle tests in `backend/tests/test_notification_lifecycle.py`**
 Test:
 1. Completing personal onboarding generates a welcome notification in the user's notification list.
 2. Generating a certified report creates an administrative notification for the user.
 
-- [ ] **Step 2: Run pytest to verify test failure**
+- [x] **Step 2: Run pytest to verify test failure**
 Run: `pytest backend/tests/test_notification_lifecycle.py -v`
 Expected: FAIL (no notifications created on these events).
 
-- [ ] **Step 3: Connect notification creation in services**
+- [x] **Step 3: Connect notification creation in services**
 - In `personal_onboarding_service.py`: after onboarding completion, call `NotificationService.create_notification(session, user_id=user.id, title="Welcome to PollWise!", message="Your personal voter portal is configured and ready.", notification_type="system", action_url="/dashboard")`.
 - In `report_service.py`: after generating certified report, call `NotificationService.create_notification(session, user_id=user.id, title="Official Report Certified", message=f"Certified report generated for election {election.title}.", notification_type="report_certified", action_url=f"/elections/{election.id}")`.
 
-- [ ] **Step 4: Run pytest to verify lifecycle tests pass**
+- [x] **Step 4: Run pytest to verify lifecycle tests pass**
 Run: `pytest backend/tests/test_notification_lifecycle.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
 ```bash
 git add backend/app/services/personal_onboarding_service.py backend/app/services/report_service.py backend/tests/test_notification_lifecycle.py
 git commit -m "feat(notifications): emit notifications on onboarding and report certification"
@@ -213,17 +213,17 @@ git commit -m "feat(notifications): emit notifications on onboarding and report 
 - Consumes: `apiClient` fetch wrapper
 - Produces: `apiClient.fetchNotifications`, `apiClient.markNotificationRead`, `apiClient.markAllNotificationsRead`
 
-- [ ] **Step 1: Write failing tests in `frontend/src/test/api-client-notifications.test.ts`**
+- [x] **Step 1: Write failing tests in `frontend/src/test/api-client-notifications.test.ts`**
 Test:
 1. `apiClient.fetchNotifications()` calls `/api/v1/notifications` with default headers and query params.
 2. `apiClient.markNotificationRead("notif-123")` makes a `PATCH` request to `/api/v1/notifications/notif-123/read`.
 3. `apiClient.markAllNotificationsRead()` makes a `POST` request to `/api/v1/notifications/mark-all-read`.
 
-- [ ] **Step 2: Run vitest to verify test failure**
+- [x] **Step 2: Run vitest to verify test failure**
 Run: `npx --prefix frontend vitest run src/test/api-client-notifications.test.ts`
 Expected: FAIL with "Property 'fetchNotifications' does not exist on type 'ApiClient'".
 
-- [ ] **Step 3: Define types and implement client methods**
+- [x] **Step 3: Define types and implement client methods**
 In `frontend/src/types/notification.ts`:
 ```typescript
 export interface NotificationItem {
@@ -252,11 +252,11 @@ export interface MarkAllReadResponse {
 In `frontend/src/lib/api-client.ts`:
 Implement `fetchNotifications(params?)`, `markNotificationRead(notificationId)`, and `markAllNotificationsRead()`.
 
-- [ ] **Step 4: Run vitest to verify client tests pass**
+- [x] **Step 4: Run vitest to verify client tests pass**
 Run: `npx --prefix frontend vitest run src/test/api-client-notifications.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
 ```bash
 git add frontend/src/types/notification.ts frontend/src/lib/api-client.ts frontend/src/test/api-client-notifications.test.ts
 git commit -m "feat(notifications): add notification types and apiClient methods"
@@ -276,7 +276,7 @@ git commit -m "feat(notifications): add notification types and apiClient methods
 - Consumes: `apiClient`, `useAuth`, `lucide-react` icons
 - Produces: `<NotificationBellDropdown />` in `AppShell.tsx` header
 
-- [ ] **Step 1: Write failing component tests in `frontend/src/test/NotificationBellDropdown.test.tsx`**
+- [x] **Step 1: Write failing component tests in `frontend/src/test/NotificationBellDropdown.test.tsx`**
 Test:
 1. Renders Bell button; displays badge with count when `unread_count > 0`, hides badge when `unread_count === 0`.
 2. Clicking Bell opens the popover displaying notification list.
@@ -285,11 +285,11 @@ Test:
 5. Clicking individual notification item action navigates and marks read.
 6. Pressing `Escape` or clicking outside closes the popover.
 
-- [ ] **Step 2: Run vitest to confirm failure**
+- [x] **Step 2: Run vitest to confirm failure**
 Run: `npx --prefix frontend vitest run src/test/NotificationBellDropdown.test.tsx`
 Expected: FAIL (module not found).
 
-- [ ] **Step 3: Implement `NotificationBellDropdown` component and update `AppShell.tsx`**
+- [x] **Step 3: Implement `NotificationBellDropdown` component and update `AppShell.tsx`**
 Build `NotificationBellDropdown` with:
 - React Query hook `useQuery({ queryKey: ["notifications"], queryFn: ... })` with `refetchInterval: 30000`.
 - Optimistic updates on `useMutation` for `markNotificationRead` and `markAllNotificationsRead`.
@@ -297,11 +297,11 @@ Build `NotificationBellDropdown` with:
 - Clean type-specific icons and colors.
 - Replace lines 561-567 in `frontend/src/layouts/AppShell.tsx` with `<NotificationBellDropdown />`.
 
-- [ ] **Step 4: Run vitest to verify component tests and AppShell tests pass**
+- [x] **Step 4: Run vitest to verify component tests and AppShell tests pass**
 Run: `npx --prefix frontend vitest run src/test/NotificationBellDropdown.test.tsx src/test/AppShell.test.tsx`
 Expected: PASS
 
-- [ ] **Step 5: Commit changes**
+- [x] **Step 5: Commit changes**
 ```bash
 git add frontend/src/components/notifications/NotificationBellDropdown.tsx frontend/src/layouts/AppShell.tsx frontend/src/test/NotificationBellDropdown.test.tsx frontend/src/test/AppShell.test.tsx
 git commit -m "feat(notifications): integrate functional NotificationBellDropdown in AppShell"
@@ -315,13 +315,13 @@ git commit -m "feat(notifications): integrate functional NotificationBellDropdow
 - Test: `backend/tests`
 - Test: `frontend/src/test`
 
-- [ ] **Step 1: Run full backend test suite**
+- [x] **Step 1: Run full backend test suite**
 Run: `pytest backend/tests`
 Expected: ALL PASS with 0 errors.
 
-- [ ] **Step 2: Run full frontend test suite**
+- [x] **Step 2: Run full frontend test suite**
 Run: `npm --prefix frontend test`
 Expected: ALL PASS with 0 failures.
 
-- [ ] **Step 3: Final branch verification and review**
+- [x] **Step 3: Final branch verification and review**
 Check git status, commit history, and verify all tasks in the plan are marked complete.
