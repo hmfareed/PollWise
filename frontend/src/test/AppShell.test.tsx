@@ -52,6 +52,7 @@ describe("AppShell Component", () => {
     expect(screen.getByText("Elections")).toBeInTheDocument();
     expect(screen.getByText("Organizations")).toBeInTheDocument();
     expect(screen.getByText("Institutional Admin")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /notifications/i })).toBeInTheDocument();
   });
 
   it("does not render sidebar or top navigation on auth routes (login, register)", () => {

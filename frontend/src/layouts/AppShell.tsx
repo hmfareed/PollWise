@@ -14,12 +14,12 @@ import {
   Layers,
   UserCheck,
   BarChart3,
-  Bell,
   Search,
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../features/auth/useAuth";
 import { Button } from "../components/ui/button";
+import { NotificationBellDropdown } from "../components/notifications/NotificationBellDropdown";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -558,13 +558,8 @@ export const AppShell: React.FC = () => {
 
           {/* Right: Notification bell, User Session profile, and Sign Out */}
           <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-            {/* Notification Bell with Badge */}
-            <div className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition cursor-pointer">
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                3
-              </span>
-            </div>
+            {/* Functional Notification Bell with Dynamic Popover */}
+            <NotificationBellDropdown />
 
             {/* User Session State */}
             {isAuthenticated && user ? (
