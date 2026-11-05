@@ -58,6 +58,18 @@ export const AppShell: React.FC = () => {
     )
   );
 
+  const institutionName =
+    memberships?.find(
+      (m) =>
+        m.role === "admin" ||
+        m.role === "owner" ||
+        m.role === "organization_admin" ||
+        m.role === "election_manager"
+    )?.organization_name ||
+    memberships?.[0]?.organization_name ||
+    user?.display_name ||
+    "Your Institution";
+
   // =========================================================================
   // VIEW: PUBLIC MARKETING LANDING PAGE
   // =========================================================================
@@ -485,10 +497,13 @@ export const AppShell: React.FC = () => {
                 <div className="h-8 w-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
                   <Landmark className="h-4 w-4" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-[10px] text-slate-400">Your institution</p>
-                  <p className="font-bold text-white text-xs truncate max-w-[130px]">
-                    University of Excellence
+                  <p
+                    className="font-bold text-white text-xs truncate max-w-[140px]"
+                    title={institutionName}
+                  >
+                    {institutionName}
                   </p>
                 </div>
               </div>
@@ -507,9 +522,12 @@ export const AppShell: React.FC = () => {
                 <div className="h-8 w-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
                   <Landmark className="h-4 w-4" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-[10px] text-slate-400">Your institution</p>
-                  <p className="font-bold text-white text-xs truncate max-w-[130px]">
+                  <p
+                    className="font-bold text-white text-xs truncate max-w-[140px]"
+                    title={memberships[0].organization_name}
+                  >
                     {memberships[0].organization_name}
                   </p>
                 </div>

@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "../features/auth/AuthContext";
+import { AuthContext } from "../features/auth/authContextDef";
 import { AppShell } from "../layouts/AppShell";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
 
@@ -53,6 +54,51 @@ describe("AppShell Component", () => {
     expect(screen.getByText("Organizations")).toBeInTheDocument();
     expect(screen.getByText("Institutional Admin")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /notifications/i })).toBeInTheDocument();
+  });
+
+  it("displays the correct institution name in the sidebar for institution admin", () => {
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AuthContext.Provider
+          value={{
+            user: {
+              id: "u-1",
+              email: "admin@hanara.edu",
+              display_name: "Admin User",
+              email_verified: true,
+              account_status: "active",
+              is_platform_admin: false,
+              account_type: "institution",
+              created_at: "2026-01-01T00:00:00Z",
+            },
+            memberships: [
+              {
+                id: "mem-1",
+                organization_id: "org-1",
+                organization_name: "Hanara International Academy",
+                organization_slug: "hanara-academy",
+                role: "organization_admin",
+                status: "active",
+              },
+            ],
+            isAuthenticated: true,
+            isLoading: false,
+            login: vi.fn(),
+            register: vi.fn(),
+            logout: vi.fn(),
+            refresh: vi.fn(),
+          }}
+        >
+          <MemoryRouter initialEntries={["/admin"]}>
+            <AppShell />
+          </MemoryRouter>
+        </AuthContext.Provider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByText("Hanara International Academy")).toBeInTheDocument();
+    expect(screen.queryByText("University of Excellence")).not.toBeInTheDocument();
   });
 
   it("does not render sidebar or top navigation on auth routes (login, register)", () => {
