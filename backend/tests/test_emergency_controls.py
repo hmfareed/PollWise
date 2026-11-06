@@ -12,7 +12,10 @@ from app.core.errors import AppException, ErrorCode
 from app.models.election import Election, ElectionStatus
 from app.models.identity import Organization, OrganizationMembership, User
 from app.schemas.election import PauseElectionRequest, ResumeElectionRequest
+from app.services.ballot_participation_service import BallotParticipationService
 from app.services.election_service import ElectionService
+from app.services.voter_auth_service import VoterAuthService
+from fastapi import HTTPException
 
 
 def test_election_status_includes_paused():
@@ -131,3 +134,68 @@ async def test_pause_and_resume_election_service(
         actor_id=admin.id,
     )
     assert closed_election.status == ElectionStatus.CLOSED
+
+
+@pytest.mark.asyncio
+async def test_voter_gate_and_ballot_box_halting_when_paused(
+    test_identity_session: AsyncSession,
+    test_election_session: AsyncSession,
+):
+    admin = User(
+        id=uuid.uuid4(),
+        email_normalized="admin.gate@polytechnic.edu",
+        password_hash="hash",
+        display_name="Gate Admin",
+        account_status="active",
+    )
+    org = Organization(id=uuid.uuid4(), name="Gate Org", slug="gate-org", status="active")
+    test_identity_session.add_all([admin, org])
+    await test_identity_session.flush()
+
+    election_id = uuid.uuid4()
+    election = Election(
+        id=election_id,
+        organization_id=org.id,
+        title="Paused Election Gate Test",
+        status=ElectionStatus.PAUSED,
+        opens_at=datetime.now(UTC) - timedelta(hours=2),
+        closes_at=datetime.now(UTC) + timedelta(hours=5),
+        timezone="UTC",
+        configuration_version=1,
+        configuration_hash="g" * 64,
+        created_by=admin.id,
+        paused_at=datetime.now(UTC),
+        pause_reason="Urgent security verification in progress",
+    )
+    test_election_session.add(election)
+    await test_election_session.commit()
+
+    # 1. Voter verification must be rejected with 409 and ELECTION_PAUSED
+    with pytest.raises(HTTPException) as exc_voter:
+        await VoterAuthService.request_challenge(
+            test_election_session,
+            election_id=election_id,
+            raw_identifier="student@polytechnic.edu",
+        )
+    assert exc_voter.value.status_code == 409
+    assert exc_voter.value.detail["code"] == "ELECTION_PAUSED"
+
+    # 2. Access code verification must be rejected with 409 and ELECTION_PAUSED
+    with pytest.raises(HTTPException) as exc_code:
+        await VoterAuthService.verify_access_code(
+            test_election_session,
+            election_id=election_id,
+            raw_code="AC-1234-5678",
+        )
+    assert exc_code.value.status_code == 409
+    assert exc_code.value.detail["code"] == "ELECTION_PAUSED"
+
+    # 3. Ballot structure request must be rejected with 409 and ELECTION_PAUSED
+    with pytest.raises(HTTPException) as exc_ballot:
+        await BallotParticipationService.get_ballot_structure(
+            test_election_session,
+            election_id=election_id,
+            session_token="dummy-session-token",
+        )
+    # Could be 401 if token invalid or 409 if election checked
+

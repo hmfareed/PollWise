@@ -36,7 +36,17 @@ class BallotParticipationService:
             )
 
         election = await election_session.get(Election, election_id)
-        if not election or election.status != ElectionStatus.OPEN:
+        if not election:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "NOT_FOUND", "message": "Election not found."},
+            )
+        if election.status == ElectionStatus.PAUSED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "ELECTION_PAUSED", "message": "Voting is temporarily paused under emergency control protocol."},
+            )
+        if election.status != ElectionStatus.OPEN:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"code": "ELECTION_NOT_OPEN", "message": "Election is not open."},
@@ -151,7 +161,17 @@ class BallotParticipationService:
 
         # 2. Check election open window
         election = await election_session.get(Election, election_id)
-        if not election or election.status != ElectionStatus.OPEN:
+        if not election:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "NOT_FOUND", "message": "Election not found."},
+            )
+        if election.status == ElectionStatus.PAUSED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "ELECTION_PAUSED", "message": "Voting is temporarily paused under emergency control protocol."},
+            )
+        if election.status != ElectionStatus.OPEN:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"code": "ELECTION_NOT_OPEN", "message": "Election is not open."},

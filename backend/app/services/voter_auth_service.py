@@ -48,7 +48,17 @@ class VoterAuthService:
     ) -> dict[str, str | int]:
         # 1. Verify election exists and is open
         election = await session.get(Election, election_id)
-        if not election or election.status != ElectionStatus.OPEN:
+        if not election:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "NOT_FOUND", "message": "Election not found."},
+            )
+        if election.status == ElectionStatus.PAUSED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "ELECTION_PAUSED", "message": "Election is temporarily paused under emergency control protocol. Voter verification is suspended."},
+            )
+        if election.status != ElectionStatus.OPEN:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"code": "ELECTION_NOT_OPEN", "message": "This election is not currently open for voting."},
@@ -292,7 +302,17 @@ class VoterAuthService:
         session: AsyncSession, election_id: uuid.UUID, raw_code: str
     ) -> dict[str, Any]:
         election = await session.get(Election, election_id)
-        if not election or election.status != ElectionStatus.OPEN:
+        if not election:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"code": "NOT_FOUND", "message": "Election not found."},
+            )
+        if election.status == ElectionStatus.PAUSED:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "ELECTION_PAUSED", "message": "Election is temporarily paused under emergency control protocol. Access code verification is suspended."},
+            )
+        if election.status != ElectionStatus.OPEN:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"code": "ELECTION_NOT_OPEN", "message": "This election is not currently open for voting."},
