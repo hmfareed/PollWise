@@ -1,3 +1,4 @@
+import enum
 import hashlib
 import json
 import uuid
@@ -75,6 +76,12 @@ class Election(ElectionBase, TimestampMixin):
     )
     reports: Mapped[list["ReportExport"]] = relationship(
         "ReportExport",
+        back_populates="election",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    recount_requests: Mapped[list["RecountRequest"]] = relationship(
+        "RecountRequest",
         back_populates="election",
         cascade="all, delete-orphan",
         lazy="selectin",
@@ -224,4 +231,32 @@ class ReportExport(ElectionBase):
     )
 
     election: Mapped["Election"] = relationship("Election", back_populates="reports")
+
+
+class RecountStatus(str, enum.Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    REJECTED = "rejected"
+
+
+class RecountRequest(ElectionBase):
+    __tablename__ = "recount_requests"
+
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    election_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("elections.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    requester_user_id: Mapped[uuid.UUID] = mapped_column(GUID(), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default=RecountStatus.PENDING, nullable=False)
+    resulting_result_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("election_results.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    election: Mapped["Election"] = relationship("Election", back_populates="recount_requests")
+
 

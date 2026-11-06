@@ -33,9 +33,28 @@ class ElectionResultResponse(BaseModel):
     configuration_hash: str
     ballot_count: int
     approval_status: str
+    result_version: int = 1
+    tally_algorithm_version: str = "1.0"
     computed_at: datetime
     published_at: datetime | None = None
     positions: list[PositionResult]
+
+
+class RecountRequestCreate(BaseModel):
+    reason: str = Field(..., min_length=5, max_length=2000)
+
+
+class RecountRequestResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    election_id: uuid.UUID
+    requester_user_id: uuid.UUID
+    reason: str
+    status: str
+    resulting_result_id: uuid.UUID | None = None
+    created_at: datetime
+    resolved_at: datetime | None = None
 
 
 class ApproveResultsRequest(BaseModel):
