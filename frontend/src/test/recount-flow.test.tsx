@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
@@ -146,17 +145,18 @@ describe("Recount Integration on ElectionResultsPage", () => {
         email: "admin@univ.edu",
         display_name: "Admin",
         account_status: "active",
-        email_verified_at: "2026-01-01T00:00:00Z",
+        email_verified: true,
+        created_at: "2026-01-01T00:00:00Z",
         is_platform_admin: false,
       },
       memberships: [
         {
           id: "mem-1",
-          user_id: "admin-1",
           organization_id: "org-1",
+          organization_name: "State College",
+          organization_slug: "state-college",
           role: "organization_admin",
           status: "active",
-          created_at: "2026-01-01T00:00:00Z",
         },
       ],
     });
