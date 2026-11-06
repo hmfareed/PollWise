@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class CreateElectionRequest(BaseModel):
@@ -76,6 +76,24 @@ class CancelElectionRequest(BaseModel):
     )
 
 
+class PauseElectionRequest(BaseModel):
+    reason: str = Field(
+        ..., min_length=5, max_length=2000, description="Mandatory operational or emergency justification for pausing election"
+    )
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        stripped = v.strip()
+        if len(stripped) < 5:
+            raise ValueError("Reason must be at least 5 characters (excluding leading and trailing whitespace)")
+        return stripped
+
+
+class ResumeElectionRequest(BaseModel):
+    reason: str | None = Field(None, max_length=2000, description="Optional notes on emergency resolution")
+
+
 class CandidateResponse(BaseModel):
     id: uuid.UUID
     position_id: uuid.UUID
@@ -110,6 +128,8 @@ class ElectionResponse(BaseModel):
     voting_method: str
     configuration_version: int
     configuration_hash: str | None = None
+    paused_at: datetime | None = None
+    pause_reason: str | None = None
     created_by: uuid.UUID
     created_at: datetime
     updated_at: datetime

@@ -567,18 +567,103 @@ class ElectionService:
         return election
 
     @classmethod
-    async def close_election(
+    async def pause_election(
         cls,
         db: AsyncSession,
-        user: User,
         election_id: uuid.UUID,
+        actor: User,
+        reason: str,
     ) -> Election:
-        """Transition election to CLOSED state, stopping further voting."""
+        """Temporarily pause an open election under emergency control protocol (Doc 01 §11.3)."""
         election = await cls.get_election(db, election_id)
         if election.status != ElectionStatus.OPEN:
             raise AppException(
                 code=ErrorCode.INVALID_STATE_TRANSITION,
-                message=f"Cannot close election from '{election.status}' state. Must be 'open'.",
+                message=f"Cannot pause election from '{election.status}' state. Must be 'open'.",
+            )
+        stripped_reason = reason.strip() if reason else ""
+        if len(stripped_reason) < 5:
+            raise AppException(
+                code=ErrorCode.VALIDATION_ERROR,
+                message="Pause reason must be at least 5 characters.",
+                status_code=422,
+            )
+
+        now = datetime.now(UTC)
+        election.status = ElectionStatus.PAUSED
+        election.paused_at = now
+        election.pause_reason = stripped_reason
+
+        await db.commit()
+        await db.refresh(election)
+
+        await cls.record_audit_event(
+            db=db,
+            event_type="ELECTION_PAUSED",
+            actor_id=actor.id,
+            organization_id=election.organization_id,
+            election_id=election.id,
+            metadata={"reason": stripped_reason, "paused_at": now.isoformat()},
+        )
+        return election
+
+    @classmethod
+    async def resume_election(
+        cls,
+        db: AsyncSession,
+        election_id: uuid.UUID,
+        actor: User,
+        reason: str | None = None,
+    ) -> Election:
+        """Resume a paused election back to open state (Doc 01 §11.3)."""
+        election = await cls.get_election(db, election_id)
+        if election.status != ElectionStatus.PAUSED:
+            raise AppException(
+                code=ErrorCode.INVALID_STATE_TRANSITION,
+                message=f"Cannot resume election from '{election.status}' state. Must be 'paused'.",
+            )
+
+        now = datetime.now(UTC)
+        election.status = ElectionStatus.OPEN
+        election.paused_at = None
+        election.pause_reason = None
+
+        await db.commit()
+        await db.refresh(election)
+
+        await cls.record_audit_event(
+            db=db,
+            event_type="ELECTION_RESUMED",
+            actor_id=actor.id,
+            organization_id=election.organization_id,
+            election_id=election.id,
+            metadata={"reason": reason or "", "resumed_at": now.isoformat()},
+        )
+        return election
+
+    @classmethod
+    async def close_election(
+        cls,
+        db: AsyncSession,
+        user: User | None = None,
+        election_id: uuid.UUID | None = None,
+        *,
+        actor: User | None = None,
+        actor_id: uuid.UUID | None = None,
+    ) -> Election:
+        """Transition election to CLOSED state, stopping further voting."""
+        if isinstance(user, uuid.UUID):
+            election_id = user
+            user = actor
+        if election_id is None:
+            raise AppException(code=ErrorCode.NOT_FOUND, message="Election ID must be specified")
+
+        actor_uid = actor_id or (user.id if user else None)
+        election = await cls.get_election(db, election_id)
+        if election.status not in (ElectionStatus.OPEN, ElectionStatus.PAUSED):
+            raise AppException(
+                code=ErrorCode.INVALID_STATE_TRANSITION,
+                message=f"Cannot close election from '{election.status}' state. Must be 'open' or 'paused'.",
             )
 
         election.status = ElectionStatus.CLOSED
@@ -588,7 +673,7 @@ class ElectionService:
         await cls.record_audit_event(
             db=db,
             event_type="ELECTION_CLOSED",
-            actor_id=user.id,
+            actor_id=actor_uid,
             organization_id=election.organization_id,
             election_id=election.id,
             metadata={},
