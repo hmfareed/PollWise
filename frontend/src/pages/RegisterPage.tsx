@@ -36,9 +36,8 @@ const COMMON_COUNTRIES = [
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const [accountType, setAccountType] = useState<"personal" | "institution">("personal");
 
-  // Personal Fields
+  // Admin Fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -66,6 +65,7 @@ export const RegisterPage: React.FC = () => {
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedInstitutionName = institutionName.trim();
 
     if (!trimmedFirstName) {
       setError("Enter your first name.");
@@ -88,6 +88,11 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
+    if (!trimmedInstitutionName) {
+      setError("Enter your institution name.");
+      return;
+    }
+
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
       return;
@@ -106,29 +111,18 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      if (accountType === "institution") {
-        await apiClient.register({
-          account_type: "institution",
-          first_name: trimmedFirstName,
-          last_name: trimmedLastName,
-          email: trimmedEmail,
-          password,
-          institution_name: institutionName.trim(),
-          institution_type: institutionType,
-          country,
-          terms_accepted: true,
-        });
-        navigate("/dashboard");
-      } else {
-        await apiClient.registerPersonal({
-          first_name: trimmedFirstName,
-          last_name: trimmedLastName,
-          email: trimmedEmail,
-          password,
-          terms_accepted: true,
-        });
-        navigate("/onboarding/personal");
-      }
+      await apiClient.register({
+        account_type: "institution",
+        first_name: trimmedFirstName,
+        last_name: trimmedLastName,
+        email: trimmedEmail,
+        password,
+        institution_name: trimmedInstitutionName,
+        institution_type: institutionType,
+        country,
+        terms_accepted: true,
+      });
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please check your information.");
     } finally {
@@ -145,37 +139,11 @@ export const RegisterPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B1528] tracking-tight">
-            Create an Account
+            Register Your Institution
           </h2>
           <p className="text-slate-500 text-sm sm:text-base mt-2 font-normal">
             Get started with secure institutional voting
           </p>
-        </div>
-
-        {/* Account Type Toggle Switcher */}
-        <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl mb-6 select-none">
-          <button
-            type="button"
-            onClick={() => setAccountType("personal")}
-            className={`py-2.5 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-              accountType === "personal"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            Personal Account
-          </button>
-          <button
-            type="button"
-            onClick={() => setAccountType("institution")}
-            className={`py-2.5 px-3 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-              accountType === "institution"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            Institution Account
-          </button>
         </div>
 
         {/* Error Alert */}
@@ -229,73 +197,65 @@ export const RegisterPage: React.FC = () => {
           {/* Email Address */}
           <div>
             <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-              {accountType === "institution" ? "Official Institution Email" : "Email Address"}
+              Official Institution Email
             </label>
             <Input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={
-                accountType === "institution"
-                  ? "admin@university.edu"
-                  : "Enter your email address"
-              }
+              placeholder="admin@university.edu"
               autoComplete="email"
             />
           </div>
 
-          {/* Conditional Institution Fields */}
-          {accountType === "institution" && (
-            <>
-              <div>
-                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                  Institution Name
-                </label>
-                <Input
-                  type="text"
-                  required
-                  value={institutionName}
-                  onChange={(e) => setInstitutionName(e.target.value)}
-                  placeholder="e.g. Northwestern Polytechnic University"
-                />
-              </div>
+          {/* Institution Fields */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+              Institution Name
+            </label>
+            <Input
+              type="text"
+              required
+              value={institutionName}
+              onChange={(e) => setInstitutionName(e.target.value)}
+              placeholder="e.g. Northwestern Polytechnic University"
+            />
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                    Institution Type
-                  </label>
-                  <Select
-                    value={institutionType}
-                    onChange={(e) => setInstitutionType(e.target.value)}
-                  >
-                    {INSTITUTION_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                Institution Type
+              </label>
+              <Select
+                value={institutionType}
+                onChange={(e) => setInstitutionType(e.target.value)}
+              >
+                {INSTITUTION_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-800 mb-1.5">
-                    Country
-                  </label>
-                  <Select
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                  >
-                    {COMMON_COUNTRIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-            </>
-          )}
+            <div>
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                Country
+              </label>
+              <Select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+              >
+                {COMMON_COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
 
           {/* Password */}
           <div>
@@ -369,11 +329,7 @@ export const RegisterPage: React.FC = () => {
             className="w-full mt-2 py-3 px-4 rounded-xl font-semibold text-white bg-[#0055FF] hover:bg-[#0047E0] shadow-md shadow-blue-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-60 cursor-pointer"
           >
             <span>
-              {isSubmitting
-                ? "Creating Account..."
-                : accountType === "institution"
-                ? "Register Institution"
-                : "Create Personal Account"}
+              {isSubmitting ? "Creating Account..." : "Register Institution"}
             </span>
             <ArrowRight className="h-4 w-4" />
           </button>

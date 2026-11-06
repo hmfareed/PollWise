@@ -74,7 +74,7 @@ describe("Auth & Organizations Pages", () => {
     expect(screen.getByText(/Missing Reset Token/i)).toBeInTheDocument();
   });
 
-  it("renders RegisterPage with personal and institution registration options", () => {
+  it("renders RegisterPage with dedicated institution registration form", () => {
     const queryClient = createTestQueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -86,13 +86,45 @@ describe("Auth & Organizations Pages", () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByRole("heading", { name: /Create an Account/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Personal Account$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Institution Account$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Register Your Institution|Create an Account/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Personal Account$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Institution Account$/i })).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText("Alice")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Smith")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Create Personal Account$/i })).toBeInTheDocument();
+    expect(screen.getByText(/Official Institution Email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/admin@university\.edu/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e\.g\. Northwestern Polytechnic University/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Register Institution$/i })).toBeInTheDocument();
     expect(screen.queryByText(/Your data is secure with Pollwise/i)).not.toBeInTheDocument();
+  });
+
+  it("renders RegisterPage with institution account creation and fixed viewport layout", () => {
+    const queryClient = createTestQueryClient();
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <MemoryRouter>
+            <RegisterPage />
+          </MemoryRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+
+    // Verify outer split container has fixed height and overflow control on desktop
+    const splitContainer = container.querySelector(".lg\\:h-screen");
+    expect(splitContainer).toBeInTheDocument();
+    expect(splitContainer).toHaveClass("lg:overflow-hidden");
+
+    // Verify institution-specific fields appear directly without tabs
+    expect(screen.getByText(/Official Institution Email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/admin@university\.edu/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e\.g\. Northwestern Polytechnic University/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Register Institution$/i })).toBeInTheDocument();
+
+    // Verify the left showcase image maintains object-top alignment to prevent cropping
+    const showcaseImg = container.querySelector('img[alt*="Pollwise Institutional Voting"]');
+    expect(showcaseImg).toBeInTheDocument();
+    expect(showcaseImg).toHaveClass("object-top");
   });
 
   it("renders OrganizationsPage", () => {

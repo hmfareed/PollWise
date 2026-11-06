@@ -16,7 +16,7 @@ interface AuthSplitLayoutProps {
  */
 export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-white lg:overflow-hidden">
       {/* Mobile Branding Bar (visible on < lg) */}
       <div className="lg:hidden bg-gradient-to-r from-[#0037D4] to-[#00228C] p-6 text-white flex items-center justify-between">
         <Link to="/" className="inline-block">
@@ -26,19 +26,19 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
       </div>
 
       {/* Left Brand Showcase (visible on lg+) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#004BDC] text-white flex-col justify-between select-none">
+      <div className="hidden lg:flex lg:w-1/2 lg:h-full relative overflow-hidden bg-[#004BDC] text-white flex-col justify-between select-none">
         {/* Full Showcase Artwork seamlessly integrated */}
         <img
           src={showcaseArtwork}
           srcSet={`${showcaseArtwork} 1x, ${showcaseArtwork2x} 2x`}
           alt="Pollwise Institutional Voting - Every Vote Matters, Every Election Counts"
-          className="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
+          className="absolute -top-[30px] inset-x-0 w-full h-[calc(100%+30px)] object-cover object-top select-none pointer-events-none"
           loading="eager"
           fetchPriority="high"
         />
 
         {/* Top Brand Link overlay for accessibility & navigation */}
-        <div className="relative z-10 px-8 xl:px-14 pt-8 xl:pt-12">
+        <div className="relative z-10 px-8 xl:px-14 pt-2 xl:pt-4">
           <Link
             to="/"
             className="inline-block w-52 h-20 cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-white/40"
@@ -63,8 +63,8 @@ export const AuthSplitLayout: React.FC<AuthSplitLayoutProps> = ({ children }) =>
       </div>
 
       {/* Right Form Area (seamless white background) */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-14 xl:p-18 overflow-y-auto bg-white">
-        <div className="w-full max-w-[460px] my-auto py-4">
+      <div className="flex-1 lg:h-full flex flex-col items-center p-6 sm:p-10 lg:p-12 xl:p-16 overflow-y-auto bg-white">
+        <div className="w-full max-w-[460px] my-auto py-6">
           {children}
         </div>
       </div>

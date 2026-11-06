@@ -6,20 +6,22 @@ import { VerifyEmailPage } from "../pages/VerifyEmailPage";
 import { apiClient } from "../lib/api-client";
 import type { User } from "../types/auth";
 
-describe("RegisterPage Personal Flow & Email Verification", () => {
+describe("RegisterPage Institution Flow & Email Verification", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("renders personal registration form with password requirements helper text", () => {
+  it("renders institution registration form with password requirements helper text", () => {
     render(
       <MemoryRouter>
         <RegisterPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByRole("heading", { name: /Create an Account/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Create Personal Account$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Register Your Institution|Create an Account/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Register Institution$/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e\.g\. Northwestern Polytechnic University/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/admin@university\.edu/i)).toBeInTheDocument();
     expect(screen.getByText(/Must be at least 8 characters/i)).toBeInTheDocument();
   });
 
@@ -48,8 +50,11 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Alice"), { target: { value: "John" } });
     fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "Doe" } });
-    fireEvent.change(screen.getByPlaceholderText("Enter your email address"), {
-      target: { value: "john.doe@example.com" },
+    fireEvent.change(screen.getByPlaceholderText(/admin@university\.edu/i), {
+      target: { value: "admin@university.edu" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. Northwestern Polytechnic University/i), {
+      target: { value: "Northwestern University" },
     });
     fireEvent.change(screen.getByPlaceholderText(/^Enter your password$/i), {
       target: { value: "SecretPassword123!" },
@@ -58,22 +63,48 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
       target: { value: "SecretPassword123!" },
     });
 
-    const submitBtn = screen.getByRole("button", { name: /^Create Personal Account$/i });
+    const submitBtn = screen.getByRole("button", { name: /^Register Institution$/i });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText(/You must agree to the Terms of Service and Privacy Policy/i)).toBeInTheDocument();
   });
 
-  it("trims fields and calls apiClient.registerPersonal and redirects to /onboarding/personal", async () => {
-    const registerPersonalSpy = vi
-      .spyOn(apiClient, "registerPersonal")
+  it("enforces institution name before submission", async () => {
+    render(
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Alice"), { target: { value: "John" } });
+    fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "Doe" } });
+    fireEvent.change(screen.getByPlaceholderText(/admin@university\.edu/i), {
+      target: { value: "admin@university.edu" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/^Enter your password$/i), {
+      target: { value: "SecretPassword123!" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/^Re-enter your password$/i), {
+      target: { value: "SecretPassword123!" },
+    });
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    const submitBtn = screen.getByRole("button", { name: /^Register Institution$/i });
+    fireEvent.submit(submitBtn.closest("form")!);
+
+    expect(await screen.findByText(/Enter your institution name/i)).toBeInTheDocument();
+  });
+
+  it("trims fields and calls apiClient.register and redirects to /dashboard", async () => {
+    const registerSpy = vi
+      .spyOn(apiClient, "register")
       .mockResolvedValueOnce({
-        id: "user-123",
-        email: "john.doe@example.com",
+        id: "user-inst-123",
+        email: "admin@university.edu",
         display_name: "John Doe",
         email_verified: true,
         account_status: "active",
-        account_type: "personal",
+        account_type: "institution",
         is_platform_admin: false,
         created_at: new Date().toISOString(),
       });
@@ -82,7 +113,7 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
       <MemoryRouter initialEntries={["/register"]}>
         <Routes>
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/onboarding/personal" element={<div data-testid="onboarding-page">Onboarding Page</div>} />
+          <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard Page</div>} />
         </Routes>
       </MemoryRouter>
     );
@@ -90,8 +121,11 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
     // Enter fields with extra whitespace
     fireEvent.change(screen.getByPlaceholderText("Alice"), { target: { value: "   John   " } });
     fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "   Doe   " } });
-    fireEvent.change(screen.getByPlaceholderText("Enter your email address"), {
-      target: { value: "  JOHN.DOE@EXAMPLE.COM  " },
+    fireEvent.change(screen.getByPlaceholderText(/admin@university\.edu/i), {
+      target: { value: "  ADMIN@UNIVERSITY.EDU  " },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. Northwestern Polytechnic University/i), {
+      target: { value: "  Northwestern University  " },
     });
     fireEvent.change(screen.getByPlaceholderText(/^Enter your password$/i), {
       target: { value: "SecretPassword123!" },
@@ -105,25 +139,29 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
     fireEvent.click(termsCheckbox);
 
     // Submit
-    const submitBtn = screen.getByRole("button", { name: /^Create Personal Account$/i });
+    const submitBtn = screen.getByRole("button", { name: /^Register Institution$/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
-      expect(registerPersonalSpy).toHaveBeenCalledWith({
+      expect(registerSpy).toHaveBeenCalledWith({
+        account_type: "institution",
         first_name: "John",
         last_name: "Doe",
-        email: "john.doe@example.com",
+        email: "admin@university.edu",
+        institution_name: "Northwestern University",
+        institution_type: "University",
+        country: "United States",
         password: "SecretPassword123!",
         terms_accepted: true,
       });
     });
 
-    // Should transition directly to personal onboarding
-    expect(await screen.findByTestId("onboarding-page")).toBeInTheDocument();
+    // Should transition to dashboard
+    expect(await screen.findByTestId("dashboard-page")).toBeInTheDocument();
   });
 
   it("displays error with sign-in link when email already exists", async () => {
-    vi.spyOn(apiClient, "registerPersonal").mockRejectedValueOnce(
+    vi.spyOn(apiClient, "register").mockRejectedValueOnce(
       new Error("An account with this email address already exists.")
     );
 
@@ -135,8 +173,11 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Alice"), { target: { value: "John" } });
     fireEvent.change(screen.getByPlaceholderText("Smith"), { target: { value: "Doe" } });
-    fireEvent.change(screen.getByPlaceholderText("Enter your email address"), {
+    fireEvent.change(screen.getByPlaceholderText(/admin@university\.edu/i), {
       target: { value: "existing@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/e\.g\. Northwestern Polytechnic University/i), {
+      target: { value: "Existing University" },
     });
     fireEvent.change(screen.getByPlaceholderText(/^Enter your password$/i), {
       target: { value: "SecretPassword123!" },
@@ -145,7 +186,7 @@ describe("RegisterPage Personal Flow & Email Verification", () => {
       target: { value: "SecretPassword123!" },
     });
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: /^Create Personal Account$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Register Institution$/i }));
 
     expect(await screen.findByText(/already exists/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Sign in to your existing account/i })).toHaveAttribute("href", "/login");
