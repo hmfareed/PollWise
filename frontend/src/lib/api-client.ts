@@ -46,7 +46,7 @@ import type {
   ParticipationStatus,
   VotingCredentialResponse,
 } from "../types/ballot";
-import type { ElectionResult } from "../types/results";
+import type { ElectionResult, RecountRequest } from "../types/results";
 import type { DashboardPeriod, DashboardSummaryResponse } from "../types/dashboard";
 import type {
   AccessCodeListResponse,
@@ -471,6 +471,16 @@ export const apiClient = {
       `/elections/${electionId}/publish`,
       { method: "POST" }
     ),
+  requestRecount: (electionId: string, reason: string) =>
+    fetchApi<{ result: ElectionResult; recount: RecountRequest }>(
+      `/elections/${electionId}/recount`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }
+    ),
+  getRecounts: (electionId: string) =>
+    fetchApi<RecountRequest[]>(`/elections/${electionId}/recounts`),
 
   // Independent Voter Authentication & Participation
   getVoterAuthConfig: (electionId: string) =>

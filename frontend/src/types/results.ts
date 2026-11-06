@@ -17,10 +17,23 @@ export interface PositionResult {
 export interface ElectionResult {
   id: string;
   election_id: string;
+  result_version?: number;
+  tally_algorithm_version?: string;
   configuration_hash: string;
   ballot_count: number;
   approval_status: string;
   computed_at: string;
   published_at?: string | null;
   positions: PositionResult[];
+}
+
+export interface RecountRequest {
+  id: string;
+  election_id: string;
+  requester_user_id: string;
+  reason: string;
+  status: "pending" | "completed" | "rejected";
+  resulting_result_id?: string | null;
+  created_at: string;
+  resolved_at?: string | null;
 }
