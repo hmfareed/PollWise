@@ -10,9 +10,11 @@ import {
   ShieldCheck, 
   AlertCircle,
   Printer,
-  Download
+  Download,
+  RotateCcw,
 } from "lucide-react";
 import { CertifiedCertificateModal } from "../components/reports/CertifiedCertificateModal";
+import { RecountRequestModal } from "../components/reports/RecountRequestModal";
 import { apiClient } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
 import { Button } from "../components/ui/button";
@@ -27,6 +29,7 @@ export const ElectionResultsPage: React.FC = () => {
   const [approveReason, setApproveReason] = useState("");
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [showRecountModal, setShowRecountModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: election, isLoading: isElectionLoading } = useQuery({
@@ -115,7 +118,21 @@ export const ElectionResultsPage: React.FC = () => {
                   Confidential Interim Tally
                 </Badge>
               )}
+              {results?.result_version && (
+                <Badge variant="outline" className="gap-1.5 py-1 px-2.5 text-xs bg-muted/40">
+                  Version {results.result_version}
+                  {results.result_version > 1 ? " (Recount)" : ""}
+                </Badge>
+              )}
             </div>
+            {results && results.result_version && results.result_version > 1 && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                <RotateCcw className="h-4 w-4 text-amber-500 shrink-0" />
+                <span>
+                  Official Recounted Tally (Version {results.result_version}). Re-computed deterministically from preserved anonymous ballots following an authorized dispute request.
+                </span>
+              </div>
+            )}
             <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
               {election.title}
             </h1>
@@ -142,6 +159,17 @@ export const ElectionResultsPage: React.FC = () => {
                   <Printer className="h-3.5 w-3.5" />
                   Official Certificate
                 </Button>
+                {isAuthenticated && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowRecountModal(true)}
+                    className="gap-1.5 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Request Recount
+                  </Button>
+                )}
               </>
             )}
 
@@ -343,6 +371,17 @@ export const ElectionResultsPage: React.FC = () => {
         onClose={() => setShowCertificateModal(false)}
         election={election}
         results={results ?? null}
+      />
+      <RecountRequestModal
+        isOpen={showRecountModal}
+        onClose={() => setShowRecountModal(false)}
+        electionId={id!}
+        electionTitle={election.title}
+        currentVersion={results?.result_version || 1}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["election-results", id] });
+          queryClient.invalidateQueries({ queryKey: ["election", id] });
+        }}
       />
     </div>
   );

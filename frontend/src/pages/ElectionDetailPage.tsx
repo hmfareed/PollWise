@@ -26,6 +26,7 @@ import {
   Printer,
   Download,
   AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import { apiClient, getAssetUrl } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -42,10 +43,11 @@ import { Badge } from "../components/ui/badge";
 import { AccessCodeManager } from "../components/admin/AccessCodeManager";
 import { CertifiedCertificateModal } from "../components/reports/CertifiedCertificateModal";
 import { ElectionReportsModal } from "../components/reports/ElectionReportsModal";
+import { RecountRequestModal } from "../components/reports/RecountRequestModal";
 import { CandidatePhotoUpload } from "../components/admin/CandidatePhotoUpload";
 import type { ElectionDetail, AuditEvent } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
-import type { ElectionResult } from "../types/results";
+import type { ElectionResult, RecountRequest } from "../types/results";
 
 // ─── Inline primitive components (no shadcn tabs/progress/input) ───────────
 
@@ -270,6 +272,7 @@ export const ElectionDetailPage: React.FC = () => {
   const [copiedVotingLink, setCopiedVotingLink] = useState(false);
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [showRecountModal, setShowRecountModal] = useState(false);
   const votingUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/elections/${id}/vote`
@@ -343,6 +346,12 @@ export const ElectionDetailPage: React.FC = () => {
     refetchInterval: 30000,
   });
 
+  const { data: recounts, refetch: refetchRecounts } = useQuery<RecountRequest[]>({
+    queryKey: ["election-recounts", id],
+    queryFn: () => apiClient.getRecounts(id!),
+    enabled: !!id && (election?.status === "tallied" || election?.status === "published"),
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
       setSecondsAgo((s) => s + 1);
@@ -356,10 +365,11 @@ export const ElectionDetailPage: React.FC = () => {
     refetchPartSummary();
     if (election?.status === "tallied" || election?.status === "published") {
       refetchResults();
+      refetchRecounts();
     }
     setLastRefreshed(new Date());
     setSecondsAgo(0);
-  }, [refetchEligibility, refetchAccessCodes, refetchPartSummary, refetchResults, election?.status]);
+  }, [refetchEligibility, refetchAccessCodes, refetchPartSummary, refetchResults, refetchRecounts, election?.status]);
 
   // ── Compute SHA-256 config fingerprint ──
   useEffect(() => {
@@ -1187,16 +1197,44 @@ export const ElectionDetailPage: React.FC = () => {
                     >
                       Reject Results
                     </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                      onClick={() => setShowRecountModal(true)}
+                      disabled={approveResultsMutation.isPending || publishMutation.isPending}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Request Recount
+                    </Button>
                   </div>
                 )}
 
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowRecountModal(true)}
+                  className="gap-1.5 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Request Recount
+                </Button>
                 {election.status === "published" && (
-                  <Link to={`/elections/${election.id}/results`}>
-                    <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-                      <Trophy className="h-4 w-4" />
-                      View Public Results
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Link to={`/elections/${election.id}/results`}>
+                      <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                        <Trophy className="h-4 w-4" />
+                        View Public Results
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                      onClick={() => setShowRecountModal(true)}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Request Recount
                     </Button>
-                  </Link>
+                  </div>
                 )}
 
                 {["draft", "scheduled", "open", "closed", "tallied", "published"].indexOf(election.status) === -1 && (
@@ -1985,7 +2023,7 @@ export const ElectionDetailPage: React.FC = () => {
           ) : (
             <>
               {/* Results summary */}
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-5">
                     <p className="text-xs text-muted-foreground">Total Ballots</p>
@@ -1998,6 +2036,25 @@ export const ElectionDetailPage: React.FC = () => {
                     <p className="text-sm font-semibold mt-1 capitalize">
                       {results.approval_status}
                     </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-5">
+                    <p className="text-xs text-muted-foreground">Tally Version</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-sm font-bold">
+                        v{results.result_version || 1}
+                      </span>
+                      {results.result_version && results.result_version > 1 ? (
+                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20">
+                          Recount
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-muted/40">
+                          Original
+                        </Badge>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -2057,6 +2114,50 @@ export const ElectionDetailPage: React.FC = () => {
                   </CardContent>
                 </Card>
               ))}
+
+              {/* Recount Audit History */}
+              {recounts && recounts.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4 text-amber-500" />
+                      Official Recount & Dispute Audit History
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Chronological ledger of formal recount requests and deterministic recalculations.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {recounts.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="rounded-xl border border-border bg-surface-alt/40 p-4 space-y-2 text-xs"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20 capitalize"
+                            >
+                              {rec.status}
+                            </Badge>
+                            <span className="font-semibold text-foreground">
+                              Formal Recount Request
+                            </span>
+                          </div>
+                          <span className="text-muted-foreground text-[11px]">
+                            {new Date(rec.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-foreground leading-relaxed">
+                          <span className="text-muted-foreground font-medium">Justification: </span>
+                          {rec.reason}
+                        </p>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Actions for tallied status */}
               {election.status === "tallied" && isAuthenticated && (
@@ -2130,6 +2231,15 @@ export const ElectionDetailPage: React.FC = () => {
                   <Printer className="h-4 w-4" />
                   Official Certificate
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowRecountModal(true)}
+                  className="gap-1.5 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Request Recount
+                </Button>
                 {election.status === "published" && (
                   <Link to={`/elections/${election.id}/results`}>
                     <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
@@ -2158,6 +2268,21 @@ export const ElectionDetailPage: React.FC = () => {
         electionTitle={election.title}
         isPublished={election.status === "published"}
         onOpenCertificate={() => setShowCertificateModal(true)}
+      />
+      <RecountRequestModal
+        isOpen={showRecountModal}
+        onClose={() => setShowRecountModal(false)}
+        electionId={id!}
+        electionTitle={election.title}
+        currentVersion={results?.result_version || 1}
+        onSuccess={() => {
+          invalidateElection();
+          queryClient.invalidateQueries({ queryKey: ["election-results", id] });
+          queryClient.invalidateQueries({ queryKey: ["election-recounts", id] });
+          refetchResults();
+          refetchRecounts();
+          notify("Recount requested successfully. New tally version created.");
+        }}
       />
 
       {/* Empty Positions Action Modal */}
