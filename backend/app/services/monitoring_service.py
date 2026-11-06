@@ -155,22 +155,23 @@ class ElectionMonitoringService:
 
         # 4. Departmental Turnout & Privacy Threshold Rule (Spec §11.2)
         # Suppress groups with < 10 eligible voters into "Other / Suppressed (< 10 voters)"
+        group_col = func.coalesce(func.nullif(ElectionVoterRecord.voter_group, ""), "General")
         dept_eligible_stmt = (
             select(
-                ElectionVoterRecord.voter_group,
+                group_col.label("voter_group"),
                 func.count(ElectionVoterRecord.id).label("eligible"),
             )
             .where(
                 ElectionVoterRecord.election_id == election_id,
                 ElectionVoterRecord.eligibility_status == "eligible",
             )
-            .group_by(ElectionVoterRecord.voter_group)
+            .group_by(group_col)
         )
         dept_eligible_rows = (await election_session.execute(dept_eligible_stmt)).all()
 
         dept_voted_stmt = (
             select(
-                ElectionVoterRecord.voter_group,
+                group_col.label("voter_group"),
                 func.count(ElectionParticipation.id).label("voted"),
             )
             .join(
@@ -181,17 +182,17 @@ class ElectionMonitoringService:
                 ElectionParticipation.election_id == election_id,
                 ElectionParticipation.participation_status == "submitted",
             )
-            .group_by(ElectionVoterRecord.voter_group)
+            .group_by(group_col)
         )
         dept_voted_rows = (await election_session.execute(dept_voted_stmt)).all()
-        voted_by_dept = {row[0] or "General": row[1] for row in dept_voted_rows}
+        voted_by_dept = {row[0]: row[1] for row in dept_voted_rows}
 
         department_metrics: list[DepartmentTurnoutMetric] = []
         suppressed_eligible = 0
         suppressed_voted = 0
 
         for row in dept_eligible_rows:
-            group_name = row[0] or "General"
+            group_name = row[0]
             elig = row[1]
             voted = voted_by_dept.get(group_name, 0)
 

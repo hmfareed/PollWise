@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "./badge";
 
-export type ElectionStatus = "draft" | "scheduled" | "open" | "closed" | "tallied" | "published" | "canceled";
+export type ElectionStatus = "draft" | "scheduled" | "open" | "paused" | "closed" | "tallied" | "published" | "canceled";
 
 interface StatusBadgeProps {
   status: ElectionStatus | string;
@@ -17,6 +17,13 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className }) =
         <Badge variant="success" className={className}>
           <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
           Active / Open
+        </Badge>
+      );
+    case "paused":
+      return (
+        <Badge variant="warning" className={`bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800 ${className || ""}`}>
+          <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+          Paused
         </Badge>
       );
     case "scheduled":

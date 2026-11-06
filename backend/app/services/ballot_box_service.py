@@ -69,6 +69,13 @@ class BallotBoxService:
         if not election:
             raise AppException(ErrorCode.NOT_FOUND, "Election not found", status_code=404)
 
+        if election.status == "paused":
+            raise AppException(
+                ErrorCode.ELECTION_PAUSED,
+                f"Voting is temporarily paused: {election.pause_reason or 'Operational hold'}",
+                status_code=409,
+            )
+
         if election.status != "open":
             raise AppException(
                 ErrorCode.ELECTION_NOT_OPEN,

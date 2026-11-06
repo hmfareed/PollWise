@@ -211,6 +211,12 @@ const STATUS_CONFIG: Record<
     bgClass: "bg-green-50",
     borderClass: "border-green-300",
   },
+  paused: {
+    label: "Paused",
+    colorClass: "text-amber-700 dark:text-amber-400",
+    bgClass: "bg-amber-50 dark:bg-amber-950/40",
+    borderClass: "border-amber-300 dark:border-amber-800",
+  },
   closed: {
     label: "Closed",
     colorClass: "text-amber-700",
@@ -1332,7 +1338,7 @@ export const ElectionDetailPage: React.FC = () => {
                   </div>
                 )}
 
-                {["draft", "scheduled", "open", "closed", "tallied", "published"].indexOf(election.status) === -1 && (
+                {["draft", "scheduled", "open", "paused", "closed", "tallied", "published"].indexOf(election.status) === -1 && (
                   <p className="text-sm text-muted-foreground">
                     No actions available for status: <strong>{election.status}</strong>
                   </p>
