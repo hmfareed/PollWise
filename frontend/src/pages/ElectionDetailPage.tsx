@@ -1209,15 +1209,6 @@ export const ElectionDetailPage: React.FC = () => {
                   </div>
                 )}
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowRecountModal(true)}
-                  className="gap-1.5 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Request Recount
-                </Button>
                 {election.status === "published" && (
                   <div className="flex flex-wrap gap-2 items-center">
                     <Link to={`/elections/${election.id}/results`}>

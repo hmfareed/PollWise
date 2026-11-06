@@ -6,7 +6,7 @@ from typing import Any
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class CandidateResult(BaseModel):
@@ -42,6 +42,14 @@ class ElectionResultResponse(BaseModel):
 
 class RecountRequestCreate(BaseModel):
     reason: str = Field(..., min_length=5, max_length=2000)
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        stripped = v.strip()
+        if len(stripped) < 5:
+            raise ValueError("Reason must be at least 5 characters (excluding leading and trailing whitespace)")
+        return stripped
 
 
 class RecountRequestResponse(BaseModel):

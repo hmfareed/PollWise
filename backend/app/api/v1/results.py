@@ -126,8 +126,12 @@ async def approve_tally(
     )
 
     if not result_id:
-        res_stmt = select(ElectionResult).where(ElectionResult.election_id == id)
-        result = (await election_session.execute(res_stmt)).scalar_one_or_none()
+        res_stmt = (
+            select(ElectionResult)
+            .where(ElectionResult.election_id == id)
+            .order_by(ElectionResult.result_version.desc())
+        )
+        result = (await election_session.execute(res_stmt)).scalars().first()
         if not result:
             raise AppException(ErrorCode.NOT_FOUND, "Election result record not found", status_code=404)
         result_id = result.id

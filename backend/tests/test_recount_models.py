@@ -49,12 +49,17 @@ def test_recount_request_model_instantiation():
 
 def test_election_relationship_has_recount_requests():
     assert hasattr(Election, "recount_requests")
+    assert hasattr(RecountRequest, "resulting_result")
 
 
 def test_recount_request_create_schema_validation():
     # Valid reason
     valid = RecountRequestCreate(reason="Valid audit recount justification")
     assert valid.reason == "Valid audit recount justification"
+
+    # Strips leading and trailing whitespace
+    padded = RecountRequestCreate(reason="   Valid audit recount justification   ")
+    assert padded.reason == "Valid audit recount justification"
 
     # Too short reason (< 5 characters)
     with pytest.raises(ValidationError):
@@ -63,6 +68,14 @@ def test_recount_request_create_schema_validation():
     # Empty reason
     with pytest.raises(ValidationError):
         RecountRequestCreate(reason="")
+
+    # Whitespace-only reason (Review Focus #2)
+    with pytest.raises(ValidationError):
+        RecountRequestCreate(reason="      ")
+
+    # Whitespace with fewer than 5 characters when stripped
+    with pytest.raises(ValidationError):
+        RecountRequestCreate(reason="   ab   ")
 
 
 def test_recount_request_response_schema():

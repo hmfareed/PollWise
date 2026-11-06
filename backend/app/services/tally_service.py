@@ -142,8 +142,12 @@ class TallyService:
         total_ballots, result_payload = cls._calculate_tally_payload(election, ballots)
 
         # 4. Check for existing result or insert new
-        existing_res_stmt = select(ElectionResult).where(ElectionResult.election_id == election_id)
-        existing_res = (await election_session.execute(existing_res_stmt)).scalar_one_or_none()
+        existing_res_stmt = (
+            select(ElectionResult)
+            .where(ElectionResult.election_id == election_id)
+            .order_by(ElectionResult.result_version.desc())
+        )
+        existing_res = (await election_session.execute(existing_res_stmt)).scalars().first()
 
         now = datetime.now(UTC)
         if existing_res:
@@ -274,7 +278,16 @@ class TallyService:
             ElectionApproval.decision == ApprovalDecision.APPROVED,
         )
         has_approval = (await election_session.execute(appr_stmt)).scalars().first() is not None
-        if not has_approval:
+
+        # Fetch latest result version to verify it is approved
+        res_stmt = (
+            select(ElectionResult)
+            .where(ElectionResult.election_id == election_id)
+            .order_by(ElectionResult.result_version.desc())
+        )
+        result = (await election_session.execute(res_stmt)).scalars().first()
+
+        if not has_approval or not result or result.approval_status != "approved":
             raise AppException(
                 ErrorCode.APPROVAL_REQUIRED,
                 "Formal publication approval is required before publishing election results",
@@ -283,11 +296,7 @@ class TallyService:
 
         now = datetime.now(UTC)
         election.status = ElectionStatus.PUBLISHED
-
-        res_stmt = select(ElectionResult).where(ElectionResult.election_id == election_id)
-        result = (await election_session.execute(res_stmt)).scalar_one_or_none()
-        if result:
-            result.published_at = now
+        result.published_at = now
 
         audit_event = AuditEvent(
             id=uuid.uuid4(),

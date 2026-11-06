@@ -11,6 +11,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -183,6 +184,7 @@ class ElectionApproval(ElectionBase):
 
 class ElectionResult(ElectionBase):
     __tablename__ = "election_results"
+    __table_args__ = (UniqueConstraint("election_id", "result_version", name="uq_election_result_version"),)
 
     id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     election_id: Mapped[uuid.UUID] = mapped_column(GUID(), nullable=False, index=True)
@@ -258,5 +260,6 @@ class RecountRequest(ElectionBase):
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     election: Mapped["Election"] = relationship("Election", back_populates="recount_requests")
+    resulting_result: Mapped["ElectionResult | None"] = relationship("ElectionResult")
 
 
