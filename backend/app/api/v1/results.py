@@ -21,7 +21,12 @@ from app.db.session import (
 )
 from app.models.election import ElectionResult
 from app.models.identity import User
-from app.schemas.results import ApproveResultsRequest, ElectionResultResponse
+from app.schemas.results import (
+    ApproveResultsRequest,
+    ElectionResultResponse,
+    RecountRequestCreate,
+    RecountRequestResponse,
+)
 from app.services.election_service import ElectionService
 from app.services.tally_service import TallyService
 
@@ -175,3 +180,71 @@ async def publish_results(
         },
         "error": None,
     }
+
+
+@router.post(
+    "/elections/{id}/recount",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+)
+async def request_recount(
+    id: uuid.UUID,
+    payload: RecountRequestCreate,
+    ballot_session: AsyncSession = Depends(get_ballot_session),
+    election_session: AsyncSession = Depends(get_election_session),
+    identity_session: AsyncSession = Depends(get_identity_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Trigger deterministic recount against preserved ballots in ballot_db (Doc 01 §12.4 & Doc 03 §8.5).
+    Authorized for organization_admin, election_manager, and auditor.
+    """
+    election = await ElectionService.get_election(election_session, id)
+    await verify_user_organization_role(
+        identity_session, current_user, election.organization_id, ["organization_admin", "election_manager", "auditor"]
+    )
+
+    new_result, recount_req = await TallyService.recount_election(
+        ballot_session=ballot_session,
+        election_session=election_session,
+        election_id=id,
+        actor=current_user,
+        reason=payload.reason,
+    )
+    result_data = await TallyService.get_results(
+        election_session, id, can_view_unapproved=True, version=new_result.result_version
+    )
+    return {
+        "data": {
+            "result": ElectionResultResponse(**result_data),
+            "recount": RecountRequestResponse.model_validate(recount_req),
+        },
+        "error": None,
+    }
+
+
+@router.get(
+    "/elections/{id}/recounts",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+)
+async def get_election_recounts(
+    id: uuid.UUID,
+    election_session: AsyncSession = Depends(get_election_session),
+    identity_session: AsyncSession = Depends(get_identity_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieve audit history of formal recount requests for an election.
+    """
+    election = await ElectionService.get_election(election_session, id)
+    await verify_user_organization_role(
+        identity_session, current_user, election.organization_id, ["organization_admin", "election_manager", "auditor"]
+    )
+
+    recounts = await TallyService.list_recounts(election_session, id)
+    return {
+        "data": [RecountRequestResponse.model_validate(r) for r in recounts],
+        "error": None,
+    }
+
