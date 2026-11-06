@@ -7,7 +7,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -22,51 +22,18 @@ from app.models.election import (
     ElectionResult,
     ElectionStatus,
     Position,
+    RecountRequest,
+    RecountStatus,
 )
 from app.models.identity import User
 
 
 class TallyService:
-    @staticmethod
-    async def compute_tally(
-        ballot_session: AsyncSession,
-        election_session: AsyncSession,
-        election_id: uuid.UUID,
-        actor: User,
-    ) -> ElectionResult:
-        """
-        Deterministically tally all accepted ballots for a closed election.
-        
-        Strict Lifecycle Rule (Doc 08):
-        - Election status must be exactly 'closed'.
-        - Reads strictly anonymous ballots from ballot_db.
-        - Calculates candidate vote distributions, abstentions, and winners.
-        - Persists immutable results record and advances status to 'tallied'.
-        """
-        # 1. Verify election state
-        elec_stmt = (
-            select(Election)
-            .where(Election.id == election_id)
-            .options(selectinload(Election.positions).selectinload(Position.candidates))
-        )
-        election = (await election_session.execute(elec_stmt)).scalar_one_or_none()
-        if not election:
-            raise AppException(ErrorCode.NOT_FOUND, "Election not found", status_code=404)
-
-        if election.status not in (ElectionStatus.CLOSED, ElectionStatus.TALLIED):
-            raise AppException(
-                ErrorCode.INVALID_STATE_TRANSITION,
-                f"Tally calculation requires election to be in status 'closed' or 'tallied' (current: '{election.status}')",
-                status_code=409,
-            )
-
-        # 2. Read all accepted ballots from ballot_db
-        ballots_stmt = select(Ballot).where(Ballot.election_id == election_id)
-        ballots = (await ballot_session.execute(ballots_stmt)).scalars().all()
+    @classmethod
+    def _calculate_tally_payload(
+        cls, election: Election, ballots: list[Ballot]
+    ) -> tuple[int, dict[str, Any]]:
         total_ballots = len(ballots)
-
-        # 3. Deterministic counting structure
-        # position_counts: { pos_id: { cand_id: count, "abstain": count } }
         position_results = []
 
         for pos in sorted(election.positions, key=lambda p: (p.display_order, str(p.id))):
@@ -128,11 +95,51 @@ class TallyService:
             })
 
         result_payload: dict[str, Any] = {
-            "election_id": str(election_id),
+            "election_id": str(election.id),
             "configuration_hash": election.configuration_hash or "",
             "total_ballots": total_ballots,
             "positions": position_results,
         }
+        return total_ballots, result_payload
+
+    @classmethod
+    async def compute_tally(
+        cls,
+        ballot_session: AsyncSession,
+        election_session: AsyncSession,
+        election_id: uuid.UUID,
+        actor: User,
+    ) -> ElectionResult:
+        """
+        Deterministically tally all accepted ballots for a closed election.
+        
+        Strict Lifecycle Rule (Doc 08):
+        - Election status must be exactly 'closed' or 'tallied'.
+        - Reads strictly anonymous ballots from ballot_db.
+        - Calculates candidate vote distributions, abstentions, and winners.
+        - Persists immutable results record and advances status to 'tallied'.
+        """
+        # 1. Verify election state
+        elec_stmt = (
+            select(Election)
+            .where(Election.id == election_id)
+            .options(selectinload(Election.positions).selectinload(Position.candidates))
+        )
+        election = (await election_session.execute(elec_stmt)).scalar_one_or_none()
+        if not election:
+            raise AppException(ErrorCode.NOT_FOUND, "Election not found", status_code=404)
+
+        if election.status not in (ElectionStatus.CLOSED, ElectionStatus.TALLIED):
+            raise AppException(
+                ErrorCode.INVALID_STATE_TRANSITION,
+                f"Tally calculation requires election to be in status 'closed' or 'tallied' (current: '{election.status}')",
+                status_code=409,
+            )
+
+        # 2. Read all accepted ballots from ballot_db
+        ballots_stmt = select(Ballot).where(Ballot.election_id == election_id)
+        ballots = (await ballot_session.execute(ballots_stmt)).scalars().all()
+        total_ballots, result_payload = cls._calculate_tally_payload(election, ballots)
 
         # 4. Check for existing result or insert new
         existing_res_stmt = select(ElectionResult).where(ElectionResult.election_id == election_id)
@@ -296,11 +303,128 @@ class TallyService:
         await election_session.commit()
         return election
 
+    @classmethod
+    async def recount_election(
+        cls,
+        ballot_session: AsyncSession,
+        election_session: AsyncSession,
+        election_id: uuid.UUID,
+        actor: User,
+        reason: str,
+    ) -> tuple[ElectionResult, RecountRequest]:
+        """
+        Deterministically recount ballots for an election in response to a dispute or audit request (Doc 01 §12.4).
+        
+        Rules:
+        - Election status must be 'tallied' or 'published'.
+        - Reads immutable ballots from ballot_db.
+        - Increments result_version (does not overwrite previous versions).
+        - Generates RecountRequest record with status 'completed'.
+        - Resets election status to 'tallied' and approval_status to 'pending'.
+        - Records immutable audit event 'election.recount'.
+        """
+        # 1. Verify election state
+        elec_stmt = (
+            select(Election)
+            .where(Election.id == election_id)
+            .options(selectinload(Election.positions).selectinload(Position.candidates))
+        )
+        election = (await election_session.execute(elec_stmt)).scalar_one_or_none()
+        if not election:
+            raise AppException(ErrorCode.NOT_FOUND, "Election not found", status_code=404)
+
+        if election.status not in (ElectionStatus.TALLIED, ElectionStatus.PUBLISHED):
+            raise AppException(
+                ErrorCode.INVALID_STATE_TRANSITION,
+                f"Recount calculation requires election to be in status 'tallied' or 'published' (current: '{election.status}')",
+                status_code=409,
+            )
+
+        # 2. Determine next result version
+        ver_stmt = select(func.max(ElectionResult.result_version)).where(ElectionResult.election_id == election_id)
+        current_max_ver = (await election_session.execute(ver_stmt)).scalar() or 1
+        new_version = current_max_ver + 1
+
+        # 3. Read ballots from ballot_db
+        ballots_stmt = select(Ballot).where(Ballot.election_id == election_id)
+        ballots = (await ballot_session.execute(ballots_stmt)).scalars().all()
+
+        total_ballots, result_payload = cls._calculate_tally_payload(election, ballots)
+        now = datetime.now(UTC)
+
+        # 4. Create new ElectionResult row with incremented version
+        new_result = ElectionResult(
+            id=uuid.uuid4(),
+            election_id=election_id,
+            result_version=new_version,
+            configuration_hash=election.configuration_hash or "",
+            tally_algorithm_version="1.0",
+            ballot_count=total_ballots,
+            result_data=json.dumps(result_payload),
+            computed_at=now,
+            computed_by=str(actor.id),
+            approval_status="pending",
+            published_at=None,
+        )
+        election_session.add(new_result)
+
+        # 5. Create RecountRequest record
+        recount_req = RecountRequest(
+            id=uuid.uuid4(),
+            election_id=election_id,
+            requester_user_id=actor.id,
+            reason=reason.strip(),
+            status=RecountStatus.COMPLETED,
+            resulting_result_id=new_result.id,
+            created_at=now,
+            resolved_at=now,
+        )
+        election_session.add(recount_req)
+
+        # 6. Reset election status to 'tallied'
+        election.status = ElectionStatus.TALLIED
+
+        # 7. Record Audit Event
+        audit_event = AuditEvent(
+            id=uuid.uuid4(),
+            organization_id=election.organization_id,
+            election_id=election_id,
+            actor_id=actor.id,
+            event_type="election.recount",
+            outcome="success",
+            metadata_json=json.dumps({
+                "recount_request_id": str(recount_req.id),
+                "previous_version": current_max_ver,
+                "new_version": new_version,
+                "reason": reason.strip(),
+                "total_ballots": total_ballots,
+            }),
+            created_at=now,
+        )
+        election_session.add(audit_event)
+
+        await election_session.commit()
+        return new_result, recount_req
+
+    @staticmethod
+    async def list_recounts(
+        election_session: AsyncSession,
+        election_id: uuid.UUID,
+    ) -> list[RecountRequest]:
+        """List all formal recount requests for an election ordered by creation date desc."""
+        stmt = (
+            select(RecountRequest)
+            .where(RecountRequest.election_id == election_id)
+            .order_by(RecountRequest.created_at.desc())
+        )
+        return list((await election_session.execute(stmt)).scalars().all())
+
     @staticmethod
     async def get_results(
         election_session: AsyncSession,
         election_id: uuid.UUID,
         can_view_unapproved: bool,
+        version: int | None = None,
     ) -> dict:
         """
         Retrieve election results.
@@ -321,7 +445,12 @@ class TallyService:
             )
 
         res_stmt = select(ElectionResult).where(ElectionResult.election_id == election_id)
-        result = (await election_session.execute(res_stmt)).scalar_one_or_none()
+        if version is not None:
+            res_stmt = res_stmt.where(ElectionResult.result_version == version)
+        else:
+            res_stmt = res_stmt.order_by(ElectionResult.result_version.desc())
+
+        result = (await election_session.execute(res_stmt)).scalars().first()
         if not result:
             raise AppException(ErrorCode.NOT_FOUND, "Results have not been computed for this election", status_code=404)
 
@@ -329,6 +458,8 @@ class TallyService:
         return {
             "id": result.id,
             "election_id": result.election_id,
+            "result_version": result.result_version,
+            "tally_algorithm_version": result.tally_algorithm_version,
             "configuration_hash": result.configuration_hash,
             "ballot_count": result.ballot_count,
             "approval_status": result.approval_status,
