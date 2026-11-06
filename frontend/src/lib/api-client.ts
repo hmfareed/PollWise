@@ -23,14 +23,15 @@ import type {
 } from "../types/auth";
 import type {
   AuditEvent,
+  Candidate,
   CreateCandidatePayload,
   CreateElectionPayload,
   CreatePositionPayload,
   Election,
   ElectionDetail,
   LaunchApprovalPayload,
+  LiveMonitoringData,
   Position,
-  Candidate,
 } from "../types/election";
 import type {
   AddMemberPayload,
@@ -385,6 +386,16 @@ export const apiClient = {
     fetchApi<ElectionDetail>(`/elections/${electionId}/schedule`, { method: "POST" }),
   openElection: (electionId: string) =>
     fetchApi<ElectionDetail>(`/elections/${electionId}/open`, { method: "POST" }),
+  pauseElection: (electionId: string, reason: string) =>
+    fetchApi<ElectionDetail>(`/elections/${electionId}/pause`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+  resumeElection: (electionId: string, reason?: string) =>
+    fetchApi<ElectionDetail>(`/elections/${electionId}/resume`, {
+      method: "POST",
+      body: JSON.stringify(reason ? { reason } : {}),
+    }),
   closeElection: (electionId: string) =>
     fetchApi<ElectionDetail>(`/elections/${electionId}/close`, { method: "POST" }),
   cancelElection: (electionId: string, reason: string) =>
@@ -405,6 +416,8 @@ export const apiClient = {
       roster_voters_count?: number;
       participations_count?: number;
     }>(`/elections/${electionId}/participation-summary`),
+  getElectionMonitoring: (electionId: string) =>
+    fetchApi<LiveMonitoringData>(`/elections/${electionId}/monitoring`),
 
   // Voter Eligibility & Entitlements
   getEligibility: (electionId: string) =>

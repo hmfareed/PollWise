@@ -25,13 +25,15 @@ export interface Election {
   organization_id: string;
   title: string;
   description?: string | null;
-  status: "draft" | "scheduled" | "open" | "closed" | "tallied" | "published" | "canceled";
+  status: "draft" | "scheduled" | "open" | "paused" | "closed" | "tallied" | "published" | "canceled";
   opens_at?: string | null;
   closes_at?: string | null;
   timezone: string;
   voting_method: string;
   configuration_version: number;
   configuration_hash?: string | null;
+  paused_at?: string | null;
+  pause_reason?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -79,4 +81,45 @@ export interface CreateCandidatePayload {
 export interface LaunchApprovalPayload {
   decision: "approved" | "rejected";
   reason?: string;
+}
+
+export interface TurnoutVelocityPoint {
+  timestamp: string;
+  ballots_count: number;
+  cumulative_ballots: number;
+}
+
+export interface DepartmentTurnoutMetric {
+  department: string;
+  eligible_count: number;
+  voted_count: number;
+  turnout_percentage: number;
+  is_suppressed: boolean;
+}
+
+export interface InfrastructureHealth {
+  ballot_box_status: string;
+  credential_service_status: string;
+  database_status: string;
+}
+
+export interface LiveMonitoringData {
+  election_id: string;
+  status: string;
+  total_eligible: number;
+  ballots_cast: number;
+  turnout_percentage: number;
+  paused_at?: string | null;
+  pause_reason?: string | null;
+  velocity: TurnoutVelocityPoint[];
+  departmental_turnout: DepartmentTurnoutMetric[];
+  health: InfrastructureHealth;
+}
+
+export interface PauseElectionRequest {
+  reason: string;
+}
+
+export interface ResumeElectionRequest {
+  reason?: string | null;
 }
