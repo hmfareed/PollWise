@@ -79,6 +79,8 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
                     ? "Election In Draft Preparation"
                     : electionStatus === "scheduled"
                     ? "Voting Scheduled But Not Yet Open"
+                    : electionStatus === "paused"
+                    ? "Voting Temporarily Paused"
                     : electionStatus === "closed"
                     ? "Election Concluded"
                     : "Voting Currently Unavailable"}
@@ -89,6 +91,8 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
                   ? "This election is currently in preparation and has not yet opened for voting. Please check back during the official voting window."
                   : electionStatus === "scheduled"
                   ? `This election is scheduled to open on ${opensAt ? new Date(opensAt).toLocaleString() : "the scheduled date"}.`
+                  : electionStatus === "paused"
+                  ? "This election is temporarily paused by election administrators under emergency operational protocol. Please check back shortly."
                   : electionStatus === "closed"
                   ? "The voting window for this election has closed. No further ballots may be submitted."
                   : "Voting is not currently active for this election."}
