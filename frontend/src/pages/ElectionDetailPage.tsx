@@ -27,6 +27,11 @@ import {
   Download,
   AlertTriangle,
   RotateCcw,
+  PauseCircle,
+  PlayCircle,
+  AlertOctagon,
+  Server,
+  Zap,
 } from "lucide-react";
 import { apiClient, getAssetUrl } from "../lib/api-client";
 import { useAuth } from "../features/auth/useAuth";
@@ -44,8 +49,11 @@ import { AccessCodeManager } from "../components/admin/AccessCodeManager";
 import { CertifiedCertificateModal } from "../components/reports/CertifiedCertificateModal";
 import { ElectionReportsModal } from "../components/reports/ElectionReportsModal";
 import { RecountRequestModal } from "../components/reports/RecountRequestModal";
+import { EmergencyControlModal } from "../components/elections/EmergencyControlModal";
+import { EmergencyStatusBanner } from "../components/elections/EmergencyStatusBanner";
+import { TurnoutVelocityChart } from "../components/elections/TurnoutVelocityChart";
 import { CandidatePhotoUpload } from "../components/admin/CandidatePhotoUpload";
-import type { ElectionDetail, AuditEvent } from "../types/election";
+import type { ElectionDetail, AuditEvent, LiveMonitoringData } from "../types/election";
 import type { EligibilityRecord } from "../types/ballot";
 import type { ElectionResult, RecountRequest } from "../types/results";
 
@@ -273,6 +281,10 @@ export const ElectionDetailPage: React.FC = () => {
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [showRecountModal, setShowRecountModal] = useState(false);
+  const [emergencyModal, setEmergencyModal] = useState<{
+    isOpen: boolean;
+    actionType: "pause" | "resume" | "emergency_close" | "cancel";
+  }>({ isOpen: false, actionType: "pause" });
   const votingUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/elections/${id}/vote`
@@ -350,6 +362,17 @@ export const ElectionDetailPage: React.FC = () => {
     queryKey: ["election-recounts", id],
     queryFn: () => apiClient.getRecounts(id!),
     enabled: !!id && (election?.status === "tallied" || election?.status === "published"),
+  });
+
+  const {
+    data: monitoringData,
+    isLoading: isMonitoringLoading,
+    refetch: refetchMonitoring,
+  } = useQuery<LiveMonitoringData>({
+    queryKey: ["election-monitoring", id],
+    queryFn: () => apiClient.getElectionMonitoring(id!),
+    enabled: !!id,
+    refetchInterval: activeTab === "participation" ? 15000 : false,
   });
 
   useEffect(() => {
@@ -608,6 +631,28 @@ export const ElectionDetailPage: React.FC = () => {
     onError: (err) => handleError(err, "Failed to close election"),
   });
 
+  const pauseMutation = useMutation({
+    mutationFn: (reason: string) => apiClient.pauseElection(id!, reason),
+    onSuccess: (updated) => {
+      invalidateElection();
+      queryClient.invalidateQueries({ queryKey: ["election-monitoring", id] });
+      notify("Election paused successfully under emergency operational protocol.");
+      setEmergencyModal({ isOpen: false, actionType: "pause" });
+    },
+    onError: (err) => handleError(err, "Failed to pause election"),
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: (reason?: string) => apiClient.resumeElection(id!, reason),
+    onSuccess: (updated) => {
+      invalidateElection();
+      queryClient.invalidateQueries({ queryKey: ["election-monitoring", id] });
+      notify("Election resumed successfully. Voting is now open.");
+      setEmergencyModal({ isOpen: false, actionType: "resume" });
+    },
+    onError: (err) => handleError(err, "Failed to resume election"),
+  });
+
   const tallyMutation = useMutation({
     mutationFn: () => apiClient.computeTally(id!),
     onSuccess: () => {
@@ -834,6 +879,27 @@ export const ElectionDetailPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Emergency Status Banner when Paused */}
+      {election.status === "paused" && (
+        <div className="mb-6">
+          <EmergencyStatusBanner
+            election={election}
+            onResume={() => setEmergencyModal({ isOpen: true, actionType: "resume" })}
+            onClose={() => {
+              if (
+                window.confirm(
+                  "Close this paused election? Voting will be permanently concluded and ballot collections frozen for tallying."
+                )
+              ) {
+                closeMutation.mutate();
+              }
+            }}
+            isResuming={resumeMutation.isPending}
+            isClosing={closeMutation.isPending}
+          />
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1111,13 +1177,22 @@ export const ElectionDetailPage: React.FC = () => {
                 )}
 
                 {election.status === "open" && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Link to={`/elections/${id}/vote`}>
                       <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
                         <Vote className="h-4 w-4" />
                         Cast Ballot
                       </Button>
                     </Link>
+                    <Button
+                      variant="outline"
+                      className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-semibold"
+                      onClick={() => setEmergencyModal({ isOpen: true, actionType: "pause" })}
+                      disabled={pauseMutation.isPending || closeMutation.isPending}
+                    >
+                      <PauseCircle className="h-4 w-4" />
+                      Pause Election
+                    </Button>
                     <Button
                       variant="destructive"
                       className="gap-2"
@@ -1130,7 +1205,36 @@ export const ElectionDetailPage: React.FC = () => {
                           closeMutation.mutate();
                         }
                       }}
-                      disabled={closeMutation.isPending}
+                      disabled={closeMutation.isPending || pauseMutation.isPending}
+                    >
+                      {closeMutation.isPending ? "Closing…" : "Close Election"}
+                    </Button>
+                  </div>
+                )}
+
+                {election.status === "paused" && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                      onClick={() => setEmergencyModal({ isOpen: true, actionType: "resume" })}
+                      disabled={resumeMutation.isPending || closeMutation.isPending}
+                    >
+                      <PlayCircle className="h-4 w-4" />
+                      {resumeMutation.isPending ? "Resuming…" : "Resume Election"}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="gap-2"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "Close this paused election? Voting will be permanently concluded and ballot collections frozen for tallying."
+                          )
+                        ) {
+                          closeMutation.mutate();
+                        }
+                      }}
+                      disabled={closeMutation.isPending || resumeMutation.isPending}
                     >
                       {closeMutation.isPending ? "Closing…" : "Close Election"}
                     </Button>
@@ -1657,7 +1761,7 @@ export const ElectionDetailPage: React.FC = () => {
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Live Statistics</CardTitle>
+                <CardTitle className="text-base font-bold">Live Turnout Statistics</CardTitle>
                 <span className="text-xs text-muted-foreground">
                   Updated {secondsAgo}s ago ({lastRefreshed.toLocaleTimeString()})
                 </span>
@@ -1688,6 +1792,108 @@ export const ElectionDetailPage: React.FC = () => {
               </p>
             </CardContent>
           </Card>
+
+          {/* Infrastructure Health Telemetry */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card className="p-4 border border-border/80 bg-card">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Ballot Ingestion Service</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 font-bold text-sm text-foreground">
+                <Server className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="capitalize">{monitoringData?.health?.ballot_box_status || "Healthy"}</span>
+              </div>
+            </Card>
+
+            <Card className="p-4 border border-border/80 bg-card">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Single-Use Credential Service</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 font-bold text-sm text-foreground">
+                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="capitalize">{monitoringData?.health?.credential_service_status || "Active"}</span>
+              </div>
+            </Card>
+
+            <Card className="p-4 border border-border/80 bg-card">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">Database Storage</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 font-bold text-sm text-foreground">
+                <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="capitalize">{monitoringData?.health?.database_status || "Connected"}</span>
+              </div>
+            </Card>
+          </div>
+
+          {/* Turnout Velocity Chart */}
+          <TurnoutVelocityChart
+            velocity={monitoringData?.velocity || []}
+            isLoading={isMonitoringLoading}
+          />
+
+          {/* Departmental Participation Breakdown (Doc 01 §11.2 Privacy Threshold) */}
+          {monitoringData?.departmental_turnout && monitoringData.departmental_turnout.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base font-bold">Departmental Turnout Breakdown</CardTitle>
+                    <CardDescription className="text-xs">
+                      Registered groups and participation rate per institutional unit
+                    </CardDescription>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Doc 01 §11.2 Privacy Protected
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 text-xs text-muted-foreground border-b border-border">
+                      <tr>
+                        <th className="py-2.5 px-3 text-left font-medium">Department / Faculty</th>
+                        <th className="py-2.5 px-3 text-right font-medium">Eligible Voters</th>
+                        <th className="py-2.5 px-3 text-right font-medium">Ballots Cast</th>
+                        <th className="py-2.5 px-3 text-right font-medium">Turnout %</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {monitoringData.departmental_turnout.map((dept, i) => (
+                        <tr key={i} className="hover:bg-muted/20">
+                          <td className="py-2.5 px-3 font-medium flex items-center gap-2">
+                            <span>{dept.department}</span>
+                            {dept.is_suppressed && (
+                              <Badge variant="outline" className="text-2xs border-amber-400 text-amber-700 bg-amber-50 dark:bg-amber-950/30">
+                                Privacy Suppressed (&lt; 10 voters)
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-semibold">{dept.eligible_count}</td>
+                          <td className="py-2.5 px-3 text-right font-semibold text-emerald-700 dark:text-emerald-400">
+                            {dept.voted_count}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-semibold text-primary">
+                            {dept.turnout_percentage.toFixed(1)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                  <span>
+                    Subgroups with fewer than 10 registered voters are aggregated to prevent deduction of individual voting participation (Doc 01 §11.2).
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Breakdown table */}
           {totalEligible > 0 && (
@@ -2273,6 +2479,24 @@ export const ElectionDetailPage: React.FC = () => {
           refetchResults();
           refetchRecounts();
           notify("Recount requested successfully. New tally version created.");
+        }}
+      />
+
+      {/* Emergency Control Modal */}
+      <EmergencyControlModal
+        isOpen={emergencyModal.isOpen}
+        actionType={emergencyModal.actionType}
+        electionTitle={election.title}
+        isSubmitting={pauseMutation.isPending || resumeMutation.isPending || closeMutation.isPending}
+        onClose={() => setEmergencyModal({ isOpen: false, actionType: "pause" })}
+        onConfirm={(reason) => {
+          if (emergencyModal.actionType === "pause") {
+            pauseMutation.mutate(reason);
+          } else if (emergencyModal.actionType === "resume") {
+            resumeMutation.mutate(reason);
+          } else if (emergencyModal.actionType === "emergency_close") {
+            closeMutation.mutate();
+          }
         }}
       />
 
