@@ -8,6 +8,7 @@ import { apiClient } from "../lib/api-client";
 import { AuthSplitLayout } from "../layouts/AuthSplitLayout";
 import { Input, PasswordInput } from "../components/ui/input";
 import { Select } from "../components/ui/select";
+import { ALL_COUNTRIES } from "../lib/countries";
 
 const INSTITUTION_TYPES = [
   "University",
@@ -17,20 +18,6 @@ const INSTITUTION_TYPES = [
   "Student union",
   "Corporate organization",
   "Nonprofit organization",
-  "Other",
-];
-
-const COMMON_COUNTRIES = [
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Germany",
-  "France",
-  "India",
-  "Nigeria",
-  "South Africa",
-  "Singapore",
   "Other",
 ];
 
@@ -248,7 +235,7 @@ export const RegisterPage: React.FC = () => {
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
               >
-                {COMMON_COUNTRIES.map((c) => (
+                {ALL_COUNTRIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>

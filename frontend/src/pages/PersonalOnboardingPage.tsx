@@ -20,6 +20,7 @@ import { useAuth } from "../features/auth/useAuth";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select } from "../components/ui/select";
+import { ALL_COUNTRIES } from "../lib/countries";
 import { Badge } from "../components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import type { MfaSetupResponse, InvitationValidationResponse } from "../types/auth";
@@ -705,13 +706,11 @@ export const PersonalOnboardingPage: React.FC = () => {
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                   >
-                    <option value="United States">United States</option>
-                    <option value="Canada">Canada</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Australia">Australia</option>
-                    <option value="Germany">Germany</option>
-                    <option value="France">France</option>
-                    <option value="Other">Other</option>
+                    {ALL_COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
                   </Select>
                 </div>
 
