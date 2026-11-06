@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, verify_user_organization_role
 from app.db.session import get_ballot_session, get_election_session, get_identity_session
 from app.models.ballot import Ballot
 from app.models.election import Candidate, Election, ElectionResult, Position
@@ -19,14 +19,18 @@ from app.schemas.election import (
     CreateElectionRequest,
     CreatePositionRequest,
     ElectionDetailResponse,
+    ElectionMonitoringResponse,
     ElectionResponse,
     LaunchApprovalRequest,
+    PauseElectionRequest,
     PositionResponse,
+    ResumeElectionRequest,
     UpdateCandidateRequest,
     UpdateElectionRequest,
     UpdatePositionRequest,
 )
 from app.services.election_service import ElectionService
+from app.services.monitoring_service import ElectionMonitoringService
 
 router = APIRouter(tags=["Election Lifecycle & Management"])
 
@@ -73,6 +77,8 @@ def serialize_election(e: Election) -> ElectionResponse:
         voting_method=e.voting_method,
         configuration_version=e.configuration_version,
         configuration_hash=e.configuration_hash,
+        paused_at=e.paused_at,
+        pause_reason=e.pause_reason,
         created_by=e.created_by,
         created_at=e.created_at,
         updated_at=e.updated_at,
@@ -292,6 +298,51 @@ async def open_election(
     )
 
 
+@router.post("/elections/{election_id}/pause", response_model=ApiResponse[ElectionDetailResponse])
+async def pause_election(
+    election_id: uuid.UUID,
+    payload: PauseElectionRequest,
+    current_user: User = Depends(get_current_user),
+    election_session: AsyncSession = Depends(get_election_session),
+    identity_session: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[ElectionDetailResponse]:
+    """Temporarily pause an open election under emergency control protocol (Doc 01 §11.3)."""
+    election = await ElectionService.get_election(election_session, election_id)
+    await verify_user_organization_role(
+        identity_session, current_user, election.organization_id, ["organization_admin", "election_manager"]
+    )
+    updated = await ElectionService.pause_election(
+        election_session, election_id, actor=current_user, reason=payload.reason
+    )
+    return ApiResponse(
+        data=serialize_election_detail(updated),
+        error=None,
+    )
+
+
+@router.post("/elections/{election_id}/resume", response_model=ApiResponse[ElectionDetailResponse])
+async def resume_election(
+    election_id: uuid.UUID,
+    payload: ResumeElectionRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    election_session: AsyncSession = Depends(get_election_session),
+    identity_session: AsyncSession = Depends(get_identity_session),
+) -> ApiResponse[ElectionDetailResponse]:
+    """Resume a paused election back to open state (Doc 01 §11.3)."""
+    election = await ElectionService.get_election(election_session, election_id)
+    await verify_user_organization_role(
+        identity_session, current_user, election.organization_id, ["organization_admin", "election_manager"]
+    )
+    reason = payload.reason if payload else None
+    updated = await ElectionService.resume_election(
+        election_session, election_id, actor=current_user, reason=reason
+    )
+    return ApiResponse(
+        data=serialize_election_detail(updated),
+        error=None,
+    )
+
+
 @router.post("/elections/{election_id}/close", response_model=ApiResponse[ElectionDetailResponse])
 async def close_election(
     election_id: uuid.UUID,
@@ -445,5 +496,33 @@ async def get_election_participation_summary(
             "roster_voters_count": total_roster_voters,
             "participations_count": total_participations,
         },
+        error=None,
+    )
+
+
+@router.get(
+    "/elections/{election_id}/monitoring",
+    response_model=ApiResponse[ElectionMonitoringResponse],
+)
+async def get_election_monitoring(
+    election_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    election_session: AsyncSession = Depends(get_election_session),
+    identity_session: AsyncSession = Depends(get_identity_session),
+    ballot_session: AsyncSession = Depends(get_ballot_session),
+) -> ApiResponse[ElectionMonitoringResponse]:
+    """Retrieve real-time live monitoring metrics, turnout velocity, infrastructure health, and privacy-thresholded departmental participation."""
+    election = await ElectionService.get_election(election_session, election_id)
+    await verify_user_organization_role(
+        identity_session, current_user, election.organization_id, ["organization_admin", "election_manager", "auditor"]
+    )
+    monitoring_data = await ElectionMonitoringService.get_monitoring_data(
+        election_session=election_session,
+        ballot_session=ballot_session,
+        identity_session=identity_session,
+        election_id=election_id,
+    )
+    return ApiResponse(
+        data=monitoring_data,
         error=None,
     )

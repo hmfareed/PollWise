@@ -94,6 +94,39 @@ class ResumeElectionRequest(BaseModel):
     reason: str | None = Field(None, max_length=2000, description="Optional notes on emergency resolution")
 
 
+class TurnoutVelocityPoint(BaseModel):
+    timestamp: datetime
+    ballots_count: int
+    cumulative_ballots: int
+
+
+class DepartmentTurnoutMetric(BaseModel):
+    department: str
+    eligible_count: int
+    voted_count: int
+    turnout_percentage: float
+    is_suppressed: bool = False
+
+
+class InfrastructureHealth(BaseModel):
+    ballot_box_status: str = "healthy"
+    credential_service_status: str = "healthy"
+    database_status: str = "healthy"
+
+
+class ElectionMonitoringResponse(BaseModel):
+    election_id: uuid.UUID
+    status: str
+    total_eligible: int
+    ballots_cast: int
+    turnout_percentage: float
+    paused_at: datetime | None = None
+    pause_reason: str | None = None
+    velocity: list[TurnoutVelocityPoint] = []
+    departmental_turnout: list[DepartmentTurnoutMetric] = []
+    health: InfrastructureHealth
+
+
 class CandidateResponse(BaseModel):
     id: uuid.UUID
     position_id: uuid.UUID
