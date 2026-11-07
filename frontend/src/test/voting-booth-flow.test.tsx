@@ -126,6 +126,15 @@ describe("VotingBoothPage Independent Voter Experience Flow", () => {
 
     // 1. Landing Screen
     expect(await screen.findByText("2026 Student Union Executive Election")).toBeInTheDocument();
+    expect(screen.getByText(/Back to Elections/i)).toBeInTheDocument();
+    expect(screen.getByText("Voting Open")).toBeInTheDocument();
+    expect(screen.getByText("Voting Window")).toBeInTheDocument();
+    expect(screen.getByText("Ballot Security")).toBeInTheDocument();
+    expect(screen.getByText("Before you start")).toBeInTheDocument();
+    expect(screen.getByText(/Enter your approved Student ID/i)).toBeInTheDocument();
+    expect(screen.getByText(/Contact election support/i)).toBeInTheDocument();
+    expect(screen.getByText(/Read our privacy policy/i)).toBeInTheDocument();
+
     const startBtn = screen.getByRole("button", { name: /start voting/i });
     fireEvent.click(startBtn);
 

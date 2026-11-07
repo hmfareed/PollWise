@@ -367,6 +367,8 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
             isOpen={isOpen}
             electionStatus={election.status}
             electionId={id}
+            hasAccessCodes={hasAccessCodes}
+            identifierLabel={label}
             onStart={() => {
               setAuthError(null);
               setPhase(hasAccessCodes ? "access_code" : "identifier");
