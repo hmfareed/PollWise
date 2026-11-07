@@ -245,8 +245,8 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
         </button>
       </div>
 
-      {/* Footer Support and Privacy Notice - Pushed to the Bottom */}
-      <div className="mt-auto pt-8 pb-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+      {/* Footer Support and Privacy Notice - Pushed to the Bottom and Aligned with Left Footer */}
+      <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
           <span>Need help?</span>
