@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Vote, ShieldCheck } from "lucide-react";
 import { apiClient } from "../lib/api-client";
@@ -13,7 +13,7 @@ import { BallotInstructionsStep } from "../components/voter/BallotInstructionsSt
 import { PositionVoteStep } from "../components/voter/PositionVoteStep";
 import { BallotReviewStep } from "../components/voter/BallotReviewStep";
 import { SubmissionConfirmedStep } from "../components/voter/SubmissionConfirmedStep";
-import type { VoterBallotStructure, BallotPosition } from "../types/voter-participation";
+import type { VoterBallotStructure } from "../types/voter-participation";
 
 type FlowPhase =
   | "landing"
@@ -38,7 +38,6 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
   onKioskReset,
 }) => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   // Phase State
   const [phase, setPhase] = useState<FlowPhase>("landing");

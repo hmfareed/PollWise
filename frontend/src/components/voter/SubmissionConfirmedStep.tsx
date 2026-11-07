@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle2, Copy, Check, ShieldCheck, RotateCcw, Home } from "lucide-react";
+import { CheckCircle2, Copy, Check, ShieldCheck, RotateCcw } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -12,7 +12,7 @@ interface SubmissionConfirmedStepProps {
 
 export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = ({
   confirmationReference,
-  isKiosk = false,
+  isKiosk: _isKiosk = false,
   onFinish,
 }) => {
   const [copied, setCopied] = useState(false);

@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, ArrowLeft, ArrowRight, FastForward, User, AlertCircle } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight, FastForward, User } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -30,7 +30,6 @@ export const PositionVoteStep: React.FC<PositionVoteStepProps> = ({
   onNext,
 }) => {
   const isLast = currentIndex === totalPositions - 1;
-  const hasAnswered = !!selectedCandidateId || isSkipped;
   const canProceed = !position.is_required || !!selectedCandidateId;
 
   return (
@@ -41,7 +40,7 @@ export const PositionVoteStep: React.FC<PositionVoteStepProps> = ({
           Position {currentIndex + 1} of {totalPositions}
         </Badge>
         {position.is_required ? (
-          <Badge variant="destructive" className="text-xs">
+          <Badge variant="danger" className="text-xs">
             Required
           </Badge>
         ) : (

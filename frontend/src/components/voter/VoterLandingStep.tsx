@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import {
   Vote,
   ShieldCheck,
@@ -67,13 +66,13 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
     <div className="w-full transition-all">
       {/* Top Breadcrumb Navigation */}
       <div className="mb-6">
-        <Link
-          to="/elections"
+        <a
+          href="/elections"
           className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Elections</span>
-        </Link>
+        </a>
       </div>
 
       {/* Main Container Card */}
@@ -278,12 +277,12 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
             <Lock className="w-3.5 h-3.5 text-slate-400" />
             <span>Privacy Notice</span>
             <span className="text-slate-300 dark:text-slate-700">•</span>
-            <Link
-              to="/privacy"
+            <a
+              href="/privacy"
               className="font-semibold text-[#0055FF] dark:text-blue-400 hover:underline"
             >
               Read our privacy policy
-            </Link>
+            </a>
           </div>
         </div>
       </div>
