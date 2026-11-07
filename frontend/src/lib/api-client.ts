@@ -375,6 +375,25 @@ export const apiClient = {
     const json = await res.json();
     return json.data;
   },
+  uploadElectionPhoto: async (file: File): Promise<{ photo_url: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${API_BASE_URL}/uploads/election-photo`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new ApiError(
+        err?.error?.code || "UPLOAD_FAILED",
+        err?.error?.message || "Failed to upload election photo",
+        res.status
+      );
+    }
+    const json = await res.json();
+    return json.data;
+  },
   
   // Lifecycle Transitions
   approveLaunch: (electionId: string, payload: LaunchApprovalPayload) =>

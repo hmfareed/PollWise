@@ -34,6 +34,7 @@ export interface Election {
   configuration_hash?: string | null;
   paused_at?: string | null;
   pause_reason?: string | null;
+  photo_url?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -61,6 +62,7 @@ export interface CreateElectionPayload {
   opens_at?: string;
   closes_at?: string;
   timezone?: string;
+  photo_url?: string;
 }
 
 export interface CreatePositionPayload {

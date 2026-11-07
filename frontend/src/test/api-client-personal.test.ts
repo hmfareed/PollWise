@@ -296,4 +296,16 @@ describe("Personal Onboarding API Client", () => {
     );
     expect(res).toEqual(mockElections);
   });
+
+  it("calls uploadElectionPhoto and returns photo_url", async () => {
+    const fakeFile = new File(["dummy"], "pfp.png", { type: "image/png" });
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ data: { photo_url: "/static/uploads/elections/logo.png" } }),
+    } as Response);
+
+    const res = await apiClient.uploadElectionPhoto(fakeFile);
+    expect(res.photo_url).toBe("/static/uploads/elections/logo.png");
+  });
 });
