@@ -49,9 +49,9 @@ export const OTPVerificationStep: React.FC<OTPVerificationStepProps> = ({
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Card className="shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
+      <Card className="shadow-xl shadow-slate-200/50 border border-slate-200/80 rounded-3xl bg-white text-slate-900">
         <CardHeader className="text-center pb-2">
-          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-xl mx-auto flex items-center justify-center mb-3">
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mx-auto flex items-center justify-center mb-3">
             <KeyRound className="w-6 h-6" />
           </div>
           <CardTitle className="text-xl font-bold tracking-tight">Verify Your Access</CardTitle>
@@ -62,11 +62,11 @@ export const OTPVerificationStep: React.FC<OTPVerificationStepProps> = ({
 
         <CardContent className="space-y-6">
           {/* Prominent On-Screen OTP Display */}
-          <div className="bg-gradient-to-b from-blue-50/80 to-blue-100/40 dark:from-blue-950/40 dark:to-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 text-center space-y-2 shadow-inner">
-            <span className="text-xs font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase block">
+          <div className="bg-gradient-to-b from-blue-50/80 to-blue-100/40 border border-blue-200 rounded-2xl p-6 text-center space-y-2 shadow-inner">
+            <span className="text-xs font-semibold tracking-wider text-blue-600 uppercase block">
               Your Pollwise verification code:
             </span>
-            <div className="text-4xl font-mono font-black tracking-widest text-blue-900 dark:text-blue-100 select-all py-1">
+            <div className="text-4xl font-mono font-black tracking-widest text-blue-900 select-all py-1">
               {formattedDisplay}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -101,7 +101,7 @@ export const OTPVerificationStep: React.FC<OTPVerificationStepProps> = ({
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-lg flex items-start gap-2.5 text-red-700 dark:text-red-400 text-sm">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2.5 text-red-700 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
@@ -136,7 +136,7 @@ export const OTPVerificationStep: React.FC<OTPVerificationStepProps> = ({
             <button
               type="button"
               onClick={onRegenerate}
-              className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
+              className="text-blue-600 hover:underline flex items-center gap-1 font-medium"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Regenerate Code
             </button>

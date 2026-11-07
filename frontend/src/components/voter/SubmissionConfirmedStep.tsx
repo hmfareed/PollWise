@@ -40,9 +40,9 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Card className="shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 text-center">
+      <Card className="shadow-xl shadow-slate-200/50 border border-slate-200/80 rounded-3xl bg-white text-slate-900 text-center">
         <CardHeader className="pb-3">
-          <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full mx-auto flex items-center justify-center mb-3 ring-8 ring-emerald-50/50 dark:ring-emerald-950/20">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full mx-auto flex items-center justify-center mb-3 ring-8 ring-emerald-50/50">
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <Badge variant="success" className="mx-auto mb-2 text-xs">
@@ -82,8 +82,8 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
             </p>
           </div>
 
-          <div className="flex items-start gap-3 p-3.5 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-900/40 rounded-xl text-left text-xs text-muted-foreground">
-            <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3.5 bg-blue-50/60 border border-blue-200/60 rounded-xl text-left text-xs text-muted-foreground">
+            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-semibold text-foreground block">One Accepted Ballot Enforced</span>
               Your voter identifier is permanently marked as participated for this election. A second ballot cannot be submitted.

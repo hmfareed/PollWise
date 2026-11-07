@@ -36,9 +36,9 @@ export const IdentifierEntryStep: React.FC<IdentifierEntryStepProps> = ({
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Card className="shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
+      <Card className="shadow-xl shadow-slate-200/50 border border-slate-200/80 rounded-3xl bg-white text-slate-900">
         <CardHeader className="text-center pb-2">
-          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-xl mx-auto flex items-center justify-center mb-3">
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl mx-auto flex items-center justify-center mb-3">
             <UserCheck className="w-6 h-6" />
           </div>
           <CardTitle className="text-xl font-bold tracking-tight">Voter Verification</CardTitle>
@@ -70,7 +70,7 @@ export const IdentifierEntryStep: React.FC<IdentifierEntryStepProps> = ({
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-lg flex items-start gap-2.5 text-red-700 dark:text-red-400 text-sm">
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2.5 text-red-700 text-sm">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>

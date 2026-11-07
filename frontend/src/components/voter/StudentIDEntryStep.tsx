@@ -38,7 +38,7 @@ export const StudentIDEntryStep: React.FC<StudentIDEntryStepProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
+    <Card className="w-full max-w-md mx-auto shadow-xl shadow-slate-200/50 border border-slate-200/80 rounded-3xl bg-white text-slate-900">
       <CardHeader className="text-center pb-3">
         <div className="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-600 mx-auto flex items-center justify-center mb-2">
           <UserCheck className="h-6 w-6" />

@@ -20,7 +20,7 @@ export const VoterSplitLayout: React.FC<VoterSplitLayoutProps> = ({
   maxWidthClassName = "max-w-2xl",
 }) => {
   return (
-    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-950 lg:overflow-hidden">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-white lg:overflow-hidden">
       {/* Mobile Branding Bar (visible on < lg) */}
       <div className="lg:hidden bg-gradient-to-r from-[#0037D4] to-[#00228C] p-4 sm:p-5 text-white flex items-center justify-between shadow-sm">
         <Link to="/" className="inline-block">
@@ -65,8 +65,8 @@ export const VoterSplitLayout: React.FC<VoterSplitLayoutProps> = ({
         </div>
       </div>
 
-      {/* Right Content Area */}
-      <div className="flex-1 lg:h-full flex flex-col items-center px-6 pt-6 sm:px-10 lg:px-12 xl:px-14 pb-5 overflow-y-auto bg-white dark:bg-slate-950">
+      {/* Right Content Area (Always Pure Light Theme) */}
+      <div className="flex-1 lg:h-full flex flex-col items-center px-6 pt-6 sm:px-10 lg:px-12 xl:px-14 pb-5 overflow-y-auto bg-white text-slate-900 [color-scheme:light]">
         <div className={`w-full ${maxWidthClassName} flex-1 flex flex-col justify-between`}>
           {children}
         </div>
