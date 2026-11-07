@@ -40,7 +40,7 @@ export const AccessCodeEntryStep: React.FC<AccessCodeEntryStepProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-lg border-border">
+    <Card className="w-full max-w-md mx-auto shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
       <CardHeader className="text-center pb-4">
         <div className="h-12 w-12 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2">
           <Ticket className="h-6 w-6" />

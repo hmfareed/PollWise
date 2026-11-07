@@ -40,7 +40,7 @@ export const SubmissionConfirmedStep: React.FC<SubmissionConfirmedStepProps> = (
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Card className="border-border shadow-sm text-center">
+      <Card className="shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 text-center">
         <CardHeader className="pb-3">
           <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full mx-auto flex items-center justify-center mb-3 ring-8 ring-emerald-50/50 dark:ring-emerald-950/20">
             <CheckCircle2 className="w-10 h-10" />

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Vote, ShieldCheck } from "lucide-react";
 import { apiClient } from "../lib/api-client";
+import { VoterSplitLayout } from "../layouts/VoterSplitLayout";
 import { VoterLandingStep } from "../components/voter/VoterLandingStep";
 import { IdentifierEntryStep } from "../components/voter/IdentifierEntryStep";
 import { OTPVerificationStep } from "../components/voter/OTPVerificationStep";
@@ -331,33 +332,20 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
   const label = authConfig?.identifier_label || "Institutional Identifier";
   const idType = authConfig?.identifier_type || "institutional_email";
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-foreground flex flex-col justify-between">
-      {/* Top Standalone Brand Bar */}
-      <header className="border-b border-border/70 bg-card/90 backdrop-blur-sm px-6 py-4 shadow-2xs">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold text-sm">
-              <Vote className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-extrabold text-base tracking-tight text-foreground block leading-none">
-                PollWise
-              </span>
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
-                Official Voting Booth
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden sm:inline font-medium">Secret Ballot Protected</span>
-          </div>
-        </div>
-      </header>
+  const isSplitLayoutPhase = [
+    "landing",
+    "access_code",
+    "student_id",
+    "identifier",
+    "otp",
+    "confirmed",
+  ].includes(phase);
 
-      {/* Main Ballot Content */}
-      <main className="flex-1 py-8 px-4 sm:px-6">
+  if (isSplitLayoutPhase) {
+    return (
+      <VoterSplitLayout
+        maxWidthClassName={phase === "landing" ? "max-w-2xl xl:max-w-3xl" : "max-w-md sm:max-w-lg"}
+      >
         {phase === "landing" && (
           <VoterLandingStep
             electionTitle={election.title}
@@ -431,6 +419,44 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
           />
         )}
 
+        {phase === "confirmed" && confirmationReference && (
+          <SubmissionConfirmedStep
+            confirmationReference={confirmationReference}
+            isKiosk={isKiosk}
+            onFinish={handleFinish}
+          />
+        )}
+      </VoterSplitLayout>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-foreground flex flex-col justify-between">
+      {/* Top Standalone Brand Bar */}
+      <header className="border-b border-border/70 bg-card/90 backdrop-blur-sm px-6 py-4 shadow-2xs">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-[#0055FF] flex items-center justify-center text-white shadow-xs font-bold text-sm">
+              <Vote className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-extrabold text-base tracking-tight text-foreground block leading-none">
+                PollWise
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
+                Official Voting Booth
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline font-medium">Secret Ballot Protected</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Ballot Content */}
+      <main className="flex-1 py-8 px-4 sm:px-6">
         {phase === "instructions" && ballot && (
           <BallotInstructionsStep
             electionTitle={ballot.election_title}
@@ -464,14 +490,6 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
             onEditPosition={handleEditPosition}
             onSubmit={handleSubmitBallot}
             onBackToBallot={() => setPhase("voting")}
-          />
-        )}
-
-        {phase === "confirmed" && confirmationReference && (
-          <SubmissionConfirmedStep
-            confirmationReference={confirmationReference}
-            isKiosk={isKiosk}
-            onFinish={handleFinish}
           />
         )}
       </main>

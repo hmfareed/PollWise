@@ -36,7 +36,7 @@ export const IdentifierEntryStep: React.FC<IdentifierEntryStepProps> = ({
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Card className="border-border shadow-sm">
+      <Card className="shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
         <CardHeader className="text-center pb-2">
           <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-xl mx-auto flex items-center justify-center mb-3">
             <UserCheck className="w-6 h-6" />
