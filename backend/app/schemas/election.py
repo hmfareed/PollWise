@@ -12,6 +12,7 @@ class CreateElectionRequest(BaseModel):
     opens_at: datetime | None = Field(None, description="Voting commencement timestamp")
     closes_at: datetime | None = Field(None, description="Voting conclusion deadline")
     timezone: str = Field(default="UTC", description="IANA timezone name")
+    photo_url: str | None = Field(None, max_length=1024, description="Optional circular profile picture URL")
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -26,6 +27,7 @@ class UpdateElectionRequest(BaseModel):
     opens_at: datetime | None = None
     closes_at: datetime | None = None
     timezone: str | None = None
+    photo_url: str | None = None
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -122,6 +124,7 @@ class ElectionMonitoringResponse(BaseModel):
     turnout_percentage: float
     paused_at: datetime | None = None
     pause_reason: str | None = None
+    photo_url: str | None = None
     velocity: list[TurnoutVelocityPoint] = []
     departmental_turnout: list[DepartmentTurnoutMetric] = []
     health: InfrastructureHealth
@@ -163,6 +166,7 @@ class ElectionResponse(BaseModel):
     configuration_hash: str | None = None
     paused_at: datetime | None = None
     pause_reason: str | None = None
+    photo_url: str | None = None
     created_by: uuid.UUID
     created_at: datetime
     updated_at: datetime

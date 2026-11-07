@@ -77,6 +77,7 @@ class ElectionService:
             voting_method="single_choice_per_position",
             configuration_version=1,
             configuration_hash=None,
+            photo_url=req.photo_url,
             created_by=user.id,
         )
         db.add(election)
@@ -160,6 +161,8 @@ class ElectionService:
             election.closes_at = req.closes_at
         if req.timezone is not None:
             election.timezone = req.timezone
+        if "photo_url" in req.model_fields_set:
+            election.photo_url = req.photo_url
 
         await db.commit()
         await db.refresh(election)

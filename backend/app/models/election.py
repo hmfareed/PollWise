@@ -63,6 +63,7 @@ class Election(ElectionBase, TimestampMixin):
     configuration_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     paused_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     pause_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(GUID(), nullable=False)
 
     positions: Mapped[list["Position"]] = relationship(
