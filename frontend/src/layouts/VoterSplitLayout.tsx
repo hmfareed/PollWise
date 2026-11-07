@@ -66,8 +66,8 @@ export const VoterSplitLayout: React.FC<VoterSplitLayoutProps> = ({
       </div>
 
       {/* Right Content Area */}
-      <div className="flex-1 lg:h-full flex flex-col items-center p-4 sm:p-8 lg:p-10 xl:p-12 overflow-y-auto bg-slate-50 dark:bg-slate-950">
-        <div className={`w-full ${maxWidthClassName} my-auto py-4`}>
+      <div className="flex-1 lg:h-full flex flex-col justify-center items-center p-6 sm:p-8 lg:p-10 xl:p-12 overflow-y-auto bg-white dark:bg-slate-950">
+        <div className={`w-full ${maxWidthClassName} my-auto`}>
           {children}
         </div>
       </div>
