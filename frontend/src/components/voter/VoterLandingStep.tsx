@@ -9,6 +9,7 @@ import {
   HelpCircle,
   Lock,
 } from "lucide-react";
+import { getAssetUrl } from "../../lib/api-client";
 
 interface VoterLandingStepProps {
   electionTitle: string;
@@ -20,6 +21,7 @@ interface VoterLandingStepProps {
   electionId?: string;
   hasAccessCodes?: boolean;
   identifierLabel?: string;
+  electionPhotoUrl?: string | null;
   onStart: () => void;
 }
 
@@ -55,8 +57,10 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
   electionStatus = "draft",
   hasAccessCodes = false,
   identifierLabel = "institutional email or ID",
+  electionPhotoUrl,
   onStart,
 }) => {
+  const [imageError, setImageError] = React.useState(false);
   const durationText = formatVotingDuration(opensAt, closesAt);
   const formattedStart = formatDateOnly(opensAt, "Immediate");
   const formattedEnd = formatDateOnly(closesAt, "Until Closed");
@@ -68,10 +72,21 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
         {/* Header Block at the very top */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-1">
           <div className="flex items-start gap-3.5">
-            {/* Elevated Icon Container */}
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-[#0055FF] flex items-center justify-center shrink-0 shadow-xs">
-              <Vote className="w-6 h-6" />
-            </div>
+            {/* Circular Profile Picture (PFP) with Fallback */}
+            {electionPhotoUrl && !imageError ? (
+              <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-slate-50 shrink-0 shadow-xs">
+                <img
+                  src={getAssetUrl(electionPhotoUrl)}
+                  alt={`${electionTitle} logo`}
+                  onError={() => setImageError(true)}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 text-[#0055FF] flex items-center justify-center shrink-0 shadow-xs">
+                <Vote className="w-6 h-6" />
+              </div>
+            )}
 
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0B1528] tracking-tight leading-snug">

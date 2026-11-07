@@ -195,4 +195,62 @@ describe("VotingBoothPage Independent Voter Experience Flow", () => {
     expect(await screen.findByText("PW-ELEC-492817")).toBeInTheDocument();
     expect(screen.getByText(/Participation Confirmed/i)).toBeInTheDocument();
   });
+
+  it("renders circular election profile picture when photo_url is provided and falls back to Vote icon on error", async () => {
+    vi.spyOn(apiClient, "getElection").mockResolvedValue({
+      id: "elec-photo",
+      organization_id: "org-1",
+      title: "SRC Presidential Election",
+      description: "Official election",
+      status: "open",
+      opens_at: "2026-10-01T00:00:00Z",
+      closes_at: "2026-12-01T00:00:00Z",
+      timezone: "UTC",
+      voting_method: "single_choice_per_position",
+      configuration_version: 1,
+      configuration_hash: "a".repeat(64),
+      photo_url: "/static/uploads/elections/src-logo.png",
+      created_by: "admin",
+      created_at: "2026-10-01T00:00:00Z",
+      updated_at: "2026-10-01T00:00:00Z",
+      positions: [],
+    });
+
+    vi.spyOn(apiClient, "getVoterAuthConfig").mockResolvedValue({
+      id: "cfg-1",
+      election_id: "elec-photo",
+      identifier_type: "institutional_id",
+      identifier_label: "Student ID",
+      otp_length: 6,
+      otp_expiry_seconds: 300,
+      otp_max_attempts: 5,
+      otp_regeneration_cooldown_seconds: 30,
+      session_idle_timeout_seconds: 600,
+      session_max_duration_seconds: 3600,
+      allow_session_resume: true,
+      allow_position_skip: true,
+      created_at: "2026-10-01T00:00:00Z",
+      updated_at: "2026-10-01T00:00:00Z",
+    });
+
+    const queryClient = createTestQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/elections/elec-photo/vote"]}>
+          <Routes>
+            <Route path="/elections/:id/vote" element={<VotingBoothPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const img = await screen.findByAltText(/SRC Presidential Election logo/i);
+    expect(img).toHaveClass("rounded-full");
+    expect(img).toHaveAttribute("src", expect.stringContaining("/static/uploads/elections/src-logo.png"));
+
+    // Trigger error fallback
+    fireEvent.error(img);
+    // Should remove image and fallback cleanly
+    expect(screen.queryByAltText(/SRC Presidential Election logo/i)).not.toBeInTheDocument();
+  });
 });

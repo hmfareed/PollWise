@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Vote, ShieldCheck } from "lucide-react";
-import { apiClient } from "../lib/api-client";
+import { apiClient, getAssetUrl } from "../lib/api-client";
 import { VoterSplitLayout } from "../layouts/VoterSplitLayout";
 import { VoterLandingStep } from "../components/voter/VoterLandingStep";
 import { IdentifierEntryStep } from "../components/voter/IdentifierEntryStep";
@@ -356,6 +356,7 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
             electionId={id}
             hasAccessCodes={hasAccessCodes}
             identifierLabel={label}
+            electionPhotoUrl={election.photo_url}
             onStart={() => {
               setAuthError(null);
               setPhase(hasAccessCodes ? "access_code" : "identifier");
@@ -435,12 +436,22 @@ export const VotingBoothPage: React.FC<VotingBoothPageProps> = ({
       <header className="border-b border-border/70 bg-card/90 backdrop-blur-sm px-6 py-4 shadow-2xs">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-[#0055FF] flex items-center justify-center text-white shadow-xs font-bold text-sm">
-              <Vote className="w-4 h-4" />
-            </div>
+            {election.photo_url ? (
+              <div className="h-8 w-8 rounded-full overflow-hidden border border-border shadow-xs shrink-0">
+                <img
+                  src={getAssetUrl(election.photo_url)}
+                  alt={`${election.title} logo`}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-[#0055FF] flex items-center justify-center text-white shadow-xs font-bold text-sm">
+                <Vote className="w-4 h-4" />
+              </div>
+            )}
             <div>
               <span className="font-extrabold text-base tracking-tight text-foreground block leading-none">
-                PollWise
+                {election.title}
               </span>
               <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
                 Official Voting Booth
