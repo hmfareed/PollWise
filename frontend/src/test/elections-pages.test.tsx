@@ -52,6 +52,7 @@ describe("Election Pages & Lifecycle UI", () => {
 
     expect(screen.getByRole("heading", { name: /Create Institutional Election/i })).toBeInTheDocument();
     expect(screen.getByText(/Basic Information/i)).toBeInTheDocument();
+    expect(screen.getByText(/Election Profile Picture/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/2026 Student Union General Election/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Next: Structure/i })).toBeInTheDocument();
   });

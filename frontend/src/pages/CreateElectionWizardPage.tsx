@@ -18,6 +18,7 @@ import {
   FileText,
   Hash,
 } from "lucide-react";
+import { ElectionPhotoUpload } from "../components/admin/ElectionPhotoUpload";
 import { apiClient } from "../lib/api-client";
 import { Button } from "../components/ui/button";
 import {
@@ -166,6 +167,7 @@ export const CreateElectionWizardPage: React.FC = () => {
   // ---------- Step 1: Basic Info ----------
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string>("");
   const [electionType, setElectionType] = useState<ElectionType>("general");
   const [academicYear, setAcademicYear] = useState("");
   const [selectedOrgId, setSelectedOrgId] = useState("");
@@ -373,6 +375,7 @@ export const CreateElectionWizardPage: React.FC = () => {
         organization_id: effectiveOrgId,
         title: title.trim(),
         description: description.trim() || undefined,
+        photo_url: photoUrl.trim() || undefined,
         opens_at: new Date(opensAt).toISOString(),
         closes_at: new Date(closesAt).toISOString(),
         timezone,
@@ -574,6 +577,15 @@ export const CreateElectionWizardPage: React.FC = () => {
                 rows={3}
                 placeholder="Provide context, voting guidelines, or institutional references…"
                 className={inputCls}
+              />
+            </div>
+
+            {/* Election Profile Picture */}
+            <div>
+              <label className={labelCls}>Election Profile Picture</label>
+              <ElectionPhotoUpload
+                value={photoUrl}
+                onChange={setPhotoUrl}
               />
             </div>
 

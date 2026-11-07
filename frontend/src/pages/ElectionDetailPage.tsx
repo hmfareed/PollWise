@@ -844,24 +844,38 @@ export const ElectionDetailPage: React.FC = () => {
 
       {/* Header */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={election.status} />
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full font-medium border ${statusCfg.bgClass} ${statusCfg.colorClass} ${statusCfg.borderClass}`}
-              >
-                {election.status === "draft" ? "Editable Draft" : "Configuration Frozen"}
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            {/* Circular Profile Picture */}
+            <div className="w-14 h-14 rounded-full overflow-hidden border border-border bg-muted/40 shrink-0 flex items-center justify-center shadow-xs">
+              {election.photo_url ? (
+                <img
+                  src={getAssetUrl(election.photo_url)}
+                  alt={`${election.title} logo`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Vote className="w-7 h-7 text-primary" />
+              )}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              {election.title}
-            </h1>
-            {election.description && (
-              <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-                {election.description}
-              </p>
-            )}
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge status={election.status} />
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium border ${statusCfg.bgClass} ${statusCfg.colorClass} ${statusCfg.borderClass}`}
+                >
+                  {election.status === "draft" ? "Editable Draft" : "Configuration Frozen"}
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+                {election.title}
+              </h1>
+              {election.description && (
+                <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+                  {election.description}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
