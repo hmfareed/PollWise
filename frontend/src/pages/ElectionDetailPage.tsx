@@ -50,6 +50,7 @@ import { CertifiedCertificateModal } from "../components/reports/CertifiedCertif
 import { ElectionReportsModal } from "../components/reports/ElectionReportsModal";
 import { RecountRequestModal } from "../components/reports/RecountRequestModal";
 import { EmergencyControlModal } from "../components/elections/EmergencyControlModal";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { EmergencyStatusBanner } from "../components/elections/EmergencyStatusBanner";
 import { TurnoutVelocityChart } from "../components/elections/TurnoutVelocityChart";
 import { CandidatePhotoUpload } from "../components/admin/CandidatePhotoUpload";
@@ -291,6 +292,43 @@ export const ElectionDetailPage: React.FC = () => {
     isOpen: boolean;
     actionType: "pause" | "resume" | "emergency_close" | "cancel";
   }>({ isOpen: false, actionType: "pause" });
+
+  // ── Confirm Dialog state (replaces window.confirm) ──
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
+    variant: "destructive" | "default";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    variant: "default",
+    onConfirm: () => undefined,
+  });
+
+  const openConfirm = (opts: {
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: "destructive" | "default";
+    onConfirm: () => void;
+  }) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: opts.title,
+      message: opts.message,
+      confirmLabel: opts.confirmLabel ?? "Confirm",
+      variant: opts.variant ?? "default",
+      onConfirm: opts.onConfirm,
+    });
+  };
+
+  const closeConfirm = () =>
+    setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
   const votingUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/elections/${id}/vote`
@@ -907,13 +945,14 @@ export const ElectionDetailPage: React.FC = () => {
             election={election}
             onResume={() => setEmergencyModal({ isOpen: true, actionType: "resume" })}
             onClose={() => {
-              if (
-                window.confirm(
-                  "Close this paused election? Voting will be permanently concluded and ballot collections frozen for tallying."
-                )
-              ) {
-                closeMutation.mutate();
-              }
+              openConfirm({
+                title: "Close Paused Election",
+                message:
+                  "Close this paused election? Voting will be permanently concluded and ballot collections frozen for tallying.",
+                confirmLabel: "Close Election",
+                variant: "destructive",
+                onConfirm: () => closeMutation.mutate(),
+              });
             }}
             isResuming={resumeMutation.isPending}
             isClosing={closeMutation.isPending}
@@ -1204,31 +1243,36 @@ export const ElectionDetailPage: React.FC = () => {
                         Cast Ballot
                       </Button>
                     </Link>
-                    <Button
-                      variant="outline"
-                      className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-semibold"
-                      onClick={() => setEmergencyModal({ isOpen: true, actionType: "pause" })}
-                      disabled={pauseMutation.isPending || closeMutation.isPending}
-                    >
-                      <PauseCircle className="h-4 w-4" />
-                      Pause Election
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="gap-2"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            "Close this election? Voters will no longer be able to cast ballots."
-                          )
-                        ) {
-                          closeMutation.mutate();
-                        }
-                      }}
-                      disabled={closeMutation.isPending || pauseMutation.isPending}
-                    >
-                      {closeMutation.isPending ? "Closing…" : "Close Election"}
-                    </Button>
+                    {!isClosingPassed && isAuthenticated && (
+                      <>
+                        <Button
+                          variant="outline"
+                          className="gap-2 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 font-semibold"
+                          onClick={() => setEmergencyModal({ isOpen: true, actionType: "pause" })}
+                          disabled={pauseMutation.isPending || closeMutation.isPending}
+                        >
+                          <PauseCircle className="h-4 w-4" />
+                          Pause Election
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="gap-2"
+                          onClick={() => {
+                            openConfirm({
+                              title: "Close Election",
+                              message:
+                                "Close this election? Voters will no longer be able to cast ballots.",
+                              confirmLabel: "Close Election",
+                              variant: "destructive",
+                              onConfirm: () => closeMutation.mutate(),
+                            });
+                          }}
+                          disabled={closeMutation.isPending || pauseMutation.isPending}
+                        >
+                          {closeMutation.isPending ? "Closing…" : "Close Election"}
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -1246,13 +1290,14 @@ export const ElectionDetailPage: React.FC = () => {
                       variant="destructive"
                       className="gap-2"
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            "Close this paused election? Voting will be permanently concluded and ballot collections frozen for tallying."
-                          )
-                        ) {
-                          closeMutation.mutate();
-                        }
+                        openConfirm({
+                          title: "Close Paused Election",
+                          message:
+                            "Close this paused election? Voting will be permanently concluded and ballot collections frozen for tallying.",
+                          confirmLabel: "Close Election",
+                          variant: "destructive",
+                          onConfirm: () => closeMutation.mutate(),
+                        });
                       }}
                       disabled={closeMutation.isPending || resumeMutation.isPending}
                     >
@@ -1278,13 +1323,14 @@ export const ElectionDetailPage: React.FC = () => {
                       <Button
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              "Publish these approved results? They will become publicly visible to all voters."
-                            )
-                          ) {
-                            publishMutation.mutate();
-                          }
+                          openConfirm({
+                            title: "Publish Results",
+                            message:
+                              "Publish these approved results? They will become publicly visible to all voters.",
+                            confirmLabel: "Publish Results",
+                            variant: "default",
+                            onConfirm: () => publishMutation.mutate(),
+                          });
                         }}
                         disabled={publishMutation.isPending}
                       >
@@ -1295,13 +1341,15 @@ export const ElectionDetailPage: React.FC = () => {
                       <Button
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              "Approve and certify these results? Once approved, they can be published to voters."
-                            )
-                          ) {
-                            approveResultsMutation.mutate({ approved: true });
-                          }
+                          openConfirm({
+                            title: "Approve Results",
+                            message:
+                              "Approve and certify these results? Once approved, they can be published to voters.",
+                            confirmLabel: "Approve Results",
+                            variant: "default",
+                            onConfirm: () =>
+                              approveResultsMutation.mutate({ approved: true }),
+                          });
                         }}
                         disabled={approveResultsMutation.isPending}
                       >
@@ -1313,9 +1361,15 @@ export const ElectionDetailPage: React.FC = () => {
                       variant="destructive"
                       className="gap-2"
                       onClick={() => {
-                        if (window.confirm("Reject these results? This will require re-tallying.")) {
-                          approveResultsMutation.mutate({ approved: false });
-                        }
+                        openConfirm({
+                          title: "Reject Results",
+                          message:
+                            "Reject these results? This will require re-tallying.",
+                          confirmLabel: "Reject Results",
+                          variant: "destructive",
+                          onConfirm: () =>
+                            approveResultsMutation.mutate({ approved: false }),
+                        });
                       }}
                       disabled={approveResultsMutation.isPending || publishMutation.isPending}
                     >
@@ -1539,13 +1593,14 @@ export const ElectionDetailPage: React.FC = () => {
                         variant="ghost"
                         className="text-danger hover:text-danger hover:bg-red-50 h-7 w-7 p-0"
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              `Remove position "${pos.title}"? This will also remove all its candidates.`
-                            )
-                          ) {
-                            removePositionMutation.mutate(pos.id);
-                          }
+                          openConfirm({
+                            title: "Remove Position",
+                            message: `Remove position "${pos.title}"? This will also remove all its candidates.`,
+                            confirmLabel: "Remove",
+                            variant: "destructive",
+                            onConfirm: () =>
+                              removePositionMutation.mutate(pos.id),
+                          });
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1709,13 +1764,14 @@ export const ElectionDetailPage: React.FC = () => {
                             variant="ghost"
                             className="text-danger hover:text-danger hover:bg-red-50 h-7 w-7 p-0"
                             onClick={() => {
-                              if (
-                                window.confirm(
-                                  `Remove candidate "${cand.name}" from this election?`
-                                )
-                              ) {
-                                removeCandidateMutation.mutate(cand.id);
-                              }
+                              openConfirm({
+                                title: "Remove Candidate",
+                                message: `Remove candidate "${cand.name}" from this election?`,
+                                confirmLabel: "Remove",
+                                variant: "destructive",
+                                onConfirm: () =>
+                                  removeCandidateMutation.mutate(cand.id),
+                              });
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -2384,13 +2440,14 @@ export const ElectionDetailPage: React.FC = () => {
                       <Button
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              "Publish these approved results? They will become publicly visible to all voters."
-                            )
-                          ) {
-                            publishMutation.mutate();
-                          }
+                          openConfirm({
+                            title: "Publish Results",
+                            message:
+                              "Publish these approved results? They will become publicly visible to all voters.",
+                            confirmLabel: "Publish Results",
+                            variant: "default",
+                            onConfirm: () => publishMutation.mutate(),
+                          });
                         }}
                         disabled={publishMutation.isPending}
                       >
@@ -2401,18 +2458,21 @@ export const ElectionDetailPage: React.FC = () => {
                       <Button
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                         onClick={async () => {
-                          if (
-                            window.confirm(
-                              "Approve and publish these results? Once published, they will become publicly accessible to all voters."
-                            )
-                          ) {
-                            try {
-                              await approveResultsMutation.mutateAsync({ approved: true });
-                              publishMutation.mutate();
-                            } catch {
-                              // Error handled by approveResultsMutation
-                            }
-                          }
+                          openConfirm({
+                            title: "Approve & Publish Results",
+                            message:
+                              "Approve and publish these results? Once published, they will become publicly accessible to all voters.",
+                            confirmLabel: "Approve & Publish",
+                            variant: "default",
+                            onConfirm: async () => {
+                              try {
+                                await approveResultsMutation.mutateAsync({ approved: true });
+                                publishMutation.mutate();
+                              } catch {
+                                // Error handled by approveResultsMutation
+                              }
+                            },
+                          });
                         }}
                         disabled={approveResultsMutation.isPending || publishMutation.isPending}
                       >
@@ -2518,6 +2578,20 @@ export const ElectionDetailPage: React.FC = () => {
             closeMutation.mutate();
           }
         }}
+      />
+
+      {/* Confirm Dialog (replaces browser window.confirm) */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        variant={confirmDialog.variant}
+        onConfirm={() => {
+          closeConfirm();
+          confirmDialog.onConfirm();
+        }}
+        onCancel={closeConfirm}
       />
 
       {/* Empty Positions Action Modal */}
