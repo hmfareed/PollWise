@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { StatusBadge } from "../components/ui/status-badge";
 import { Input, PasswordInput } from "../components/ui/input";
 import { PollwiseBrand, PollwiseEmblem } from "../components/PollwiseBrand";
+import { VoterSplitLayout } from "../layouts/VoterSplitLayout";
 
 describe("UI Primitives", () => {
   it("renders Button with text and handles default variant", () => {
@@ -52,5 +54,29 @@ describe("UI Primitives", () => {
     fireEvent.click(toggleBtn);
     expect(input).toHaveAttribute("type", "text");
     expect(screen.getByRole("button", { name: /Hide password/i })).toBeInTheDocument();
+  });
+
+  it("renders VoterSplitLayout with official brand showcase and right content", () => {
+    render(
+      <MemoryRouter>
+        <VoterSplitLayout maxWidthClassName="max-w-2xl">
+          <div data-testid="voter-step-content">Voter Portal Step Content</div>
+        </VoterSplitLayout>
+      </MemoryRouter>
+    );
+
+    // Right content renders
+    expect(screen.getByTestId("voter-step-content")).toBeInTheDocument();
+    expect(screen.getByText("Voter Portal Step Content")).toBeInTheDocument();
+
+    // Mobile branding bar contains title
+    expect(screen.getByText("Official Voting Portal")).toBeInTheDocument();
+
+    // Left showcase image is present with official alt text
+    const showcaseImg = screen.getByAltText(/Pollwise Institutional Voting - Every Vote Matters/i);
+    expect(showcaseImg).toBeInTheDocument();
+
+    // Cryptographic assurance statement
+    expect(screen.getByText(/Protected by cryptographic ballot assurance/i)).toBeInTheDocument();
   });
 });
