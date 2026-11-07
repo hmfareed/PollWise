@@ -1,6 +1,8 @@
 import React from "react";
 import {
   Vote,
+  Calendar,
+  ShieldCheck,
   ArrowRight,
   Info,
   AlertCircle,
@@ -21,20 +23,48 @@ interface VoterLandingStepProps {
   onStart: () => void;
 }
 
+const formatVotingDuration = (opensAt?: string | null, closesAt?: string | null): string => {
+  if (!opensAt || !closesAt) return "(24 hours)";
+  const start = new Date(opensAt).getTime();
+  const end = new Date(closesAt).getTime();
+  if (isNaN(start) || isNaN(end) || end <= start) return "(Until Closed)";
+  const diffHours = Math.round((end - start) / (1000 * 60 * 60));
+  if (diffHours < 24) return `(${diffHours} ${diffHours === 1 ? "hour" : "hours"})`;
+  const diffDays = Math.round(diffHours / 24);
+  if (diffHours % 24 === 0) return `(${diffDays} ${diffDays === 1 ? "day" : "days"})`;
+  return `(${diffHours} hours)`;
+};
+
+const formatDateOnly = (isoStr?: string | null, fallback = "Immediate"): string => {
+  if (!isoStr) return fallback;
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return fallback;
+  return d.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+  });
+};
+
 export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
   electionTitle,
   electionDescription,
   opensAt,
+  closesAt,
   isOpen,
   electionStatus = "draft",
   hasAccessCodes = false,
   identifierLabel = "institutional email or ID",
   onStart,
 }) => {
+  const durationText = formatVotingDuration(opensAt, closesAt);
+  const formattedStart = formatDateOnly(opensAt, "Immediate");
+  const formattedEnd = formatDateOnly(closesAt, "Until Closed");
+
   return (
     <div className="w-full flex-1 flex flex-col justify-between transition-all">
-      {/* Top Main Section: Election Header, Instructions, and Action Button */}
-      <div className="space-y-6">
+      {/* Top Main Section: Election Header, Flat Metadata, Instructions, and Action Button */}
+      <div className="space-y-5">
         {/* Header Block at the very top */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-1">
           <div className="flex items-start gap-3.5">
@@ -56,7 +86,7 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
           {/* Status Badge */}
           <div className="sm:self-start shrink-0">
             {isOpen ? (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -64,11 +94,43 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
                 <span>Voting Open</span>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
                 <AlertCircle className="w-3.5 h-3.5" />
                 <span className="capitalize">{electionStatus}</span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Flat Metadata Row (Voting Window & Ballot Security) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start py-1">
+          {/* Voting Window */}
+          <div className="flex items-start gap-3">
+            <Calendar className="w-5 h-5 text-[#0055FF] dark:text-blue-400 mt-0.5 shrink-0" />
+            <div className="space-y-0.5 text-xs sm:text-sm">
+              <span className="font-bold text-[#0B1528] dark:text-white block">
+                Voting Window
+              </span>
+              <span className="text-slate-600 dark:text-slate-300 block font-medium">
+                {formattedStart} – {formattedEnd}
+              </span>
+              <span className="text-slate-400 dark:text-slate-500 text-xs block">
+                {durationText}
+              </span>
+            </div>
+          </div>
+
+          {/* Ballot Security with subtle divider on sm screens */}
+          <div className="flex items-start gap-3 sm:border-l sm:border-slate-200 dark:sm:border-slate-800 sm:pl-6">
+            <ShieldCheck className="w-5 h-5 text-[#0055FF] dark:text-blue-400 mt-0.5 shrink-0" />
+            <div className="space-y-0.5 text-xs sm:text-sm">
+              <span className="font-bold text-[#0B1528] dark:text-white block">
+                Ballot Security
+              </span>
+              <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">
+                Your candidate selections are cryptographically decoupled from your institutional identity.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -184,7 +246,7 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
       </div>
 
       {/* Footer Support and Privacy Notice - Pushed to the Bottom */}
-      <div className="mt-auto pt-10 pb-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-auto pt-8 pb-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
           <span>Need help?</span>
