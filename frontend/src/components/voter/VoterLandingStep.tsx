@@ -64,7 +64,7 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
   return (
     <div className="w-full flex-1 flex flex-col justify-between transition-all">
       {/* Top Main Section: Election Header, Flat Metadata, Instructions, and Action Button */}
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* Header Block at the very top */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-1">
           <div className="flex items-start gap-3.5">
@@ -102,8 +102,8 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
           </div>
         </div>
 
-        {/* Flat Metadata Row (Voting Window & Ballot Security) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start py-1">
+        {/* Flat Metadata Row (Voting Window & Ballot Security) - moved down with breathing room */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start pt-4 sm:pt-6 pb-2">
           {/* Voting Window */}
           <div className="flex items-start gap-3">
             <Calendar className="w-5 h-5 text-[#0055FF] dark:text-blue-400 mt-0.5 shrink-0" />
