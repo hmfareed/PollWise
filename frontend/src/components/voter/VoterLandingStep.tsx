@@ -2,7 +2,6 @@ import React from "react";
 import {
   Vote,
   ArrowRight,
-  ChevronLeft,
   Info,
   AlertCircle,
   HelpCircle,
@@ -33,167 +32,159 @@ export const VoterLandingStep: React.FC<VoterLandingStepProps> = ({
   onStart,
 }) => {
   return (
-    <div className="w-full transition-all space-y-6">
-      {/* Top Breadcrumb Navigation */}
-      <div>
-        <a
-          href="/elections"
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors group"
-        >
-          <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-          <span>Back to Elections</span>
-        </a>
-      </div>
+    <div className="w-full flex-1 flex flex-col justify-between transition-all">
+      {/* Top Main Section: Election Header, Instructions, and Action Button */}
+      <div className="space-y-6">
+        {/* Header Block at the very top */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-1">
+          <div className="flex items-start gap-3.5">
+            {/* Elevated Icon Container */}
+            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/60 text-[#0055FF] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs">
+              <Vote className="w-6 h-6" />
+            </div>
 
-      {/* Header Block (Flat on Page) */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="flex items-start gap-3.5">
-          {/* Elevated Icon Container */}
-          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/60 text-[#0055FF] dark:text-blue-400 flex items-center justify-center shrink-0 shadow-xs">
-            <Vote className="w-6 h-6" />
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0B1528] dark:text-white tracking-tight leading-snug">
+                {electionTitle}
+              </h1>
+              <p className="text-xs sm:text-sm font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase mt-1">
+                {electionDescription || "Official Institutional Election"}
+              </p>
+            </div>
           </div>
 
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0B1528] dark:text-white tracking-tight leading-snug">
-              {electionTitle}
-            </h1>
-            <p className="text-xs sm:text-sm font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase mt-1">
-              {electionDescription || "Official Institutional Election"}
+          {/* Status Badge */}
+          <div className="sm:self-start shrink-0">
+            {isOpen ? (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Voting Open</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span className="capitalize">{electionStatus}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Dynamic System Instructions Card */}
+        <div className="bg-blue-50/70 dark:bg-blue-950/30 rounded-2xl p-4 sm:p-5 border border-blue-100 dark:border-blue-900/50 space-y-3.5">
+          <div className="flex items-center gap-2.5 text-[#0055FF] dark:text-blue-400">
+            <Info className="w-4 h-4 shrink-0" />
+            <h2 className="text-sm font-bold text-[#0B1528] dark:text-white">
+              Before you start
+            </h2>
+          </div>
+
+          <ol className="space-y-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-200">
+            {hasAccessCodes ? (
+              <>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <span>Enter the alphanumeric access code found on your physical voter slip.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>Provide your Student or Institutional ID to verify eligibility.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <span>Access your confidential ballot and review positions sequentially.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    4
+                  </span>
+                  <span>Follow the instructions to complete and cast your vote anonymously.</span>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <span>Enter your approved {identifierLabel}.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>You will see a 6-digit verification code on this screen.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                  </span>
+                  <span>Enter the code to verify your session and access the ballot.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    4
+                  </span>
+                  <span>Follow the instructions to complete and cast your vote anonymously.</span>
+                </li>
+              </>
+            )}
+          </ol>
+        </div>
+
+        {/* Unavailable Banner if not open */}
+        {!isOpen && (
+          <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs space-y-1.5">
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>
+                {electionStatus === "draft"
+                  ? "Election In Draft Preparation"
+                  : electionStatus === "scheduled"
+                  ? "Voting Scheduled But Not Yet Open"
+                  : electionStatus === "paused"
+                  ? "Voting Temporarily Paused"
+                  : electionStatus === "closed"
+                  ? "Election Concluded"
+                  : "Voting Currently Unavailable"}
+              </span>
+            </div>
+            <p className="text-slate-600 dark:text-amber-300/80 leading-relaxed">
+              {electionStatus === "draft"
+                ? "This election is currently in preparation and has not yet opened for voting. Please check back during the official voting window."
+                : electionStatus === "scheduled"
+                ? `This election is scheduled to open on ${opensAt ? new Date(opensAt).toLocaleString() : "the scheduled date"}.`
+                : electionStatus === "paused"
+                ? "This election is temporarily paused by election administrators under emergency operational protocol. Please check back shortly."
+                : electionStatus === "closed"
+                ? "The voting window for this election has closed. No further ballots may be submitted."
+                : "Voting is not currently active for this election."}
             </p>
           </div>
-        </div>
+        )}
 
-        {/* Status Badge */}
-        <div className="sm:self-start shrink-0">
-          {isOpen ? (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span>Voting Open</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span className="capitalize">{electionStatus}</span>
-            </div>
-          )}
-        </div>
+        {/* Primary Action Button */}
+        <button
+          type="button"
+          disabled={!isOpen}
+          onClick={onStart}
+          className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-[#0055FF] hover:bg-[#0047E0] disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed shadow-md shadow-blue-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-base cursor-pointer"
+        >
+          <span>Start Voting</span>
+          <ArrowRight className="w-5 h-5" />
+        </button>
       </div>
 
-      {/* Dynamic System Instructions Card */}
-      <div className="bg-blue-50/70 dark:bg-blue-950/30 rounded-2xl p-4 sm:p-5 border border-blue-100 dark:border-blue-900/50 space-y-3.5">
-        <div className="flex items-center gap-2.5 text-[#0055FF] dark:text-blue-400">
-          <Info className="w-4 h-4 shrink-0" />
-          <h2 className="text-sm font-bold text-[#0B1528] dark:text-white">
-            Before you start
-          </h2>
-        </div>
-
-        <ol className="space-y-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-200">
-          {hasAccessCodes ? (
-            <>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  1
-                </span>
-                <span>Enter the alphanumeric access code found on your physical voter slip.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  2
-                </span>
-                <span>Provide your Student or Institutional ID to verify eligibility.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  3
-                </span>
-                <span>Access your confidential ballot and review positions sequentially.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  4
-                </span>
-                <span>Follow the instructions to complete and cast your vote anonymously.</span>
-              </li>
-            </>
-          ) : (
-            <>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  1
-                </span>
-                <span>Enter your approved {identifierLabel}.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  2
-                </span>
-                <span>You will see a 6-digit verification code on this screen.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  3
-                </span>
-                <span>Enter the code to verify your session and access the ballot.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#0055FF] dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  4
-                </span>
-                <span>Follow the instructions to complete and cast your vote anonymously.</span>
-              </li>
-            </>
-          )}
-        </ol>
-      </div>
-
-      {/* Unavailable Banner if not open */}
-      {!isOpen && (
-        <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 text-xs space-y-1.5">
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span>
-              {electionStatus === "draft"
-                ? "Election In Draft Preparation"
-                : electionStatus === "scheduled"
-                ? "Voting Scheduled But Not Yet Open"
-                : electionStatus === "paused"
-                ? "Voting Temporarily Paused"
-                : electionStatus === "closed"
-                ? "Election Concluded"
-                : "Voting Currently Unavailable"}
-            </span>
-          </div>
-          <p className="text-slate-600 dark:text-amber-300/80 leading-relaxed">
-            {electionStatus === "draft"
-              ? "This election is currently in preparation and has not yet opened for voting. Please check back during the official voting window."
-              : electionStatus === "scheduled"
-              ? `This election is scheduled to open on ${opensAt ? new Date(opensAt).toLocaleString() : "the scheduled date"}.`
-              : electionStatus === "paused"
-              ? "This election is temporarily paused by election administrators under emergency operational protocol. Please check back shortly."
-              : electionStatus === "closed"
-              ? "The voting window for this election has closed. No further ballots may be submitted."
-              : "Voting is not currently active for this election."}
-          </p>
-        </div>
-      )}
-
-      {/* Primary Action Button (Immediately Visible Without Scrolling) */}
-      <button
-        type="button"
-        disabled={!isOpen}
-        onClick={onStart}
-        className="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-[#0055FF] hover:bg-[#0047E0] disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed shadow-md shadow-blue-500/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 text-base cursor-pointer"
-      >
-        <span>Start Voting</span>
-        <ArrowRight className="w-4 h-4" />
-      </button>
-
-      {/* Footer Support and Privacy Notice */}
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-slate-500 dark:text-slate-400">
+      {/* Footer Support and Privacy Notice - Pushed to the Bottom */}
+      <div className="mt-auto pt-10 pb-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
         <div className="flex items-center gap-2">
           <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
           <span>Need help?</span>

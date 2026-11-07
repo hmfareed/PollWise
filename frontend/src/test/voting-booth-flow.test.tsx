@@ -126,7 +126,7 @@ describe("VotingBoothPage Independent Voter Experience Flow", () => {
 
     // 1. Landing Screen
     expect(await screen.findByText("2026 Student Union Executive Election")).toBeInTheDocument();
-    expect(screen.getByText(/Back to Elections/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Back to Elections/i)).not.toBeInTheDocument();
     expect(screen.getByText("Voting Open")).toBeInTheDocument();
     expect(screen.getByText("Before you start")).toBeInTheDocument();
     expect(screen.getByText(/Enter your approved Student ID/i)).toBeInTheDocument();
